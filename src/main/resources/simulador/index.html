@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mandalore - Simulador de conversa</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #eef1f5; color: #1f2933; height: 100vh; display: flex; flex-direction: column; }
+    header { background: #075e54; color: #fff; padding: 10px 18px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 17px; margin: 0; font-weight: 600; flex: 1; }
+    header small { opacity: .8; font-family: Consolas, monospace; }
+    header button, header select { background: #fff; color: #075e54; border: 0; border-radius: 6px; padding: 7px 12px; cursor: pointer; font-weight: 600; }
+    main { flex: 1; display: grid; grid-template-columns: minmax(320px, 1fr) minmax(320px, 440px); min-height: 0; }
+    .chat { display: flex; flex-direction: column; min-height: 0; background: #e5ddd5; }
+    .mensagens { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+    .msg { max-width: 75%; padding: 8px 11px; border-radius: 8px; white-space: pre-wrap; line-height: 1.4; box-shadow: 0 1px 1px rgba(0,0,0,.12); cursor: default; }
+    .msg.usuario { align-self: flex-end; background: #dcf8c6; }
+    .msg.bot { align-self: flex-start; background: #fff; cursor: pointer; }
+    .msg.bot.selecionada { outline: 2px solid #128c7e; }
+    .msg.erro { align-self: center; background: #fde2e1; color: #9b1c1c; font-size: 13px; }
+    .msg .meta { display: block; font-size: 11px; color: #667781; margin-top: 4px; }
+    .msg.transbordo { border-left: 4px solid #f59e0b; }
+    .msg.humano { align-self: flex-start; background: #fff7d6; border-left: 4px solid #f59e0b; }
+    .ok { background: #e3f6ec; color: #1e6b43; border-radius: 6px; padding: 8px; }
+    .atalhos { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px 12px 0; }
+    .atalhos button { background: #fff; border: 1px solid #c8d1d9; border-radius: 14px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    form { display: flex; gap: 8px; padding: 10px 12px 12px; }
+    form input { flex: 1; padding: 11px 14px; border-radius: 20px; border: 1px solid #c8d1d9; font-size: 15px; }
+    form button { background: #128c7e; color: #fff; border: 0; border-radius: 20px; padding: 0 18px; font-size: 15px; cursor: pointer; }
+    form button:disabled { opacity: .5; cursor: wait; }
+    aside { background: #fff; border-left: 1px solid #d5dbe1; overflow-y: auto; padding: 14px 16px; font-size: 13px; }
+    aside h2 { font-size: 14px; margin: 0 0 10px; }
+    aside h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #52606d; margin: 16px 0 6px; }
+    .vazio { color: #7b8794; }
+    .linha { display: flex; gap: 8px; margin: 3px 0; }
+    .linha b { min-width: 72px; color: #52606d; font-weight: 600; }
+    code, pre { font-family: Consolas, monospace; font-size: 12px; }
+    pre { background: #f5f7fa; border: 1px solid #e4e7eb; border-radius: 6px; padding: 8px; overflow-x: auto; margin: 0; white-space: pre-wrap; word-break: break-word; }
+    .ctx { display: inline-block; background: #e3f2fd; color: #0b5394; border-radius: 10px; padding: 2px 8px; margin: 2px 4px 2px 0; font-family: Consolas, monospace; font-size: 12px; }
+    .alerta { background: #fde2e1; color: #9b1c1c; border-radius: 6px; padding: 8px; }
+    .aviso { background: #fff4e5; color: #8a4b00; border-radius: 6px; padding: 8px; }
+    @media (max-width: 800px) { main { grid-template-columns: 1fr; } aside { border-left: 0; border-top: 1px solid #d5dbe1; max-height: 40vh; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Simulador de conversa</h1>
+    <small id="sessao"></small>
+    <select id="modo" title="Dialogflow direto mostra intents e contextos. Via Chatwoot segue o caminho real, com transbordo para atendente.">
+      <option value="dialogflow">Dialogflow direto</option>
+      <option value="chatwoot">Via Chatwoot</option>
+    </select>
+    <button id="nova" type="button" title="Inicia uma sessão nova no Dialogflow, sem contextos">Nova conversa</button>
+  </header>
+  <main>
+    <section class="chat">
+      <div class="mensagens" id="mensagens"></div>
+      <div class="atalhos" id="atalhos"></div>
+      <form id="form" autocomplete="off">
+        <input id="texto" placeholder="Digite como o paciente digitaria" autofocus>
+        <button id="enviar" type="submit">Enviar</button>
+      </form>
+    </section>
+    <aside id="detalhe">
+      <h2>Detalhes do turno</h2>
+      <p class="vazio">Envie uma mensagem. Clique numa resposta do bot para ver a intent, os contextos e os parâmetros daquele turno.</p>
+    </aside>
+  </main>
+  <script>
+    const ATALHOS = ["oi", "marcar consulta", "ver meus agendamentos", "começar de novo", "quero falar com atendente"];
+    const mensagens = document.getElementById("mensagens");
+    const detalhe = document.getElementById("detalhe");
+    const form = document.getElementById("form");
+    const campo = document.getElementById("texto");
+    const botao = document.getElementById("enviar");
+    let sessao = sessionStorage.getItem("simulador.sessao") || novaSessao();
+
+    function novaSessao() {
+      const id = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, "0")).join("");
+      sessionStorage.setItem("simulador.sessao", id);
+      return id;
+    }
+
+    function mostrarSessao() {
+      document.getElementById("sessao").textContent = "sessão " + sessao;
+    }
+
+    function hora() {
+      return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+
+    function adicionar(classe, texto, meta) {
+      const div = document.createElement("div");
+      div.className = "msg " + classe;
+      div.textContent = texto;
+      if (meta) {
+        const span = document.createElement("span");
+        span.className = "meta";
+        span.textContent = meta;
+        div.appendChild(span);
+      }
+      mensagens.appendChild(div);
+      mensagens.scrollTop = mensagens.scrollHeight;
+      return div;
+    }
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => node.append(f));
+      return node;
+    }
+
+    function linha(rotulo, valor) {
+      return el("div", { className: "linha" }, el("b", {}, rotulo), el("code", {}, valor || "-"));
+    }
+
+    function mostrarDetalhe(turno, div) {
+      document.querySelectorAll(".msg.bot.selecionada").forEach((m) => m.classList.remove("selecionada"));
+      div.classList.add("selecionada");
+      const r = turno.resposta;
+      const contextos = r.contextos.length
+        ? r.contextos.map((c) => el("span", { className: "ctx", title: "lifespan " + c.lifespan }, c.nome + " · " + c.lifespan))
+        : [el("span", { className: "vazio" }, "nenhum contexto ativo")];
+      const parametros = Object.keys(r.parametros || {}).length
+        ? el("pre", {}, JSON.stringify(r.parametros, null, 2))
+        : el("span", { className: "vazio" }, "nenhum parâmetro");
+      detalhe.replaceChildren(
+        el("h2", {}, "Turno " + turno.numero + " · " + turno.hora),
+        linha("Usuário", turno.texto),
+        linha("Intent", r.intent),
+        linha("Ação", r.acao),
+        linha("Latência", r.latenciaMs + " ms"),
+        r.erroWebhook ? el("div", { className: "alerta" }, "Webhook falhou: " + r.erroWebhook) : "",
+        r.transbordo ? el("div", { className: "aviso" }, "Transbordo: no Chatwoot esta conversa iria para um atendente.") : "",
+        el("h3", {}, "Contextos ativos"),
+        el("div", {}, contextos),
+        el("h3", {}, "Parâmetros"),
+        parametros
+      );
+    }
+
+    const seletorModo = document.getElementById("modo");
+    let modo = sessionStorage.getItem("simulador.modo") || "dialogflow";
+    let renderizadas = new Set();
+    let consulta = null;
+
+    function mostrarConversa(c) {
+      (c.mensagens || []).forEach((m) => {
+        if (renderizadas.has(m.id)) return;
+        renderizadas.add(m.id);
+        if (m.doPaciente) {
+          adicionar("usuario", m.texto, "paciente");
+        } else if (m.tipoRemetente === "agent_bot") {
+          adicionar("bot", m.texto, m.remetente + " · bot");
+        } else {
+          adicionar("humano", m.texto, m.remetente + " · atendente");
+        }
+      });
+      const situacao = c.emAtendimento
+        ? el("div", { className: "aviso" }, "Em atendimento humano. O bot parou de responder; o atendente responde pelo painel do Chatwoot e a mensagem aparece aqui.")
+        : el("div", { className: "ok" }, c.conversationId ? "Bot atendendo (status " + (c.status || "-") + ")." : "Envie uma mensagem para abrir a conversa no Chatwoot.");
+      const painel = c.painelUrl
+        ? el("a", { href: c.painelUrl, target: "_blank", rel: "noopener" }, "Abrir conversa no painel do Chatwoot")
+        : "";
+      detalhe.replaceChildren(
+        el("h2", {}, "Conversa no Chatwoot"),
+        linha("Conversa", c.conversationId),
+        linha("Status", c.status),
+        situacao,
+        el("p", {}, painel),
+        el("p", { className: "vazio" }, "Neste modo a mensagem segue o caminho real: Chatwoot, webhook do Mandalore e Dialogflow. Intents e contextos ficam no log do Mandalore.")
+      );
+    }
+
+    async function lerConversa() {
+      try {
+        const resp = await fetch("/simulador/chatwoot/conversa?sessao=" + encodeURIComponent(sessao));
+        if (resp.ok) mostrarConversa(await resp.json());
+      } catch (e) {
+        // a próxima consulta tenta de novo
+      }
+    }
+
+    function consultarPeriodicamente() {
+      if (consulta) return;
+      consulta = setInterval(lerConversa, 2000);
+    }
+
+    function pararConsulta() {
+      clearInterval(consulta);
+      consulta = null;
+    }
+
+    async function enviarChatwoot(texto) {
+      campo.value = "";
+      botao.disabled = true;
+      try {
+        const resp = await fetch("/simulador/chatwoot/mensagem", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessao, texto })
+        });
+        const corpo = await resp.json();
+        if (!resp.ok) {
+          adicionar("erro", corpo.erro || ("HTTP " + resp.status));
+          return;
+        }
+        mostrarConversa(corpo);
+        consultarPeriodicamente();
+      } catch (e) {
+        adicionar("erro", "Não foi possível falar com o Mandalore: " + e.message);
+      } finally {
+        botao.disabled = false;
+        campo.focus();
+      }
+    }
+
+    let numero = 0;
+    async function enviar(texto) {
+      texto = texto.trim();
+      if (!texto) return;
+      if (modo === "chatwoot") return enviarChatwoot(texto);
+      adicionar("usuario", texto, hora());
+      campo.value = "";
+      botao.disabled = true;
+      try {
+        const resp = await fetch("/simulador/mensagem", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessao, texto })
+        });
+        const corpo = await resp.json();
+        if (!resp.ok) {
+          adicionar("erro", corpo.erro || ("HTTP " + resp.status));
+          return;
+        }
+        numero += 1;
+        const turno = { numero, texto, hora: hora(), resposta: corpo };
+        const div = adicionar("bot" + (corpo.transbordo ? " transbordo" : ""), corpo.texto || "(sem resposta)", corpo.intent + " · " + corpo.latenciaMs + " ms");
+        div.addEventListener("click", () => mostrarDetalhe(turno, div));
+        mostrarDetalhe(turno, div);
+      } catch (e) {
+        adicionar("erro", "Não foi possível falar com o Mandalore: " + e.message);
+      } finally {
+        botao.disabled = false;
+        campo.focus();
+      }
+    }
+
+    form.addEventListener("submit", (e) => { e.preventDefault(); enviar(campo.value); });
+    function reiniciar(mensagem) {
+      pararConsulta();
+      sessao = novaSessao();
+      numero = 0;
+      renderizadas = new Set();
+      mensagens.replaceChildren();
+      if (modo === "chatwoot") {
+        mostrarConversa({ mensagens: [] });
+      } else {
+        detalhe.replaceChildren(el("h2", {}, "Detalhes do turno"), el("p", { className: "vazio" }, mensagem));
+      }
+      mostrarSessao();
+      campo.focus();
+    }
+
+    document.getElementById("nova").addEventListener("click", () => reiniciar("Conversa nova iniciada."));
+    seletorModo.value = modo;
+    seletorModo.addEventListener("change", () => {
+      modo = seletorModo.value;
+      sessionStorage.setItem("simulador.modo", modo);
+      reiniciar("Modo Dialogflow direto.");
+    });
+    if (modo === "chatwoot") {
+      mostrarConversa({ mensagens: [] });
+      lerConversa().then(() => { if (renderizadas.size) consultarPeriodicamente(); });
+    }
+    ATALHOS.forEach((t) => {
+      document.getElementById("atalhos").append(el("button", { type: "button", onclick: () => enviar(t) }, t));
+    });
+    mostrarSessao();
+  </script>
+</body>
+</html>

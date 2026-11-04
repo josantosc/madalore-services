@@ -1,0 +1,11 @@
+[
+  "agendamento-sem-cadastro.json",
+  "agendamento-paciente-cadastrado-medico.json",
+  "sem-horario-recuperacao.json",
+  "opcao-invalida-e-reinicio.json",
+  "cancelamento.json",
+  "remarcacao.json",
+  "convenio-ver-outros.json",
+  "agendamento-exame.json",
+  "exame-sem-horario.json"
+]

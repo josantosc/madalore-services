@@ -1,0 +1,61 @@
+{
+  "id": "opcao-invalida-e-reinicio",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": false,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "textoContem": ["Marcar consulta"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
+        "contextos": ["paciente"]
+      }
+    },
+    {
+      "intent": "acao.consulta.convenios",
+      "texto": "continuar",
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "9",
+      "parametros": {
+        "escolha": 9
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "textoContem": ["Qual convênio", "Particular"],
+        "contextos": ["lista"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "texto.conversa.reiniciar",
+      "texto": "começar de novo",
+      "espera": {
+        "textoContem": ["vamos começar uma nova conversa"],
+        "contextos": ["menu"],
+        "contextosAusentes": ["paciente", "lista", "convenio", "oferta", "aguardando_confirmacao"],
+        "escritas": 0
+      }
+    }
+  ]
+}

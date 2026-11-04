@@ -1,0 +1,67 @@
+{
+  "id": "cancelamento",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": true,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_JA_TEM_AGENDAMENTO",
+        "textoContem": ["Maria", "já tem consulta"],
+        "contextos": ["paciente", "agendamentos", "apos_identificar"]
+      }
+    },
+    {
+      "intent": "acao.agenda.meus_agendamentos",
+      "texto": "ver agendamentos",
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_LISTA",
+        "textoContem": ["Você tem estes agendamentos", "Cardiologia"],
+        "contextos": ["agendamentos", "lista"]
+      }
+    },
+    {
+      "intent": "acao.agenda.cancelar",
+      "texto": "cancelar 1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_CONFIRMACAO_AUSENTE",
+        "textoContem": ["Posso cancelar a consulta"],
+        "contextos": ["aguardando_confirmacao"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.agenda.agendar",
+      "texto": "sim",
+      "parametros": {
+        "confirmacao": "sim"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_ESCRITA",
+        "textoContem": ["Cancelei a consulta"],
+        "contextos": ["pos_agendamento"],
+        "contextosAusentes": ["aguardando_confirmacao"],
+        "escritas": 1,
+        "ultimaEscrita": "cancelar"
+      }
+    }
+  ]
+}

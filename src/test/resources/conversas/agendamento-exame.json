@@ -1,0 +1,127 @@
+{
+  "id": "agendamento-exame",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": false,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "textoContem": ["2. Marcar exame"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "texto.exame.iniciar",
+      "texto": "2",
+      "espera": {
+        "textoContem": ["CPF"],
+        "contextos": ["menu", "exame"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
+        "textoContem": ["Encontrei o cadastro de Maria"],
+        "contextos": ["paciente", "apos_identificar", "exame"]
+      }
+    },
+    {
+      "intent": "acao.consulta.convenios",
+      "texto": "continuar",
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "textoContem": ["Particular"],
+        "contextos": ["lista", "exame"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_EXAME",
+        "textoContem": ["Qual exame", "1. Ecocardiograma", "2. Gamagrafia Óssea"],
+        "contextos": ["convenio", "lista", "exame"],
+        "contextosAusentes": ["tipo_busca"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "Ecocardiograma",
+      "parametros": {
+        "escolha": "Ecocardiograma"
+      },
+      "espera": {
+        "evento": "RESULTADO_PERIODO",
+        "textoContem": ["Qual período"],
+        "contextos": ["exame", "pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.agenda.disponibilidade",
+      "texto": "tarde",
+      "parametros": {
+        "periodo": "tarde"
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_HORARIOS",
+        "textoContem": ["Ecocardiograma", "15:00", "Agenda Ecocardiogramas"],
+        "contextos": ["oferta"],
+        "payloadContem": {
+          "oferta": "9101"
+        }
+      }
+    },
+    {
+      "intent": "acao.agenda.escolher",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_CONFIRMACAO_AUSENTE",
+        "textoContem": [
+          "Maria, confirme os dados",
+          "Exame: Ecocardiograma",
+          "Local: Agenda Ecocardiogramas",
+          "Convênio: Particular"
+        ],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.agenda.agendar",
+      "texto": "sim",
+      "parametros": {
+        "confirmacao": "sim"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_ESCRITA",
+        "textoContem": [
+          "Exame agendado, Maria",
+          "Exame: Ecocardiograma",
+          "Orientações para Ecocardiograma:",
+          "Chegar com 30 minutos de antecedência",
+          "OBRIGATÓRIO APRESENTAR NO DIA DO EXAME",
+          "Rua Blumenau, 123",
+          "Marcar outro exame"
+        ],
+        "contextos": ["pos_agendamento"],
+        "escritas": 1,
+        "ultimaEscrita": "agendar_exame"
+      }
+    }
+  ]
+}

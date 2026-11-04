@@ -1,0 +1,114 @@
+{
+  "id": "exame-sem-horario",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": false,
+    "periodosSemHorario": ["manha"]
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "textoContem": ["Marcar exame"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "texto.exame.iniciar",
+      "texto": "marcar exame",
+      "espera": {
+        "textoContem": ["CPF"],
+        "contextos": ["exame"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
+        "contextos": ["paciente", "apos_identificar"]
+      }
+    },
+    {
+      "intent": "acao.consulta.convenios",
+      "texto": "continuar",
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_EXAME",
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "2",
+      "parametros": {
+        "escolha": 2
+      },
+      "espera": {
+        "evento": "RESULTADO_PERIODO",
+        "contextos": ["pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.agenda.disponibilidade",
+      "texto": "manhã",
+      "parametros": {
+        "periodo": "manha"
+      },
+      "espera": {
+        "evento": "RESULTADO_SEM_HORARIO_EXAME",
+        "textoContem": ["Não encontrei horários de Gamagrafia Óssea", "2. Escolher outro exame"],
+        "contextos": ["sem_horario_exame"],
+        "contextosAusentes": ["sem_horario", "pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.exame.exames",
+      "texto": "2",
+      "espera": {
+        "evento": "RESULTADO_LISTA_EXAME",
+        "textoContem": ["1. Ecocardiograma"],
+        "contextos": ["lista", "exame"],
+        "contextosAusentes": ["sem_horario_exame", "periodo", "dia"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_PERIODO",
+        "contextos": ["pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.agenda.disponibilidade",
+      "texto": "tarde",
+      "parametros": {
+        "periodo": "tarde"
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_HORARIOS",
+        "textoContem": ["Ecocardiograma", "15:30"],
+        "escritas": 0
+      }
+    }
+  ]
+}

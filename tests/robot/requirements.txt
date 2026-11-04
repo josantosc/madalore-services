@@ -1,0 +1,3 @@
+robotframework==7.5
+robotframework-browser==20.6.0
+cryptography==50.0.2

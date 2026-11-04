@@ -1,0 +1,6433 @@
+{
+  "schemaVersion": 1,
+  "languageCode": "pt-BR",
+  "project": "regression-project",
+  "entities": [
+    {
+      "displayName": "confirmacao",
+      "kind": "KIND_MAP",
+      "entities": [
+        {
+          "value": "sim",
+          "synonyms": [
+            "sim",
+            "isso",
+            "pode",
+            "pode marcar",
+            "confirmo",
+            "quero"
+          ]
+        },
+        {
+          "value": "nao",
+          "synonyms": [
+            "nao",
+            "não",
+            "não quero",
+            "nao quero",
+            "outro horário",
+            "outro horario",
+            "troca"
+          ]
+        }
+      ]
+    },
+    {
+      "displayName": "cpf",
+      "kind": "KIND_REGEXP",
+      "entities": [
+        {
+          "value": "\\d{3}\\.?\\d{3}\\.?\\d{3}-?\\d{2}",
+          "synonyms": [
+            "\\d{3}\\.?\\d{3}\\.?\\d{3}-?\\d{2}"
+          ]
+        }
+      ]
+    },
+    {
+      "displayName": "navegacao",
+      "kind": "KIND_MAP",
+      "entities": [
+        {
+          "value": "voltar",
+          "synonyms": [
+            "voltar",
+            "volta",
+            "passo anterior"
+          ]
+        }
+      ]
+    },
+    {
+      "displayName": "periodo",
+      "kind": "KIND_MAP",
+      "entities": [
+        {
+          "value": "manha",
+          "synonyms": [
+            "manha",
+            "manhã",
+            "de manhã",
+            "cedo"
+          ]
+        },
+        {
+          "value": "tarde",
+          "synonyms": [
+            "tarde",
+            "à tarde",
+            "a tarde",
+            "de tarde"
+          ]
+        },
+        {
+          "value": "tanto_faz",
+          "synonyms": [
+            "tanto faz",
+            "qualquer",
+            "indiferente"
+          ]
+        }
+      ]
+    }
+  ],
+  "intents": [
+    {
+      "displayName": "acao.agenda.agendar",
+      "priority": 900000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "sim",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "pode marcar",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmo",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "isso",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "não",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "não quero",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro horário"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/aguardando_confirmacao"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "confirmacao",
+          "entityTypeDisplayName": "@confirmacao",
+          "value": "$confirmacao",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.agenda.cancelar",
+      "priority": 880000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar o "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar a "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar o "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar a "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar o "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar a "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar o "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar a "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar o "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar a "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar o "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar a "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar o "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar a "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar o "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar a "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela o "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela a "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela o "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela a "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela o "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela a "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela o "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela a "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela o "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela a "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela o "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela a "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela o "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela a "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela o "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancela a "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/agendamentos"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "escolha",
+          "entityTypeDisplayName": "@sys.number",
+          "value": "$escolha",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.agenda.confirmar",
+      "priority": 880000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar o "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar a "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar o "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar a "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar o "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar a "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar o "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar a "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar o "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar a "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar o "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar a "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar o "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar a "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar o "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar a "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma o "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma a "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma o "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma a "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma o "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma a "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma o "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma a "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma o "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma a "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma o "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma a "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma o "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma a "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma o "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirma a "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/agendamentos"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "escolha",
+          "entityTypeDisplayName": "@sys.number",
+          "value": "$escolha",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.agenda.disponibilidade",
+      "priority": 970000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "manhã",
+              "entityType": "@periodo",
+              "alias": "periodo",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tarde",
+              "entityType": "@periodo",
+              "alias": "periodo",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tanto faz",
+              "entityType": "@periodo",
+              "alias": "periodo",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "de "
+            },
+            {
+              "text": "manhã",
+              "entityType": "@periodo",
+              "alias": "periodo",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "à "
+            },
+            {
+              "text": "tarde",
+              "entityType": "@periodo",
+              "alias": "periodo",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "20/07/2026",
+              "entityType": "@sys.date",
+              "alias": "data",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "amanhã",
+              "entityType": "@sys.date",
+              "alias": "data",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "esta semana"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "manhã",
+              "entityType": "@periodo",
+              "alias": "periodo",
+              "userDefined": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "amanhã",
+              "entityType": "@sys.date",
+              "alias": "data",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "de "
+            },
+            {
+              "text": "tarde",
+              "entityType": "@periodo",
+              "alias": "periodo",
+              "userDefined": true
+            },
+            {
+              "text": " em "
+            },
+            {
+              "text": "20/07/2026",
+              "entityType": "@sys.date",
+              "alias": "data",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "esta semana de "
+            },
+            {
+              "text": "manhã",
+              "entityType": "@periodo",
+              "alias": "periodo",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/pedindo_horario"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "periodo",
+          "entityTypeDisplayName": "@periodo",
+          "value": "$periodo",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "data",
+          "entityTypeDisplayName": "@sys.date",
+          "value": "$data",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.agenda.escolher",
+      "priority": 850000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "o primeiro"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "o segundo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "o terceiro"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/oferta"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "escolha",
+          "entityTypeDisplayName": "@sys.number",
+          "value": "$escolha",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.agenda.meus_agendamentos",
+      "priority": 720000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver agendamentos"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "minhas consultas"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "meus agendamentos"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver consultas"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver esse agendamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero ver"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cancelar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero cancelar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero remarcar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar consulta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "confirmar presença"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "3"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opção 3"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver, remarcar ou cancelar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver, remarcar e cancelar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver remarcar ou cancelar"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/apos_identificar"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.agenda.remarcar",
+      "priority": 880000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar o "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar a "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar o "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar a "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar o "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar a "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar o "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar a "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar o "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar a "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar o "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar a "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar o "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar a "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar o "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarcar a "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca o "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca a "
+            },
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca o "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca a "
+            },
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca o "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca a "
+            },
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca o "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca a "
+            },
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca o "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca a "
+            },
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca o "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca a "
+            },
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca o "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca a "
+            },
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca o "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "remarca a "
+            },
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/agendamentos"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "escolha",
+          "entityTypeDisplayName": "@sys.number",
+          "value": "$escolha",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.consulta.convenios",
+      "priority": 650000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "continuar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "pode seguir"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero marcar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar consulta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar outro"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outra consulta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "convênio"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "convenio"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver convênios"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "seguir"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opção 1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opcao 1"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/apos_identificar"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.consulta.escolher_lista",
+      "priority": 900000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "3",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "4",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "5",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "6",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "7",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "8",
+              "entityType": "@sys.number",
+              "alias": "escolha",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver mais"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver outros"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outra pessoa"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro"
+            }
+          ]
+        },
+        {
+          "type": "TEMPLATE",
+          "parts": [
+            {
+              "text": "@sys.any:escolha"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/lista"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "escolha",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$escolha",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.consulta.especialidades",
+      "priority": 920000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "pela clínica"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "pela clinica"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "por especialidade"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "especialidades"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outras especialidades"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver especialidades"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/convenio",
+        "projects/regression-project/agent/sessions/-/contexts/tipo_busca"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "cd_medico",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$cd_medico",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.consulta.fallback.escolher_lista",
+      "priority": 890000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": true,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/lista"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "escolher_lista"
+    },
+    {
+      "displayName": "acao.consulta.novo.convenios",
+      "priority": 980000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar outra consulta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "novo agendamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "agendar novamente"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/pos_agendamento"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.consulta.profissionais",
+      "priority": 920000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "por médico"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "por medico"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "médico de preferência"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "medico de preferencia"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver médicos"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "profissionais"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quem já me atendeu"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro médico"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/convenio",
+        "projects/regression-project/agent/sessions/-/contexts/tipo_busca"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.exame.convenios",
+      "priority": 660000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opção 2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opcao 2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar um exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero marcar um exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "agendar exame"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/apos_identificar"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.exame.exames",
+      "priority": 980000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "escolher outro exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "trocar exame"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/convenio",
+        "projects/regression-project/agent/sessions/-/contexts/sem_horario_exame"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/sem_horario_exame",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/periodo",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/dia",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/oferta",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.paciente.identificar",
+      "priority": 750000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "19/10/1988",
+              "entityType": "@sys.date",
+              "alias": "data_nascimento",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "10/05/1990",
+              "entityType": "@sys.date",
+              "alias": "data_nascimento",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "nasci em "
+            },
+            {
+              "text": "01/02/1980",
+              "entityType": "@sys.date",
+              "alias": "data_nascimento",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "cpf "
+            },
+            {
+              "text": "529.982.247-25",
+              "entityType": "@cpf",
+              "alias": "cpf",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "52998224725",
+              "entityType": "@cpf",
+              "alias": "cpf",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "19/10/1988",
+              "entityType": "@sys.date",
+              "alias": "data_nascimento",
+              "userDefined": true
+            },
+            {
+              "text": " cpf "
+            },
+            {
+              "text": "529.982.247-25",
+              "entityType": "@cpf",
+              "alias": "cpf",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "nascimento "
+            },
+            {
+              "text": "10/05/1990",
+              "entityType": "@sys.date",
+              "alias": "data_nascimento",
+              "userDefined": true
+            },
+            {
+              "text": " e documento "
+            },
+            {
+              "text": "111.444.777-35",
+              "entityType": "@cpf",
+              "alias": "cpf",
+              "userDefined": true
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/menu"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/identificando",
+          "lifespanCount": 5
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "cpf",
+          "entityTypeDisplayName": "@cpf",
+          "value": "$cpf",
+          "mandatory": true,
+          "isList": false,
+          "prompts": [
+            "Qual o CPF de quem será atendido?",
+            "Confere o CPF? Preciso dos 11 números."
+          ],
+          "defaultValue": "#identificando.cpf"
+        },
+        {
+          "displayName": "data_nascimento",
+          "entityTypeDisplayName": "@sys.date",
+          "value": "$data_nascimento",
+          "mandatory": true,
+          "isList": false,
+          "prompts": [
+            "Para achar o cadastro, qual a data de nascimento? Pode ser dia/mês/ano, por exemplo 19/10/1988.",
+            "Agora informe a data de nascimento, com dia, mês e ano. Por exemplo: 19/10/1988."
+          ]
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "acao.paciente.sem_cadastro",
+      "priority": 980000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "sim"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "pode agendar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "agendar sem cadastro"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "continuar sem cadastro"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro"
+      ],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "nome",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$nome",
+          "mandatory": true,
+          "isList": false,
+          "prompts": [
+            "Para continuar, qual é o nome completo de quem será atendido?",
+            "Por favor, informe o nome completo de quem será atendido."
+          ]
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.coleta.cpf",
+      "priority": 200000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "não sei o cpf"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "esqueci o cpf"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual cpf"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Obrigado. Qual o CPF de quem vai ser atendido?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.coleta.dia",
+      "priority": 300000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_DIA"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/periodo"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 4
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Para qual dia? Pode ser uma data, como 20/07/2026, ou esta semana."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.coleta.nascimento",
+      "priority": 600000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "3"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar consulta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero marcar uma consulta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver, remarcar ou cancelar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver, remarcar e cancelar"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/menu"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/exame",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Para achar o cadastro, qual o CPF de quem será atendido?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.coleta.periodo",
+      "priority": 300000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_PERIODO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 4
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou diga manhã, tarde ou qualquer período."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.consulta.marcar_outro",
+      "priority": 400000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar outro"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero outra consulta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outra consulta"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/agendamento_futuro"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Certo. Diga continuar para eu ver os convênios."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.consulta.seguir_especialidade",
+      "priority": 700000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "sim",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "pode",
+              "entityType": "@confirmacao",
+              "alias": "confirmacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "seguir"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "sigo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero essa"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/confirma_especialidade"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 4
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/confirma_especialidade",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "confirmacao",
+          "entityTypeDisplayName": "@confirmacao",
+          "value": "$confirmacao",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou diga manhã, tarde ou qualquer período."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.conversa.encerrar",
+      "priority": 990000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "encerrar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "encerrar atendimento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "não preciso de mais nada"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "nao preciso de mais nada"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/pos_agendamento"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Atendimento encerrado. Foi um prazer ajudar!\n\nQuando precisar, é só enviar uma nova mensagem."
+            ]
+          }
+        }
+      ],
+      "resetContexts": true
+    },
+    {
+      "displayName": "texto.conversa.reiniciar",
+      "priority": 1000000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "reiniciar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "recomeçar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "recomecar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "começar de novo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "comecar de novo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "nova conversa"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "iniciar novamente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "limpar conversa"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 3
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Pronto, vamos começar uma nova conversa.\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n\nComo posso ajudar?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": true
+    },
+    {
+      "displayName": "texto.exame.iniciar",
+      "priority": 600000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "marcar um exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero marcar um exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "agendar exame"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/menu"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/exame",
+          "lifespanCount": 20
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Para achar o cadastro, qual o CPF de quem será atendido?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.fallback",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": true,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não entendi. Pode reformular ou pedir um atendente?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.navegacao.voltar",
+      "priority": 1000000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "voltar",
+              "entityType": "@navegacao",
+              "alias": "navegacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "volta",
+              "entityType": "@navegacao",
+              "alias": "navegacao",
+              "userDefined": true
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "passo anterior"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/oferta",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/aguardando_confirmacao",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/dia",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "navegacao",
+          "entityTypeDisplayName": "@navegacao",
+          "value": "$navegacao",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Certo, voltei um passo. Pode escolher de novo ou dizer o que quer fazer."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.paciente.tentar_novamente",
+      "priority": 970000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "não"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "nao"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tentar novamente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tentar de novo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "corrigir dados"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "informar outro cpf"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/paciente_sem_cadastro",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/paciente",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/identificando",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/tem_nascimento",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 3
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Sem problema. Vamos conferir os dados novamente. Qual é o CPF de quem será atendido?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.agendamento_nao_encontrado",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_AGENDAMENTO_NAO_ENCONTRADO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não encontrei essa consulta."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.confirmacao_ausente",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_CONFIRMACAO_AUSENTE"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "texto",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$texto",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "resumo",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$resumo",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "acao",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$acao",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "$texto"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.horario_fora_da_oferta",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_HORARIO_FORA_DA_OFERTA"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Escolha um dos horários que acabei de passar."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.horario_indisponivel",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_HORARIO_INDISPONIVEL"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Esse horário não está mais livre."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.indisponivel",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_INDISPONIVEL"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui consultar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.ja_tem_agendamento",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_JA_TEM_AGENDAMENTO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 4
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "nome",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$nome",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "quando",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$quando",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "quantidade",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$quantidade",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "$nome, você já tem consulta em $quando. Posso marcar outra, ver, remarcar ou cancelar."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.lista_convenio",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_LISTA_CONVENIO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/tipo_busca",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "lista",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$lista",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "payload",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$payload",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Qual convênio você gostaria de usar?\n\n$lista\n\nResponda com o número ou o nome da opção. Para retornar, diga voltar."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.lista_especialidade",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_LISTA_ESPECIALIDADE"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/tipo_busca",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "lista",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$lista",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "medico",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$medico",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "payload",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$payload",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Qual especialidade você gostaria de consultar?\n\n$lista\n\nResponda com o número ou o nome da opção. Para retornar, diga voltar."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.lista_exame",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_LISTA_EXAME"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/tipo_busca",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "lista",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$lista",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "payload",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$payload",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Qual exame você precisa marcar?\n\n$lista\n\nResponda com o número ou o nome do exame. Para retornar, diga voltar."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.lista_horarios",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_LISTA_HORARIOS"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/oferta",
+          "lifespanCount": 5
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/tipo_busca",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "lista",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$lista",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "payload",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$payload",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "$lista"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.lista_profissional",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_LISTA_PROFISSIONAL"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/tipo_busca",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "lista",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$lista",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "payload",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$payload",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Você gostaria de marcar com algum destes profissionais?\n\n$lista\n\nResponda com o número ou o nome da opção."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.nao_identificado",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_NAO_IDENTIFICADO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 3
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Para seguir, preciso da data de nascimento e do CPF."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.paciente_nao_encontrado",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_PACIENTE_NAO_ENCONTRADO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/paciente_sem_cadastro",
+          "lifespanCount": 20
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/identificando",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "cpf",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$cpf",
+          "mandatory": false,
+          "isList": false,
+          "defaultValue": "#identificando.cpf"
+        },
+        {
+          "displayName": "nascimento",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$nascimento",
+          "mandatory": false,
+          "isList": false,
+          "defaultValue": "#identificando.data_nascimento"
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não localizei um cadastro com o CPF e a data de nascimento informados.\n\n1. Agendar sem cadastro\n2. Conferir os dados\n\nQual opção você prefere?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.sem_agendamento",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_SEM_AGENDAMENTO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "nome",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$nome",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "$nome, você não tem consulta em aberto."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.sem_exame",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_SEM_EXAME"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "No momento não encontrei exames com horário livre para marcar por aqui. Se quiser, diga atendente para falar com alguém da equipe."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.sem_horario",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_SEM_HORARIO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/sem_horario",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "especialidade",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$especialidade",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "periodo",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$periodo",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não encontrei horários de $especialidade $periodo.\n\nComo você prefere continuar?\n\n1. Tentar outro período\n2. Escolher outra especialidade ou médico\n3. Falar com alguém da equipe"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.sem_horario_exame",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_SEM_HORARIO_EXAME"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/sem_horario_exame",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "exame",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$exame",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "periodo",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$periodo",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não encontrei horários de $exame $periodo.\n\nComo você prefere continuar?\n\n1. Tentar outro período\n2. Escolher outro exame\n3. Falar com alguém da equipe"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.sucesso_escrita",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_SUCESSO_ESCRITA"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pos_agendamento",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/oferta",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "texto",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$texto",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "orientacao",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$orientacao",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "fechamento",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$fechamento",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "especialidade",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$especialidade",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "data",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$data",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "hora",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$hora",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "medico",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$medico",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "convenio",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$convenio",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "acao",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$acao",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "$texto"
+            ]
+          }
+        },
+        {
+          "text": {
+            "text": [
+              "$orientacao"
+            ]
+          }
+        },
+        {
+          "text": {
+            "text": [
+              "$fechamento"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.sucesso_identificar",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_SUCESSO_IDENTIFICAR"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 4
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "nome",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$nome",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Encontrei o cadastro de $nome.\n\nDiga continuar para marcar, ou ver, remarcar e cancelar."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.sucesso_lista",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_SUCESSO_LISTA"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/opcao_sem_cadastro",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "lista",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$lista",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "payload",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$payload",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "$lista"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.sucesso_sem_cadastro",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_SUCESSO_SEM_CADASTRO"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 4
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "nome",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$nome",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Certo, $nome. Vou reservar sem criar cadastro de pessoa física."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.tipo_busca",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_TIPO_BUSCA"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/tipo_busca",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Como você prefere procurar o atendimento?\n\n1. Pela clínica ou especialidade\n2. Por um médico de preferência\n\nResponda com o número ou com a opção desejada."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.uma_especialidade",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_UMA_ESPECIALIDADE"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/confirma_especialidade",
+          "lifespanCount": 2
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "medico",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$medico",
+          "mandatory": false,
+          "isList": false
+        },
+        {
+          "displayName": "especialidade",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$especialidade",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Com $medico, a especialidade é $especialidade. Sigo com ela?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.saudacao",
+      "priority": 250000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [
+        "WELCOME"
+      ],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "oi"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "olá"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ola"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "bom dia"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "boa tarde"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "boa noite"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "começar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "menu"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 3
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Olá! Como posso ajudar?\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n\nResponda com o número ou descreva o que você precisa."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.saudacao.retomar",
+      "priority": 940000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "oi"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "olá"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ola"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "bom dia"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "boa tarde"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "boa noite"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "começar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "menu"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/apos_identificar",
+          "lifespanCount": 4
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/exame",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [
+        {
+          "displayName": "nome",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$nome",
+          "mandatory": false,
+          "isList": false,
+          "defaultValue": "#paciente.nome"
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Olá novamente, $nome! O que você gostaria de fazer agora?\n\n1. Marcar uma consulta\n2. Marcar um exame\n3. Ver, remarcar ou cancelar um agendamento"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.sem_horario.fallback",
+      "priority": 970000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": true,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/sem_horario"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Escolha uma opção: 1 para outro período, 2 para uma nova busca ou 3 para falar com a equipe."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.sem_horario.nova_busca",
+      "priority": 980000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "2"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outra especialidade"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro médico"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro medico"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "fazer outra busca"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/sem_horario"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/sem_horario",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/tipo_busca",
+          "lifespanCount": 3
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/especialidade",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/profissional",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/periodo",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/dia",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/lista",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/oferta",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Tudo bem. Como você prefere fazer uma nova busca?\n\n1. Pela clínica ou especialidade\n2. Por um médico de preferência"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.sem_horario.outro_periodo",
+      "priority": 980000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro período"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro periodo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tentar outro período"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver outros horários"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/sem_horario"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/sem_horario",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 4
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/periodo",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/dia",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/oferta",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou diga manhã, tarde ou qualquer período."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.sem_horario_exame.fallback",
+      "priority": 970000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": true,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/sem_horario_exame"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Escolha uma opção: 1 para outro período, 2 para outro exame ou 3 para falar com a equipe."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.sem_horario_exame.outro_periodo",
+      "priority": 980000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro período"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "outro periodo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tentar outro período"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver outros horários"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/sem_horario_exame"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/sem_horario_exame",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/pedindo_horario",
+          "lifespanCount": 4
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/periodo",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/dia",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/oferta",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou diga manhã, tarde ou qualquer período."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "transbordo.atendente",
+      "priority": 950000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "atendente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero falar com alguém"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "falar com uma pessoa"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero um humano"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "operador"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero falar com atendente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero falar com um atendente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "falar com atendente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "me passa para um atendente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "atendimento humano"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero falar com uma pessoa de verdade"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Vou chamar alguém da equipe."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "transbordo.sem_horario.atendente",
+      "priority": 990000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "3"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "falar com atendente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero ajuda"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/sem_horario"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/sem_horario",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Entendi. Vou encaminhar você para alguém da equipe continuar o atendimento."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "transbordo.sem_horario_exame.atendente",
+      "priority": 990000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "3"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "falar com atendente"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero ajuda"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/sem_horario_exame"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/sem_horario_exame",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Entendi. Vou encaminhar você para alguém da equipe continuar o atendimento."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "id": "sem-horario-recuperacao",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": false,
+    "periodosSemHorario": ["manha"]
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "textoContem": ["Marcar consulta"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
+        "contextos": ["paciente", "apos_identificar"]
+      }
+    },
+    {
+      "intent": "acao.consulta.convenios",
+      "texto": "continuar",
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_TIPO_BUSCA",
+        "contextos": ["tipo_busca"]
+      }
+    },
+    {
+      "intent": "acao.consulta.especialidades",
+      "texto": "1",
+      "espera": {
+        "evento": "RESULTADO_LISTA_ESPECIALIDADE",
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "Cardiologia",
+      "parametros": {
+        "escolha": "Cardiologia"
+      },
+      "espera": {
+        "evento": "RESULTADO_PERIODO",
+        "contextos": ["pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.agenda.disponibilidade",
+      "texto": "manhã",
+      "parametros": {
+        "periodo": "manha"
+      },
+      "espera": {
+        "evento": "RESULTADO_SEM_HORARIO",
+        "textoContem": ["Não encontrei horários de Cardiologia", "1. Tentar outro período", "3. Falar com alguém"],
+        "contextos": ["sem_horario"],
+        "contextosAusentes": ["pedindo_horario"]
+      }
+    },
+    {
+      "intent": "texto.sem_horario.fallback",
+      "texto": "sim",
+      "espera": {
+        "textoContem": ["1 para outro período", "2 para uma nova busca", "3 para falar com a equipe"],
+        "contextos": ["sem_horario"]
+      }
+    },
+    {
+      "intent": "texto.sem_horario.outro_periodo",
+      "texto": "1",
+      "espera": {
+        "textoContem": ["Qual período"],
+        "contextos": ["pedindo_horario"],
+        "contextosAusentes": ["sem_horario", "periodo", "oferta"]
+      }
+    },
+    {
+      "intent": "acao.agenda.disponibilidade",
+      "texto": "tarde",
+      "parametros": {
+        "periodo": "tarde"
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_HORARIOS",
+        "textoContem": ["Cardiologia", "15:00"],
+        "contextos": ["oferta"],
+        "contextosAusentes": ["sem_horario"]
+      }
+    }
+  ]
+}

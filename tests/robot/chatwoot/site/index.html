@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Mandalore - teste do widget Chatwoot</title>
+</head>
+<body>
+  <h1>Página de teste do widget</h1>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var baseUrl = (params.get("baseUrl") || "").replace(/\/+$/, "");
+      var token = params.get("token") || "";
+      window.chatwootSettings = { locale: "pt_BR", position: "right", type: "standard" };
+      var script = document.createElement("script");
+      script.src = baseUrl + "/packs/js/sdk.js";
+      script.async = true;
+      script.onload = function () {
+        window.chatwootSDK.run({ websiteToken: token, baseUrl: baseUrl });
+      };
+      document.body.appendChild(script);
+    })();
+  </script>
+</body>
+</html>

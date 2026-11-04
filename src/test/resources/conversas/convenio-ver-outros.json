@@ -1,0 +1,72 @@
+{
+  "id": "convenio-ver-outros",
+  "fixture": {
+    "pacienteCadastrado": false,
+    "possuiAgendamento": false,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "textoContem": ["Marcar consulta"]
+      }
+    },
+    {
+      "intent": "texto.coleta.nascimento",
+      "texto": "1",
+      "espera": {
+        "textoContem": ["CPF"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "00936398302 19/10/1988",
+      "parametros": {
+        "cpf": "00936398302",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_PACIENTE_NAO_ENCONTRADO",
+        "textoContem": ["Agendar sem cadastro"]
+      }
+    },
+    {
+      "intent": "acao.paciente.sem_cadastro",
+      "texto": "Joeckson dos Santos Correa",
+      "parametros": {
+        "nome": "Joeckson dos Santos Correa"
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "textoContem": ["1. Particular", "2. Ver outros"],
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "2",
+      "parametros": {
+        "escolha": 2
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "textoContem": ["1. Unimed"],
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_TIPO_BUSCA",
+        "textoContem": ["clínica ou especialidade"],
+        "contextos": ["convenio", "tipo_busca"]
+      }
+    }
+  ]
+}

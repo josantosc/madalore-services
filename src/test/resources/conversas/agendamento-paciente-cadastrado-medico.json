@@ -1,0 +1,112 @@
+{
+  "id": "agendamento-paciente-cadastrado-medico",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": false,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "olá",
+      "espera": {
+        "textoContem": ["Como posso ajudar?"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
+        "textoContem": ["Encontrei o cadastro de Maria"],
+        "contextos": ["paciente", "apos_identificar"]
+      }
+    },
+    {
+      "intent": "acao.consulta.convenios",
+      "texto": "continuar",
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "textoContem": ["Particular"],
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_TIPO_BUSCA",
+        "contextos": ["tipo_busca"]
+      }
+    },
+    {
+      "intent": "acao.consulta.profissionais",
+      "texto": "2",
+      "espera": {
+        "evento": "RESULTADO_LISTA_PROFISSIONAL",
+        "textoContem": ["Dra. Ana Teste", "Dr. Bruno Teste"],
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "Dra. Ana Teste",
+      "parametros": {
+        "escolha": "Dra. Ana Teste"
+      },
+      "espera": {
+        "evento": "RESULTADO_PERIODO",
+        "textoContem": ["Qual período"],
+        "contextos": ["profissional", "pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.agenda.disponibilidade",
+      "texto": "tarde",
+      "parametros": {
+        "periodo": "tarde"
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_HORARIOS",
+        "textoContem": ["Dra. Ana Teste", "15:00"],
+        "contextos": ["oferta"],
+        "payloadContem": {
+          "oferta": "8001"
+        }
+      }
+    },
+    {
+      "intent": "acao.agenda.escolher",
+      "texto": "2",
+      "parametros": {
+        "escolha": 2
+      },
+      "espera": {
+        "evento": "RESULTADO_CONFIRMACAO_AUSENTE",
+        "textoContem": ["Maria, confirme os dados", "Dra. Ana Teste"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.agenda.agendar",
+      "texto": "sim",
+      "parametros": {
+        "confirmacao": "sim"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_ESCRITA",
+        "textoContem": ["Agendamento confirmado, Maria", "Cardiologia"],
+        "escritas": 1,
+        "ultimaEscrita": "agendar"
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+# Montado no container em /app/config/clientes.properties (Coolify: Storages > File Mount).
+# Uma conta do Chatwoot por clinica. Conta sem cadastro usa as variaveis globais.
+
+mandalore.clientes.1.chatwoot-token=
+mandalore.clientes.1.webhook-secret=
+mandalore.clientes.1.tasy.url=jdbc:oracle:thin:@//ip-ou-dns-da-clinica:1521/SERVICO
+mandalore.clientes.1.tasy.username=
+mandalore.clientes.1.tasy.password=

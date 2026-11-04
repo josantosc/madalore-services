@@ -1,0 +1,129 @@
+{
+  "id": "agendamento-sem-cadastro",
+  "fixture": {
+    "pacienteCadastrado": false,
+    "possuiAgendamento": false,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "textoContem": ["Marcar consulta"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "texto.coleta.nascimento",
+      "texto": "1",
+      "espera": {
+        "textoContem": ["CPF"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "00936398302 19/10/1988",
+      "parametros": {
+        "cpf": "00936398302",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_PACIENTE_NAO_ENCONTRADO",
+        "textoContem": ["Agendar sem cadastro", "Conferir os dados"],
+        "contextos": ["paciente_sem_cadastro", "opcao_sem_cadastro"]
+      }
+    },
+    {
+      "intent": "acao.paciente.sem_cadastro",
+      "texto": "Joeckson dos Santos Correa",
+      "parametros": {
+        "nome": "Joeckson dos Santos Correa"
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "textoContem": ["Qual convênio", "Particular"],
+        "contextos": ["paciente", "paciente_sem_cadastro", "lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "Particular",
+      "parametros": {
+        "escolha": "Particular"
+      },
+      "espera": {
+        "evento": "RESULTADO_TIPO_BUSCA",
+        "textoContem": ["clínica ou especialidade", "médico de preferência"],
+        "contextos": ["convenio", "tipo_busca"],
+        "contextosAusentes": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.especialidades",
+      "texto": "1",
+      "espera": {
+        "evento": "RESULTADO_LISTA_ESPECIALIDADE",
+        "textoContem": ["Cardiologia", "Clínica Médica"],
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_PERIODO",
+        "textoContem": ["Qual período"],
+        "contextos": ["especialidade", "pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.agenda.disponibilidade",
+      "texto": "manhã",
+      "parametros": {
+        "periodo": "manha"
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_HORARIOS",
+        "textoContem": ["Cardiologia", "Dr. Bruno Teste"],
+        "contextos": ["oferta"],
+        "payloadContem": {
+          "oferta": "8001"
+        },
+        "contextosAusentes": ["pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.agenda.escolher",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_CONFIRMACAO_AUSENTE",
+        "textoContem": ["confirme os dados", "Posso confirmar?"],
+        "contextos": ["aguardando_confirmacao"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.agenda.agendar",
+      "texto": "sim",
+      "parametros": {
+        "confirmacao": "sim"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_ESCRITA",
+        "textoContem": ["Agendamento confirmado", "Cardiologia", "Posso ajudar em mais alguma coisa?"],
+        "contextos": ["pos_agendamento"],
+        "contextosAusentes": ["aguardando_confirmacao", "oferta"],
+        "escritas": 1,
+        "ultimaEscrita": "agendar"
+      }
+    }
+  ]
+}

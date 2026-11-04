@@ -1,0 +1,82 @@
+{
+  "id": "remarcacao",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": true,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_JA_TEM_AGENDAMENTO",
+        "contextos": ["paciente", "agendamentos"],
+        "payloadContem": {
+          "agendamentos": "7001"
+        }
+      }
+    },
+    {
+      "intent": "acao.agenda.remarcar",
+      "texto": "remarcar 1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_PERIODO",
+        "textoContem": ["Qual período"],
+        "contextos": ["agendamentos", "pedindo_horario"]
+      }
+    },
+    {
+      "intent": "acao.agenda.disponibilidade",
+      "texto": "tarde",
+      "parametros": {
+        "periodo": "tarde"
+      },
+      "espera": {
+        "evento": "RESULTADO_LISTA_HORARIOS",
+        "textoContem": ["15:00"],
+        "contextos": ["oferta"]
+      }
+    },
+    {
+      "intent": "acao.agenda.escolher",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_CONFIRMACAO_AUSENTE",
+        "textoContem": ["Posso confirmar?"],
+        "contextos": ["aguardando_confirmacao"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.agenda.agendar",
+      "texto": "sim",
+      "parametros": {
+        "confirmacao": "sim"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_ESCRITA",
+        "textoContem": ["Agendamento confirmado", "Cardiologia"],
+        "escritas": 1,
+        "ultimaEscrita": "remarcar"
+      }
+    }
+  ]
+}
