@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Mandalore - Curadoria do agente</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #eef1f5; color: #1f2933; }
+    header { background: #0f5f6e; color: #fff; padding: 12px 22px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 2; }
+    header h1 { font-size: 18px; margin: 0; font-weight: 600; flex: 1; }
+    header select, header button { background: #fff; color: #0f5f6e; border: 0; border-radius: 6px; padding: 7px 12px; font-weight: 600; cursor: pointer; }
+    main { max-width: 1280px; margin: 0 auto; padding: 18px 22px 40px; display: grid; gap: 18px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+    .card { background: #fff; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+    .card small { display: block; color: #52606d; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .card strong { display: block; font-size: 28px; margin-top: 4px; }
+    .card span { font-size: 12px; color: #7b8794; }
+    .card.alerta strong { color: #b42318; }
+    .card.bom strong { color: #1e6b43; }
+    .linha2 { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+    section.painel { background: #fff; border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+    section.painel h2 { font-size: 15px; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+    section.painel h2 .contador { background: #fde7e7; color: #b42318; border-radius: 10px; padding: 1px 9px; font-size: 12px; }
+    .legenda { display: flex; gap: 14px; font-size: 12px; color: #52606d; margin-top: 6px; }
+    .legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    svg text { font-size: 11px; fill: #52606d; }
+    .intent { display: grid; grid-template-columns: 1fr 52px; gap: 8px; align-items: center; margin: 6px 0; font-size: 13px; }
+    .intent .barra { position: relative; background: #f1f4f7; border-radius: 4px; height: 22px; overflow: hidden; }
+    .intent .barra div { position: absolute; inset: 0 auto 0 0; background: #cfe8ec; }
+    .intent .barra span { position: relative; padding: 0 8px; line-height: 22px; white-space: nowrap; font-family: Consolas, monospace; font-size: 12px; }
+    .intent b { text-align: right; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; font-size: 12px; color: #52606d; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding: 8px; border-bottom: 1px solid #e4e7eb; }
+    td { padding: 10px 8px; border-bottom: 1px solid #eef1f5; vertical-align: top; }
+    td.fala { font-size: 15px; max-width: 420px; word-break: break-word; }
+    .marcador { background: #fff4e5; color: #8a4b00; border-radius: 4px; padding: 0 3px; font-family: Consolas, monospace; font-size: 12px; }
+    .tag { display: inline-block; border-radius: 10px; padding: 1px 8px; font-size: 12px; font-weight: 600; }
+    .tag.fallback { background: #fde7e7; color: #b42318; }
+    .tag.baixa { background: #fff4e5; color: #8a4b00; }
+    .tag.media { background: #e3f6ec; color: #1e6b43; }
+    code { font-family: Consolas, monospace; font-size: 12px; color: #334e68; }
+    .acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+    button.acao { border: 1px solid #c8d1d9; background: #fff; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; }
+    button.acao.principal { background: #0f766e; border-color: #0f766e; color: #fff; }
+    button.acao:disabled { opacity: .5; cursor: wait; }
+    tr.editor td { background: #f5fbfb; }
+    .form-ensinar { display: grid; grid-template-columns: 1fr 260px auto auto; gap: 8px; align-items: center; }
+    .form-ensinar input { padding: 8px 10px; border: 1px solid #c8d1d9; border-radius: 6px; font-size: 14px; width: 100%; }
+    .dica { grid-column: 1 / -1; font-size: 12px; color: #7b8794; }
+    .vazio { color: #7b8794; padding: 18px 0; text-align: center; }
+    #aviso { position: fixed; right: 20px; bottom: 20px; max-width: 420px; padding: 12px 14px; border-radius: 8px; color: #fff; background: #1f2933; box-shadow: 0 6px 18px rgba(0,0,0,.2); opacity: 0; transition: opacity .2s; pointer-events: none; }
+    #aviso.ver { opacity: 1; }
+    #aviso.erro { background: #b42318; }
+    @media (max-width: 900px) { .linha2 { grid-template-columns: 1fr; } .form-ensinar { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Curadoria do agente</h1>
+    <select id="dias" title="Período analisado">
+      <option value="1">Hoje</option>
+      <option value="7" selected>7 dias</option>
+      <option value="30">30 dias</option>
+      <option value="90">90 dias</option>
+    </select>
+    <button id="atualizar" type="button">Atualizar</button>
+  </header>
+  <main>
+    <div class="cards" id="cards"></div>
+    <div class="linha2">
+      <section class="painel">
+        <h2>Mensagens por dia</h2>
+        <div id="grafico"></div>
+        <div class="legenda">
+          <span><i style="background:#9fd3da"></i>entendidas</span>
+          <span><i style="background:#f5b85c"></i>confiança baixa</span>
+          <span><i style="background:#e5484d"></i>não entendidas</span>
+        </div>
+      </section>
+      <section class="painel">
+        <h2>Intents mais acionadas</h2>
+        <div id="intents"></div>
+      </section>
+    </div>
+    <section class="painel">
+      <h2>Fila de curadoria <span class="contador" id="pendentes">0</span></h2>
+      <p class="vazio" style="text-align:left;padding:0 0 10px">
+        Falas que o bot não entendeu ou entendeu com pouca certeza. Ensine a frase na intent certa,
+        marque como fora do escopo ou ignore. Dados pessoais já chegam mascarados.
+      </p>
+      <table>
+        <thead><tr><th>Fala do paciente</th><th>Vezes</th><th>Bot entendeu</th><th>Confiança</th><th>Última</th><th></th></tr></thead>
+        <tbody id="fila"></tbody>
+      </table>
+    </section>
+  </main>
+  <datalist id="lista-intents"></datalist>
+  <div id="aviso"></div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let intents = [];
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => f !== null && f !== undefined && node.append(f));
+      return node;
+    }
+
+    function svg(tag, attrs, ...filhos) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node.setAttribute(k, v));
+      filhos.forEach((f) => node.append(f));
+      return node;
+    }
+
+    function aviso(texto, erro) {
+      const a = $("aviso");
+      a.textContent = texto;
+      a.className = "ver" + (erro ? " erro" : "");
+      clearTimeout(aviso.t);
+      aviso.t = setTimeout(() => a.className = "", erro ? 7000 : 3500);
+    }
+
+    async function api(caminho, opcoes) {
+      const resp = await fetch("/curadoria/api/" + caminho, opcoes);
+      const corpo = resp.status === 204 ? null : await resp.json().catch(() => null);
+      if (!resp.ok) throw new Error((corpo && corpo.erro) || ("HTTP " + resp.status));
+      return corpo;
+    }
+
+    const pct = (parte, total) => total ? (100 * parte / total).toFixed(1).replace(".", ",") + "%" : "-";
+
+    function card(rotulo, valor, sub, classe) {
+      return el("div", { className: "card " + (classe || "") }, el("small", {}, rotulo), el("strong", {}, valor), el("span", {}, sub || ""));
+    }
+
+    function mostrarIndicadores(d) {
+      const fallbackPct = d.mensagens ? d.fallback / d.mensagens : 0;
+      const resolvidas = d.conversas ? 1 - d.transbordos / d.conversas : 0;
+      $("cards").replaceChildren(
+        card("Mensagens", d.mensagens.toLocaleString("pt-BR"), d.conversas + " conversas"),
+        card("Não entendidas", pct(d.fallback, d.mensagens), d.fallback + " mensagens", fallbackPct > 0.15 ? "alerta" : "bom"),
+        card("Confiança baixa", pct(d.baixaConfianca, d.mensagens), d.baixaConfianca + " mensagens"),
+        card("Sem atendente", d.conversas ? pct(d.conversas - d.transbordos, d.conversas) : "-", d.transbordos + " transbordos", resolvidas >= 0.5 ? "bom" : ""),
+        card("Pendentes", d.pendentes, "falas para revisar", d.pendentes ? "alerta" : "bom"),
+        card("Ensinadas", d.ensinadas, "frases no período", "bom")
+      );
+      $("pendentes").textContent = d.pendentes;
+      mostrarGrafico(d.porDia || []);
+      mostrarIntents(d.intents || []);
+    }
+
+    function mostrarGrafico(dias) {
+      if (!dias.length) {
+        $("grafico").replaceChildren(el("p", { className: "vazio" }, "Sem mensagens no período."));
+        return;
+      }
+      const w = 720, h = 200, base = 176, topo = 10;
+      const max = Math.max(...dias.map((d) => d.mensagens), 1);
+      const passo = w / dias.length;
+      const largura = Math.max(4, Math.min(42, passo * 0.7));
+      const alt = (v) => (base - topo) * v / max;
+      const g = svg("svg", { viewBox: "0 0 " + w + " " + h, width: "100%", role: "img" });
+      g.append(svg("line", { x1: 0, x2: w, y1: base, y2: base, stroke: "#d5dbe1" }));
+      g.append(svg("text", { x: 0, y: topo + 4 }, String(max)));
+      const rotular = Math.ceil(dias.length / 10);
+      dias.forEach((d, i) => {
+        const x = i * passo + (passo - largura) / 2;
+        const baixa = Math.min(d.baixaConfianca, d.mensagens - d.fallback);
+        const partes = [[d.mensagens - d.fallback - baixa, "#9fd3da"], [baixa, "#f5b85c"], [d.fallback, "#e5484d"]];
+        let y = base;
+        partes.forEach(([v, cor]) => {
+          if (v <= 0) return;
+          const a = alt(v);
+          y -= a;
+          g.append(svg("rect", { x, y, width: largura, height: a, fill: cor, rx: 2 }));
+        });
+        const titulo = svg("title");
+        titulo.textContent = d.dia + ": " + d.mensagens + " mensagens, " + d.fallback + " não entendidas, " + d.baixaConfianca + " com confiança baixa";
+        const alvo = svg("rect", { x, y: topo, width: largura, height: base - topo, fill: "transparent" });
+        alvo.append(titulo);
+        g.append(alvo);
+        if (i % rotular === 0) {
+          const [, mes, dia] = d.dia.split("-");
+          const t = svg("text", { x: x + largura / 2, y: base + 16, "text-anchor": "middle" });
+          t.textContent = dia + "/" + mes;
+          g.append(t);
+        }
+      });
+      $("grafico").replaceChildren(g);
+    }
+
+    function mostrarIntents(lista) {
+      if (!lista.length) {
+        $("intents").replaceChildren(el("p", { className: "vazio" }, "Sem dados."));
+        return;
+      }
+      const max = Math.max(...lista.map((i) => i.vezes));
+      $("intents").replaceChildren(...lista.map((i) => {
+        const fundo = el("div");
+        fundo.style.width = (100 * i.vezes / max) + "%";
+        const conf = i.confianca === null ? "" : " · " + i.confianca.toFixed(2);
+        return el("div", { className: "intent", title: i.intent + conf },
+          el("div", { className: "barra" }, fundo, el("span", {}, i.intent)),
+          el("b", {}, String(i.vezes)));
+      }));
+    }
+
+    function falaComMarcadores(texto) {
+      const span = el("span");
+      texto.split(/(<(?:cpf|data|telefone|email|numero)>)/).forEach((parte) => {
+        span.append(/^<\w+>$/.test(parte) ? el("span", { className: "marcador", title: "dado pessoal mascarado" }, parte) : parte);
+      });
+      return span;
+    }
+
+    function confianca(f) {
+      if (f.fallback) return el("span", { className: "tag fallback" }, "não entendeu");
+      if (f.confianca === null) return el("span", { className: "tag baixa" }, "-");
+      return el("span", { className: "tag " + (f.confianca < 0.4 ? "fallback" : f.confianca < 0.6 ? "baixa" : "media") }, f.confianca.toFixed(2));
+    }
+
+    function quando(iso) {
+      if (!iso) return "-";
+      return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function mostrarFila(lista) {
+      const corpo = $("fila");
+      if (!lista.length) {
+        corpo.replaceChildren(el("tr", {}, el("td", { colSpan: 6, className: "vazio" }, "Nada para revisar no período. 🎉")));
+        return;
+      }
+      corpo.replaceChildren(...lista.map((f) => {
+        const tr = el("tr");
+        const ensinar = el("button", { className: "acao principal", type: "button", onclick: () => abrirEditor(tr, f) }, "Ensinar");
+        const fora = el("button", { className: "acao", type: "button", title: "O bot não precisa atender isso", onclick: () => decidir(tr, f, "FORA_ESCOPO") }, "Fora do escopo");
+        const ignorar = el("button", { className: "acao", type: "button", title: "Ruído, teste ou mensagem sem sentido", onclick: () => decidir(tr, f, "IGNORAR") }, "Ignorar");
+        tr.append(
+          el("td", { className: "fala" }, falaComMarcadores(f.texto)),
+          el("td", {}, String(f.vezes)),
+          el("td", {}, el("code", {}, f.intent || "-")),
+          el("td", {}, confianca(f)),
+          el("td", {}, quando(f.ultima)),
+          el("td", {}, el("div", { className: "acoes" }, ensinar, fora, ignorar))
+        );
+        return tr;
+      }));
+    }
+
+    function abrirEditor(tr, f) {
+      document.querySelectorAll("tr.editor").forEach((e) => e.remove());
+      const frase = el("input", { value: f.texto, title: "Frase de treino. Troque os marcadores por exemplos fictícios." });
+      const intent = el("input", { placeholder: "Intent certa", value: f.fallback ? "" : (f.intent || "") });
+      intent.setAttribute("list", "lista-intents");
+      const salvar = el("button", { className: "acao principal", type: "submit" }, "Ensinar ao bot");
+      const cancelar = el("button", { className: "acao", type: "button" }, "Cancelar");
+      const form = el("form", { className: "form-ensinar" }, frase, intent, salvar, cancelar,
+        el("div", { className: "dica" }, "A frase entra como exemplo de treino na intent e o agente é retreinado. Troque <cpf>, <data> etc. por valores fictícios."));
+      const editor = el("tr", { className: "editor" }, el("td", { colSpan: 6 }, form));
+      cancelar.onclick = () => editor.remove();
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        if (!intents.includes(intent.value)) {
+          aviso("Escolha uma intent da lista.", true);
+          intent.focus();
+          return;
+        }
+        decidir(tr, f, "ENSINAR", intent.value, frase.value, salvar);
+      };
+      tr.after(editor);
+      (/<\w+>/.test(f.texto) ? frase : intent).focus();
+      carregarIntents();
+    }
+
+    async function decidir(tr, f, acao, intent, frase, botao) {
+      const botoes = [...tr.querySelectorAll("button"), botao].filter(Boolean);
+      botoes.forEach((b) => b.disabled = true);
+      try {
+        const r = await api("decisao", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto: f.texto, acao, intent, frase })
+        });
+        const msg = { ENSINAR: r.fraseNova ? "Frase ensinada em " + intent + "." : "A intent já tinha essa frase; registrada.", FORA_ESCOPO: "Marcada como fora do escopo.", IGNORAR: "Ignorada." };
+        aviso(msg[acao]);
+        const editor = tr.nextElementSibling;
+        if (editor && editor.classList.contains("editor")) editor.remove();
+        tr.remove();
+        const restante = Math.max(0, Number($("pendentes").textContent) - 1);
+        $("pendentes").textContent = restante;
+        if (!$("fila").children.length) mostrarFila([]);
+      } catch (e) {
+        aviso(e.message, true);
+        botoes.forEach((b) => b.disabled = false);
+      }
+    }
+
+    async function carregarIntents() {
+      if (intents.length) return;
+      try {
+        intents = await api("intents");
+        $("lista-intents").replaceChildren(...intents.map((i) => el("option", { value: i })));
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    async function carregar() {
+      const dias = $("dias").value;
+      try {
+        const [ind, fila] = await Promise.all([api("indicadores?dias=" + dias), api("fila?dias=" + dias)]);
+        mostrarIndicadores(ind);
+        mostrarFila(fila);
+      } catch (e) {
+        aviso("Não foi possível carregar: " + e.message, true);
+      }
+    }
+
+    $("dias").addEventListener("change", carregar);
+    $("atualizar").addEventListener("click", carregar);
+    carregar();
+  </script>
+</body>
+</html>

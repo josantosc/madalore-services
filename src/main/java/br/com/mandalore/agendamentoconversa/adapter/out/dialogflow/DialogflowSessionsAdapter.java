@@ -1,9 +1,5 @@
 package br.com.mandalore.agendamentoconversa.adapter.out.dialogflow;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -21,7 +17,6 @@ import org.springframework.web.client.RestClientResponseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.auth.oauth2.GoogleCredentials;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDialogflow;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowEvent;
@@ -34,12 +29,11 @@ import br.com.mandalore.agendamentoconversa.application.domain.service.Textos;
 public class DialogflowSessionsAdapter implements DialogflowPort {
 
     private static final Logger LOG = LoggerFactory.getLogger(DialogflowSessionsAdapter.class);
-    private static final String ESCOPO = "https://www.googleapis.com/auth/dialogflow";
     private static final int LIMITE_TEXTO = 256;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final String projectId;
-    private final String credenciais;
+    private final DialogflowCredenciais credenciais;
     private final String idioma;
     private final String fuso;
     private final String ambiente;
@@ -50,7 +44,7 @@ public class DialogflowSessionsAdapter implements DialogflowPort {
 
     public DialogflowSessionsAdapter(
             @Value("${dialogflow.project-id:}") String projectId,
-            @Value("${dialogflow.credentials:}") String credenciais,
+            DialogflowCredenciais credenciais,
             @Value("${dialogflow.language-code:pt-BR}") String idioma,
             @Value("${dialogflow.time-zone:America/Sao_Paulo}") String fuso,
             @Value("${dialogflow.environment:}") String ambiente,
@@ -69,10 +63,10 @@ public class DialogflowSessionsAdapter implements DialogflowPort {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(2));
         factory.setReadTimeout(Duration.ofMillis(timeoutMs));
-        String host = this.regiao.isBlank()
-                ? "https://dialogflow.googleapis.com"
-                : "https://" + this.regiao + "-dialogflow.googleapis.com";
-        this.client = RestClient.builder().baseUrl(host).requestFactory(factory).build();
+        this.client = RestClient.builder()
+                .baseUrl(DialogflowCredenciais.host(this.regiao))
+                .requestFactory(factory)
+                .build();
         this.telemetry = telemetry;
     }
 
@@ -88,7 +82,7 @@ public class DialogflowSessionsAdapter implements DialogflowPort {
         try {
             JsonNode resposta = client.post()
                     .uri(caminho(), variaveis(sessao))
-                    .header("Authorization", "Bearer " + token())
+                    .header("Authorization", "Bearer " + credenciais.token())
                     .body(Map.of(
                             "queryParams", Map.of("timeZone", fuso),
                             "queryInput", Map.of(
@@ -274,27 +268,4 @@ public class DialogflowSessionsAdapter implements DialogflowPort {
         return query.path("fulfillmentText").asText("");
     }
 
-    private String token() {
-        try (InputStream stream = abrir()) {
-            GoogleCredentials credentials = GoogleCredentials.fromStream(stream).createScoped(ESCOPO);
-            credentials.refreshIfExpired();
-            if (credentials.getAccessToken() == null) {
-                credentials.refresh();
-            }
-            return credentials.getAccessToken().getTokenValue();
-        } catch (Exception ex) {
-            throw new IllegalStateException("Falha ao autenticar no Dialogflow", ex);
-        }
-    }
-
-    private InputStream abrir() throws Exception {
-        if (credenciais == null || credenciais.isBlank()) {
-            throw new IllegalStateException("DIALOGFLOW_CREDENTIALS ausente");
-        }
-        String valor = credenciais.trim();
-        if (valor.startsWith("{")) {
-            return new ByteArrayInputStream(valor.getBytes(StandardCharsets.UTF_8));
-        }
-        return new FileInputStream(valor);
-    }
 }

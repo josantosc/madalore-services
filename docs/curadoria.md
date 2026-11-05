@@ -13,13 +13,42 @@ Nomes próprios não são mascarados: o texto continua sendo dado pessoal de sa�
 Restrinja o acesso ao banco e apague o histórico antigo (abaixo). Para não guardar a fala,
 use `OBSERVABILITY_CURADORIA_TEXTO=false`.
 
+## Tela de curadoria
+
+![Tela de curadoria](img/curadoria.png)
+
+Em `/curadoria` (ex.: `https://bs-api.jscinfor.com/curadoria`), com usuário e senha próprios:
+
+- Indicadores do período: mensagens, % não entendidas, % confiança baixa, % sem atendente, pendentes e frases ensinadas.
+- Gráfico por dia e intents mais acionadas.
+- Fila: falas que caíram no fallback ou ficaram abaixo de `CURADORIA_LIMITE_CONFIANCA`, agrupadas.
+  - **Ensinar**: edite a frase (troque `<cpf>`, `<data>` etc. por exemplos fictícios), escolha a intent e
+    a frase entra como exemplo de treino no Dialogflow; o agente é retreinado.
+  - **Fora do escopo** / **Ignorar**: só registra a decisão.
+  - Decidida, a fala sai da fila (`observability.curadoria_decisao`, com quem decidiu).
+
+Configuração no Coolify:
+
+```
+CURADORIA_ENABLED=true
+CURADORIA_USER=curadoria
+CURADORIA_PASSWORD=<senha forte>
+```
+
+Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZE_SCHEMA=true`
+(cria a tabela de decisões). Para **Ensinar**, a conta de serviço do Dialogflow precisa do papel
+**Dialogflow API Admin** no IAM (o **Dialogflow API Client** só conversa). A frase vai para o agente
+draft; com `DIALOGFLOW_ENVIRONMENT` definido, publique uma versão nova para valer no ambiente.
+
 ## Rotina semanal
 
-1. Revisar a fila de não entendidas e de baixa confiança.
-2. Para cada frase: incluir como frase de treino na intent certa, criar intent nova ou marcar como fora do escopo.
+1. Abrir a tela de curadoria e revisar a fila.
+2. Para cada frase: ensinar na intent certa, marcar como fora do escopo ou ignorar. Intent nova se cria no console do Dialogflow.
 3. Virar as correções em casos de [regressão conversacional](testes-regressao-conversacional.md), rodar e publicar o agente.
 
 ## Consultas
+
+As mesmas informações da tela, direto no banco.
 
 Fila de curadoria (últimos 7 dias, frases repetidas agrupadas):
 

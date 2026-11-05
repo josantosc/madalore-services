@@ -35,3 +35,14 @@ CREATE INDEX IF NOT EXISTS idx_flow_event_message_sid
     WHERE message_sid IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_flow_event_intent_action
     ON observability.flow_event (intent, action, created_at);
+
+-- Decisão da curadoria por fala (minúscula, sem espaços nas pontas). A fala some da fila depois de decidida.
+CREATE TABLE IF NOT EXISTS observability.curadoria_decisao (
+    chave VARCHAR(1000) PRIMARY KEY,
+    texto VARCHAR(1000) NOT NULL,
+    acao VARCHAR(20) NOT NULL,
+    intent VARCHAR(160),
+    frase VARCHAR(768),
+    usuario VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
