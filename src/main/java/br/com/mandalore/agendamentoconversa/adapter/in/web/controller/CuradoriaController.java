@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientResponseException;
 
-import br.com.mandalore.agendamentoconversa.adapter.in.web.curadoria.CuradoriaAuthFilter;
+import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAuthFilter;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Curadoria;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.CuradoriaUseCase;
 
@@ -71,7 +71,7 @@ public class CuradoriaController {
     @PostMapping(value = "/curadoria/api/decisao", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> decidir(
             @RequestBody DecisaoRequest request,
-            @RequestAttribute(CuradoriaAuthFilter.USUARIO) String usuario
+            @RequestAttribute(AdminAuthFilter.USUARIO) String usuario
     ) {
         try {
             boolean nova = curadoria.decidir(new Curadoria.Decisao(

@@ -110,18 +110,19 @@ class PostgresTabelaPrecoAdapterIT {
     void telaPedeLoginEAbreSessaoAteOLogout() throws Exception {
         tabela.substituir(List.of(), "teste");
 
-        mvc.perform(get("/precos")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/precos/login"));
+        mvc.perform(get("/precos")).andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/login?volta=%2Fprecos"));
         mvc.perform(get("/precos/api/itens")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/precos/login"))
+        mvc.perform(get("/admin/login"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Acesso do financeiro")));
-        mvc.perform(post("/precos/login").contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("usuario", "u").param("senha", "errada").with(ip("10.9.9.1")))
+                .andExpect(content().string(containsString("Central de administração")));
+        mvc.perform(post("/admin/login").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("usuario", "u").param("senha", "errada").param("volta", "/precos").with(ip("10.9.9.1")))
                 .andExpect(status().isSeeOther())
-                .andExpect(redirectedUrl("/precos/login?erro=senha"));
+                .andExpect(redirectedUrl("/admin/login?erro=senha&volta=%2Fprecos"));
 
-        MockHttpSession sessao = (MockHttpSession) mvc.perform(post("/precos/login").contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("usuario", "u").param("senha", "p").with(ip("10.9.9.2")))
+        MockHttpSession sessao = (MockHttpSession) mvc.perform(post("/admin/login").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("usuario", "u").param("senha", "p").param("volta", "/precos").with(ip("10.9.9.2")))
                 .andExpect(status().isSeeOther())
                 .andExpect(redirectedUrl("/precos"))
                 .andReturn().getRequest().getSession(false);
@@ -129,8 +130,13 @@ class PostgresTabelaPrecoAdapterIT {
         mvc.perform(get("/precos").session(sessao))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Tabela de preços")));
-        mvc.perform(get("/precos/login").session(sessao)).andExpect(redirectedUrl("/precos"));
-        mvc.perform(get("/precos/api/eu").session(sessao)).andExpect(jsonPath("$.usuario").value("u"));
+        mvc.perform(get("/admin/login").session(sessao)).andExpect(redirectedUrl("/admin"));
+        mvc.perform(get("/admin/api/eu").session(sessao))
+                .andExpect(jsonPath("$.usuario").value("u"))
+                .andExpect(jsonPath("$.modulos[0].id").value("precos"))
+                .andExpect(jsonPath("$.modulos.length()").value(1));
+        mvc.perform(get("/curadoria").session(sessao)).andExpect(redirectedUrl("/admin"));
+        mvc.perform(get("/curadoria/api/conversas").session(sessao)).andExpect(status().isForbidden());
         mvc.perform(put("/precos/api/itens/GLI").session(sessao)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nome\":\"Glicose\",\"sinonimos\":[\"Glicemia\"],\"valor\":12.5,\"prazo\":\"\"}"))
@@ -150,9 +156,9 @@ class PostgresTabelaPrecoAdapterIT {
         mvc.perform(delete("/precos/api/itens/NAOEXISTE").session(sessao))
                 .andExpect(status().isNotFound());
 
-        mvc.perform(post("/precos/logout").session(sessao))
+        mvc.perform(post("/admin/logout").session(sessao))
                 .andExpect(status().isSeeOther())
-                .andExpect(redirectedUrl("/precos/login?saiu=1"));
+                .andExpect(redirectedUrl("/admin/login?saiu=1"));
         assertThat(sessao.isInvalid()).isTrue();
     }
 

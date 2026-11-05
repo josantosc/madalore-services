@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Central de administração</title>
+  <link rel="stylesheet" href="/admin/assets/nav.css">
+  <script src="/admin/assets/nav.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--adm-fundo); color: var(--adm-texto); font: 14px/1.5 var(--adm-fonte); -webkit-font-smoothing: antialiased; }
+    main { max-width: 1040px; width: 100%; margin: 0 auto; padding: 32px 32px 48px; }
+    h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
+    .descricao { color: var(--adm-texto-2); margin: 6px 0 0; }
+    .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 28px; }
+    .modulo { display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 12px; text-decoration: none; color: inherit;
+      background: var(--adm-solido); box-shadow: 0 0 0 1px var(--adm-borda); transition: box-shadow .15s, transform .15s; }
+    a.modulo:hover { box-shadow: 0 0 0 1px var(--adm-marca), 0 8px 24px rgba(11, 92, 122, .12); transform: translateY(-1px); }
+    .modulo.desligado { background: var(--adm-alpha-1); box-shadow: 0 0 0 1px var(--adm-borda); }
+    .icone { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--adm-marca-suave); color: var(--adm-marca); }
+    .desligado .icone { background: var(--adm-alpha-2); color: var(--adm-texto-3); }
+    .icone svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .modulo h2 { font-size: 15px; font-weight: 500; margin: 0; }
+    .modulo p { margin: 0; color: var(--adm-texto-2); flex: 1; }
+    .abrir { color: var(--adm-marca); font-weight: 500; font-size: 13px; }
+    .selo { align-self: flex-start; background: var(--adm-alpha-2); color: var(--adm-texto-2); border-radius: 6px; padding: 1px 8px; font-size: 12px; }
+    .selo code { font-family: Consolas, monospace; font-size: 11px; }
+    @media (max-width: 860px) { main { padding: 20px 16px 40px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 id="titulo">Central de administração</h1>
+    <p class="descricao">Ferramentas do assistente virtual e do orçamento por foto. Escolha uma área.</p>
+    <div class="grade" id="grade"></div>
+  </main>
+  <script>
+    const ICONES = {
+      curadoria: '<path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v13"/>',
+      precos: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/>',
+      simulador: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/>',
+      conversas: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'
+    };
+    const VARIAVEL = { curadoria: "CURADORIA_ENABLED", precos: "ORCAMENTO_ENABLED", simulador: "SIMULADOR_ENABLED" };
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => f !== null && f !== undefined && node.append(f));
+      return node;
+    }
+
+    function icone(nome) {
+      const caixa = el("div", { className: "icone" });
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.innerHTML = ICONES[nome];
+      caixa.append(svg);
+      return caixa;
+    }
+
+    function cartao(id, titulo, descricao, href, rodape, externo) {
+      if (!href) {
+        return el("div", { className: "modulo desligado" }, icone(id), el("h2", {}, titulo), el("p", {}, descricao), rodape);
+      }
+      return el("a", { className: "modulo", href, target: externo ? "_blank" : "", rel: externo ? "noopener" : "" },
+        icone(id), el("h2", {}, titulo), el("p", {}, descricao), el("span", { className: "abrir" }, "Abrir →"));
+    }
+
+    document.addEventListener("adm:usuario", ({ detail: eu }) => {
+      document.getElementById("titulo").textContent = "Olá, " + eu.usuario;
+      const grade = document.getElementById("grade");
+      eu.modulos.forEach((m) => grade.append(m.ativo
+        ? cartao(m.id, m.titulo, m.descricao, m.caminho)
+        : cartao(m.id, m.titulo, m.descricao, null,
+            el("span", { className: "selo" }, "Desligado. Ligue com ", el("code", {}, VARIAVEL[m.id] + "=true")))));
+      if (eu.chatwootUrl) {
+        grade.append(cartao("conversas", "Conversas no Chatwoot", "Atendimento aos pacientes, equipes e respostas prontas.",
+          eu.chatwootUrl + "/app", null, true));
+      }
+    });
+  </script>
+</body>
+</html>

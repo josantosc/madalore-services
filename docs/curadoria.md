@@ -31,9 +31,10 @@ Configuração no Coolify:
 
 ```
 CURADORIA_ENABLED=true
-CURADORIA_USER=curadoria
-CURADORIA_PASSWORD=<senha forte>
 ```
+
+A tela fica na central de administração (`/admin`), com o login de `ADMIN_USER`/`ADMIN_PASSWORD`. Para quem só
+faz curadoria, `CURADORIA_USER`/`CURADORIA_PASSWORD` criam um login que enxerga apenas esta tela.
 
 Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZE_SCHEMA=true`
 (cria a tabela de decisões). Para **Ensinar**, a conta de serviço do Dialogflow precisa do papel

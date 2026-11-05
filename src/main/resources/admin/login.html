@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Entrar - Tabela de preços</title>
+  <title>Entrar - Central de administração</title>
   <link rel="icon" href="__CHATWOOT_URL__/favicon-32x32.png">
   <style>
     @property --bs-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
@@ -103,15 +103,16 @@
 <body>
   <header>
     <img src="__CHATWOOT_URL__/brand-assets/logo_dark.svg" alt="BioSaúde">
-    <h1>Tabela de preços</h1>
-    <p>Acesso do financeiro</p>
+    <h1>Central de administração</h1>
+    <p>Curadoria, tabela de preços e simulador</p>
   </header>
 
   <section class="cartao" id="cartao">
     <p class="mensagem" id="mensagem" role="alert"></p>
-    <form method="post" action="/precos/login" id="form">
+    <form method="post" action="/admin/login" id="form">
+      <input type="hidden" name="volta" id="volta">
       <label>Usuário
-        <input name="usuario" autocomplete="username" placeholder="Ex.: financeiro" required autofocus>
+        <input name="usuario" autocomplete="username" placeholder="Seu usuário" required autofocus>
       </label>
       <label>Senha
         <input name="senha" type="password" autocomplete="current-password" placeholder="Sua senha" required>
@@ -125,7 +126,7 @@
     const MENSAGENS = {
       senha: ["erro", "Usuário ou senha incorretos."],
       bloqueado: ["erro", "Muitas tentativas. Aguarde 15 minutos e tente de novo."],
-      saiu: ["info", "Você saiu da tabela de preços."]
+      saiu: ["info", "Você saiu da central de administração."]
     };
     const params = new URLSearchParams(location.search);
     const chave = params.get("erro") || (params.has("saiu") ? "saiu" : null);
@@ -135,8 +136,9 @@
       msg.className = "mensagem " + tipo;
       msg.textContent = texto;
       if (tipo === "erro") document.getElementById("cartao").classList.add("erro");
-      history.replaceState(null, "", location.pathname);
+      history.replaceState(null, "", location.pathname + (params.get("volta") ? "?volta=" + encodeURIComponent(params.get("volta")) : ""));
     }
+    document.getElementById("volta").value = params.get("volta") || "";
     document.getElementById("form").addEventListener("submit", () => {
       const botao = document.getElementById("entrar");
       setTimeout(() => { botao.disabled = true; botao.textContent = "Entrando..."; }, 0);

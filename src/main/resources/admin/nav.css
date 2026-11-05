@@ -1,0 +1,42 @@
+/* Menu lateral da central de administração, comum a /admin, /curadoria, /precos e /simulador. */
+:root {
+  --adm-fundo: #fdfdfd; --adm-solido: #ffffff; --adm-alpha-1: rgba(0, 0, 51, .03); --adm-alpha-2: rgba(0, 0, 59, .055);
+  --adm-borda: #e8e8ec; --adm-texto: #1c2024; --adm-texto-2: #60646c; --adm-texto-3: #8b8d98;
+  --adm-marca: #0b5c7a; --adm-marca-hover: #0a536e; --adm-marca-suave: #e7eff2; --adm-marca-texto: #094b64;
+  --adm-fonte: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+body.adm-layout { display: flex !important; flex-direction: row !important; height: 100vh !important; margin: 0 !important; overflow: hidden !important; }
+.adm-conteudo { flex: 1; min-width: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
+.adm-conteudo > main { width: 100%; }
+
+.adm-nav { width: 208px; flex: none; display: flex; flex-direction: column; gap: 2px; padding: 10px 8px;
+  background: var(--adm-fundo); border-right: 1px solid var(--adm-borda);
+  font: 14px/1.5 var(--adm-fonte); color: var(--adm-texto); -webkit-font-smoothing: antialiased; }
+.adm-nav * { box-sizing: border-box; }
+.adm-nav svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.adm-marca { display: flex; align-items: center; gap: 8px; padding: 6px 8px 14px; font-weight: 600; color: var(--adm-texto); text-decoration: none; }
+.adm-marca img { width: 24px; height: 24px; border-radius: 6px; }
+.adm-secao { padding: 12px 8px 4px; font-size: 11px; font-weight: 500; color: var(--adm-texto-3); text-transform: uppercase; letter-spacing: .05em; }
+.adm-item { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: 8px;
+  color: var(--adm-texto-2); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-item:hover { background: var(--adm-alpha-2); color: var(--adm-texto); }
+.adm-item.ativo { background: var(--adm-alpha-2); color: var(--adm-texto); font-weight: 500; }
+.adm-espaco { flex: 1; }
+.adm-usuario { display: flex; align-items: center; gap: 8px; padding: 8px; margin-top: 6px; border-top: 1px solid var(--adm-borda); }
+.adm-avatar { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--adm-marca-suave); color: var(--adm-marca-texto); font-size: 12px; font-weight: 600; text-transform: uppercase; }
+.adm-quem { flex: 1; min-width: 0; line-height: 1.25; }
+.adm-quem span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-quem small { display: block; color: var(--adm-texto-3); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-sair { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border: 0; border-radius: 6px; cursor: pointer;
+  background: var(--adm-alpha-1); color: var(--adm-texto-2); padding: 0; }
+.adm-sair:hover { background: var(--adm-alpha-2); color: var(--adm-texto); }
+
+@media (max-width: 860px) {
+  body.adm-layout { flex-direction: column !important; }
+  .adm-conteudo { height: auto; flex: 1; min-height: 0; }
+  .adm-nav { width: 100%; flex-direction: row; align-items: center; padding: 6px 8px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--adm-borda); }
+  .adm-marca { padding: 0 6px 0 0; }
+  .adm-marca span, .adm-secao, .adm-espaco, .adm-quem, .adm-avatar { display: none; }
+  .adm-usuario { border: 0; margin: 0 0 0 auto; padding: 0; }
+}

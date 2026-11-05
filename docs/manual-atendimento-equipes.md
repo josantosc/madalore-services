@@ -154,7 +154,8 @@ Sem preço na tabela (verificar):
 ## 6. Tabela de preços (financeiro)
 
 Os valores do orçamento vêm da **tabela de preços particular**, que o financeiro mantém em
-`https://bs-api.jscinfor.com/precos`, com usuário e senha próprios.
+`https://bs-api.jscinfor.com/precos`, dentro da **central de administração** (`https://bs-api.jscinfor.com/admin`).
+O login do financeiro abre só a tabela de preços; o do administrador abre também a curadoria e o simulador.
 
 - **Entrar:** a tela de login é igual à do Chatwoot. Depois de 8 horas sem uso, ela pede a senha de novo.
 - **Sair:** botão no rodapé do menu, ao lado do nome. Use sempre em computador compartilhado.

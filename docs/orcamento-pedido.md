@@ -47,19 +47,33 @@ Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZ
 
 ## Tela do financeiro
 
-`https://bs-api.jscinfor.com/precos`, com usuário e senha próprios (separados da curadoria):
+`https://bs-api.jscinfor.com/precos`, dentro da central de administração (`/admin`). Login do financeiro, que
+enxerga só esta tela (o `ADMIN_USER` também entra):
 
 ```
 PRECOS_USER=financeiro
 PRECOS_PASSWORD=<senha forte>
 ```
 
-Sem as duas variáveis a tela responde 503. O acesso é pela tela de login (`/precos/login`, mesmo visual do login do
-Chatwoot). A sessão expira após 8 horas sem uso, e **Sair** no rodapé do menu encerra na hora. Cinco senhas erradas
+## Central de administração
+
+`https://bs-api.jscinfor.com/admin` reúne curadoria, tabela de preços e simulador com um login só
+(`/admin/login`, mesmo visual do login do Chatwoot) e o mesmo menu lateral em todas as telas:
+
+| Login | Variáveis | Telas |
+|---|---|---|
+| Administrador | `ADMIN_USER`, `ADMIN_PASSWORD` | todas |
+| Curadoria | `CURADORIA_USER`, `CURADORIA_PASSWORD` (opcional) | `/curadoria` |
+| Financeiro | `PRECOS_USER`, `PRECOS_PASSWORD` (opcional) | `/precos` |
+
+Sem nenhuma credencial preenchida, as telas respondem 503. Uma tela fora do perfil volta para a central (API
+responde 403); tela desligada (`CURADORIA_ENABLED`, `ORCAMENTO_ENABLED`, `SIMULADOR_ENABLED`) aparece em cinza.
+A sessão expira após 8 horas sem uso, e **Sair** no rodapé do menu encerra na hora. Cinco senhas erradas
 bloqueiam o IP por 15 minutos. O cookie da sessão só trafega por HTTPS; para testar em `http://localhost`, use
-`SESSAO_COOKIE_SECURE=false`. O visual da lista segue o painel do Chatwoot (cor da marca, menu
-lateral com o logo e link para as conversas, vindos de `PRECOS_CHATWOOT_URL`, padrão
-`https://bs-chat.jscinfor.com`). Na tela:
+`SESSAO_COOKIE_SECURE=false`. Logo da marca e link **Conversas** vêm de `ADMIN_CHATWOOT_URL`, padrão
+`https://bs-chat.jscinfor.com`; o nome no menu, de `ADMIN_NOME`.
+
+Na tela de preços:
 
 - buscar por código, nome ou sinônimo; aba **Sem preço** lista os exames com valor R$ 0,00;
 - **Adicionar exame**, editar (lápis) e excluir (lixeira), em janelas de confirmação como no Chatwoot;

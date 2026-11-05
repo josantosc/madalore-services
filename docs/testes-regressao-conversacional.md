@@ -65,8 +65,8 @@ sem contextos.
 O simulador usa o agente e o webhook reais, então as ações consultam e gravam no
 banco configurado, e o túnel (ngrok) precisa estar no ar. Um pedido de atendente
 só é sinalizado na tela, porque não há conversa no Chatwoot para transferir. A
-página não tem autenticação: mantenha `SIMULADOR_ENABLED` desligado fora do
-ambiente local.
+página fica na central de administração e pede o login de `ADMIN_USER`; mesmo
+assim, mantenha `SIMULADOR_ENABLED` desligado em produção fora dos testes.
 
 ## Robot Framework
 

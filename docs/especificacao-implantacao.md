@@ -119,6 +119,8 @@ A trilha não grava telefone, CPF, conteúdo da mensagem, token nem texto clíni
 ```env
 HTTP_PORT=8080
 SIMULADOR_ENABLED=false
+ADMIN_USER=admin
+ADMIN_PASSWORD=
 
 ORACLE_JDBC_URL=jdbc:oracle:thin:@//host-tasy:1521/SERVICO
 ORACLE_USER=USR_MANDALORE
@@ -158,7 +160,7 @@ OBSERVABILITY_POSTGRES_PASSWORD=
 | POST | `/webhook` | Dialogflow | HTTP Basic | Sim |
 | GET | `/health` | Monitor | Nenhuma | Não |
 | GET | `/actuator/health/liveness` e `/actuator/health/readiness` | Orquestrador | Nenhuma | Não |
-| GET | `/simulador` | Navegador | Nenhuma | Proibido em produção |
+| GET | `/admin` (central: `/curadoria`, `/precos`, `/simulador`) | Navegador | Login da central (`ADMIN_USER`) | Sim |
 
 ### 4.5 Saída de rede
 

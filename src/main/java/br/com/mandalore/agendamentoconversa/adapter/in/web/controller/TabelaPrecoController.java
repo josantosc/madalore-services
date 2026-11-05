@@ -1,5 +1,7 @@
 package br.com.mandalore.agendamentoconversa.adapter.in.web.controller;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -7,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.mandalore.agendamentoconversa.adapter.in.web.precos.PrecosAuthFilter;
+import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAuthFilter;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.TabelaPrecoUseCase;
 
@@ -38,9 +41,13 @@ public class TabelaPrecoController {
     public record ItemRequest(String nome, List<String> sinonimos, BigDecimal valor, String prazo) {
     }
 
-    @GetMapping(value = "/precos/api/eu", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, String> eu(@RequestAttribute(PrecosAuthFilter.USUARIO) String usuario) {
-        return Map.of("usuario", usuario);
+    @GetMapping("/precos")
+    public ResponseEntity<byte[]> pagina() throws IOException {
+        try (InputStream html = new ClassPathResource("precos/index.html").getInputStream()) {
+            return ResponseEntity.ok()
+                    .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
+                    .body(html.readAllBytes());
+        }
     }
 
     @GetMapping(value = "/precos/api/itens", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -52,7 +59,7 @@ public class TabelaPrecoController {
     public ResponseEntity<Map<String, Object>> salvar(
             @PathVariable String codigo,
             @RequestBody ItemRequest request,
-            @RequestAttribute(PrecosAuthFilter.USUARIO) String usuario
+            @RequestAttribute(AdminAuthFilter.USUARIO) String usuario
     ) {
         try {
             tabela.salvar(new Orcamento.ItemPreco(codigo, request.nome(), request.sinonimos(), request.valor(),
@@ -66,7 +73,7 @@ public class TabelaPrecoController {
     @DeleteMapping("/precos/api/itens/{codigo}")
     public ResponseEntity<Void> remover(
             @PathVariable String codigo,
-            @RequestAttribute(PrecosAuthFilter.USUARIO) String usuario
+            @RequestAttribute(AdminAuthFilter.USUARIO) String usuario
     ) {
         return tabela.remover(codigo, usuario) ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
@@ -74,7 +81,7 @@ public class TabelaPrecoController {
     @PutMapping("/precos/api/importar")
     public ResponseEntity<Map<String, Object>> importar(
             @RequestBody byte[] csv,
-            @RequestAttribute(PrecosAuthFilter.USUARIO) String usuario
+            @RequestAttribute(AdminAuthFilter.USUARIO) String usuario
     ) {
         if (csv.length > LIMITE_ARQUIVO) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Arquivo acima de 2 MB"));
