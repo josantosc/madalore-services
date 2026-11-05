@@ -1,5 +1,6 @@
 package br.com.mandalore.agendamentoconversa.adapter.out.dialogflow;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -46,8 +47,9 @@ public class DialogflowIntentsAdapter implements TreinamentoPort {
         this.regiao = regiao == null ? "" : regiao.trim();
         this.idioma = idioma;
         this.credenciais = credenciais;
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(3));
+        // HttpURLConnection (SimpleClientHttpRequestFactory) não suporta PATCH, usado para ensinar frases.
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(15));
         this.client = RestClient.builder()
                 .baseUrl(DialogflowCredenciais.host(this.regiao))
