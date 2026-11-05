@@ -63,7 +63,7 @@ public class GeminiPedidoAdapter implements LeitorPedidoPort {
             ObjectMapper mapper,
             @Value("${orcamento.gemini.project-id:}") String projeto,
             @Value("${orcamento.gemini.location:global}") String regiao,
-            @Value("${orcamento.gemini.model:gemini-2.5-flash}") String modelo,
+            @Value("${orcamento.gemini.model:gemini-3.8-flash}") String modelo,
             @Value("${orcamento.gemini.timeout-ms:60000}") int timeoutMs
     ) {
         this.credenciais = credenciais;

@@ -25,7 +25,7 @@ No projeto do Dialogflow (o mesmo do `DIALOGFLOW_CREDENTIALS`):
 2. No IAM, dê à conta de serviço o papel **Vertex AI User**.
 
 O Vertex AI não usa as imagens para treinar modelos. Custo: centavos de real por foto com o
-`gemini-2.5-flash`.
+`gemini-3.8-flash`.
 
 ### Coolify (Mandalore)
 
@@ -40,7 +40,7 @@ Opcionais:
 |---|---|---|
 | `GEMINI_PROJECT_ID` | `DIALOGFLOW_PROJECT_ID` | Outro projeto Google |
 | `GEMINI_LOCATION` | `global` | `southamerica-east1` mantém o processamento no Brasil, se o modelo estiver disponível lá |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Outro modelo Gemini |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Outro modelo Gemini |
 
 Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZE_SCHEMA=true`
 (cria `orcamento.item_preco`). Para importar a tabela pela API, também `CURADORIA_ENABLED=true`.

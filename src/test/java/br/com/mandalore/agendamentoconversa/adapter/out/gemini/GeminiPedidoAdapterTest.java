@@ -18,7 +18,7 @@ class GeminiPedidoAdapterTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final GeminiPedidoAdapter adapter = new GeminiPedidoAdapter(
-            new GoogleCredenciais(""), mapper, "projeto", "global", "gemini-2.5-flash", 1000);
+            new GoogleCredenciais(""), mapper, "projeto", "global", "gemini-3.8-flash", 1000);
 
     @Test
     void interpretaJsonEstruturado() throws Exception {
