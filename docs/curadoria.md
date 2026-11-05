@@ -41,6 +41,8 @@ Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZ
 **Dialogflow API Admin** no IAM (o **Dialogflow API Client** só conversa). A frase vai para o agente
 draft; com `DIALOGFLOW_ENVIRONMENT` definido, publique uma versão nova para valer no ambiente.
 
+O resumo diário destes indicadores pode chegar num grupo do Telegram: [relatórios no Telegram](relatorios-telegram.md).
+
 ## Rotina semanal
 
 1. Abrir a tela de curadoria e revisar a fila.

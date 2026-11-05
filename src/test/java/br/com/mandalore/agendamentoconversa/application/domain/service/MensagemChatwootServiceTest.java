@@ -24,6 +24,8 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDialogflow;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
+import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowEvent;
+import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowTelemetry;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.OrcarPedidoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.DialogflowPort;
@@ -43,6 +45,9 @@ class MensagemChatwootServiceTest {
     @Mock
     private OrcarPedidoUseCase orcamento;
 
+    @Mock
+    private FlowTelemetry telemetry;
+
     @InjectMocks
     private MensagemChatwootService service;
 
@@ -55,6 +60,9 @@ class MensagemChatwootServiceTest {
 
         verify(orcamento).orcar(foto);
         verify(dialogflow, never()).detectar(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        ArgumentCaptor<FlowEvent> evento = ArgumentCaptor.forClass(FlowEvent.class);
+        verify(telemetry).record(evento.capture());
+        assertThat(evento.getValue().stage()).isEqualTo("orcamento.pedido");
     }
 
     @Test
@@ -119,6 +127,11 @@ class MensagemChatwootServiceTest {
 
         verify(chatwoot).atribuirEquipe("8", "9", Setor.LABORATORIO);
         verify(chatwoot).abrirAtendente("8", "9");
+        ArgumentCaptor<FlowEvent> evento = ArgumentCaptor.forClass(FlowEvent.class);
+        verify(telemetry).record(evento.capture());
+        assertThat(evento.getValue().component()).isEqualTo("CHATWOOT");
+        assertThat(evento.getValue().stage()).isEqualTo("transbordo");
+        assertThat(evento.getValue().details()).containsEntry("equipe", "LABORATORIO");
     }
 
     @Test

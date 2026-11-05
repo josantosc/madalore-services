@@ -14,6 +14,8 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDialogflow;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
+import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowEvent;
+import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowTelemetry;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.OrcarPedidoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMensagemUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
@@ -33,15 +35,18 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
     private final Set<String> mensagensVistas = ConcurrentHashMap.newKeySet();
     private final Map<String, Setor> assuntos = new ConcurrentHashMap<>();
     private final ObjectProvider<OrcarPedidoUseCase> orcamentos;
+    private final FlowTelemetry telemetry;
 
     public MensagemChatwootService(
             DialogflowPort dialogflow,
             ChatwootPort chatwoot,
-            ObjectProvider<OrcarPedidoUseCase> orcamentos
+            ObjectProvider<OrcarPedidoUseCase> orcamentos,
+            FlowTelemetry telemetry
     ) {
         this.dialogflow = dialogflow;
         this.chatwoot = chatwoot;
         this.orcamentos = orcamentos;
+        this.telemetry = telemetry;
     }
 
     @Override
@@ -65,6 +70,7 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
             if (orcamento != null && mensagem.documento().isPresent()) {
                 intent = "orcamento.pedido";
                 orcamento.orcar(mensagem);
+                registrar(mensagem, "orcamento.pedido", null);
                 return;
             }
             if (mensagem.content() == null || mensagem.content().isBlank()) {
@@ -90,6 +96,7 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
                 Setor setor = assunto.orElseGet(() -> Optional.ofNullable(assuntos.remove(chave)).orElse(Setor.RECEPCAO));
                 atribuirEquipe(mensagem, setor);
                 chatwoot.abrirAtendente(mensagem.accountId(), mensagem.conversationId());
+                registrar(mensagem, "transbordo", setor);
             } else if (assunto.isPresent()) {
                 if (assuntos.size() >= LIMITE_ASSUNTOS) {
                     assuntos.clear();
@@ -112,6 +119,14 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
                     status
             );
         }
+    }
+
+    private void registrar(MensagemEntrada mensagem, String etapa, Setor setor) {
+        telemetry.record(FlowEvent.builder("CHATWOOT", etapa, "SUCCESS")
+                .correlation(mensagem.conversationId(), mensagem.conversationId())
+                .detail("equipe", setor == null ? null : setor.name())
+                .detail("canal", mensagem.canal() == null ? null : mensagem.canal().name())
+                .build());
     }
 
     private void atribuirEquipe(MensagemEntrada mensagem, Setor setor) {

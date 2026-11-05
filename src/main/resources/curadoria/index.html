@@ -68,6 +68,8 @@
       <option value="90">90 dias</option>
     </select>
     <button id="atualizar" type="button">Atualizar</button>
+    <button id="enviar-curadoria" type="button" title="Envia agora o resumo de ontem ao grupo do Telegram">Resumo no Telegram</button>
+    <button id="enviar-gestor" type="button" title="Envia agora o relatório da semana passada ao grupo do Telegram">Semanal no Telegram</button>
   </header>
   <main>
     <div class="cards" id="cards"></div>
@@ -322,8 +324,24 @@
       }
     }
 
+    async function enviarRelatorio(tipo, botao) {
+      botao.disabled = true;
+      try {
+        await api("relatorios/" + tipo, { method: "POST" });
+        aviso("Relatório enviado ao Telegram.");
+      } catch (e) {
+        aviso(e.message === "HTTP 404"
+          ? "Relatórios desligados. Defina RELATORIOS_ENABLED=true no Mandalore."
+          : "Não foi possível enviar: " + e.message, true);
+      } finally {
+        botao.disabled = false;
+      }
+    }
+
     $("dias").addEventListener("change", carregar);
     $("atualizar").addEventListener("click", carregar);
+    $("enviar-curadoria").addEventListener("click", (ev) => enviarRelatorio("curadoria", ev.currentTarget));
+    $("enviar-gestor").addEventListener("click", (ev) => enviarRelatorio("gestor", ev.currentTarget));
     carregar();
   </script>
 </body>

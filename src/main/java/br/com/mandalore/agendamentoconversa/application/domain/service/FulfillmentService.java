@@ -16,6 +16,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.port.in.ExecutarF
 public class FulfillmentService implements ExecutarFulfillmentUseCase {
 
     private static final Logger LOG = LoggerFactory.getLogger(FulfillmentService.class);
+    private static final String ESCRITA = "RESULTADO_SUCESSO_ESCRITA";
 
     private final AgendaConsultaService agenda;
     private final PerguntasFrequentesService perguntas;
@@ -78,7 +79,7 @@ public class FulfillmentService implements ExecutarFulfillmentUseCase {
             return resultado;
         } finally {
             String codigo = resultado == null ? CodigoNegocio.INDISPONIVEL.valor() : resultado.codigo().valor();
-            telemetry.record(FlowEvent.builder("MANDALORE", "fulfillment." + command.operacao(), status.equals("sucesso") ? "SUCCESS" : "ERROR")
+            FlowEvent.Builder evento = FlowEvent.builder("MANDALORE", "fulfillment." + command.operacao(), status.equals("sucesso") ? "SUCCESS" : "ERROR")
                     .correlation(
                             Textos.conversationId(command.session()),
                             Textos.conversationId(command.session())
@@ -86,8 +87,12 @@ public class FulfillmentService implements ExecutarFulfillmentUseCase {
                     .intent(command.intent(), command.operacao())
                     .eventName(resultado == null ? null : resultado.evento())
                     .businessResult(codigo)
-                    .durationMs(elapsed(inicio))
-                    .build());
+                    .durationMs(elapsed(inicio));
+            if (resultado != null && ESCRITA.equals(resultado.evento())) {
+                evento.detail("escrita", resultado.parametros().get("acao"))
+                        .detail("exame", resultado.contexto() != null && resultado.contexto().isExame());
+            }
+            telemetry.record(evento.build());
             LOG.info(
                     "conversation_id={} intent={} codigo={} latencia_ms={} status={}",
                     Textos.conversationId(command.session()),
