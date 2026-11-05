@@ -26,6 +26,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDialogflow;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowEvent;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowTelemetry;
+import br.com.mandalore.agendamentoconversa.application.domain.observability.Mascara;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.DialogflowPort;
 import br.com.mandalore.agendamentoconversa.application.domain.service.Textos;
 
@@ -45,6 +46,7 @@ public class DialogflowSessionsAdapter implements DialogflowPort {
     private final String regiao;
     private final RestClient client;
     private final FlowTelemetry telemetry;
+    private final boolean curadoriaTexto;
 
     public DialogflowSessionsAdapter(
             @Value("${dialogflow.project-id:}") String projectId,
@@ -54,8 +56,10 @@ public class DialogflowSessionsAdapter implements DialogflowPort {
             @Value("${dialogflow.environment:}") String ambiente,
             @Value("${dialogflow.location:}") String regiao,
             @Value("${dialogflow.detect-timeout-ms:8000}") int timeoutMs,
+            @Value("${observability.curadoria.texto:true}") boolean curadoriaTexto,
             FlowTelemetry telemetry
     ) {
+        this.curadoriaTexto = curadoriaTexto;
         this.projectId = projectId;
         this.credenciais = credenciais;
         this.idioma = idioma;
@@ -101,12 +105,21 @@ public class DialogflowSessionsAdapter implements DialogflowPort {
             String action = query == null ? "" : query.path("action").asText("");
             registrarWebhook(resposta, conversationId, intent, action);
             String fulfillment = textoResposta(query);
-            telemetry.record(FlowEvent.builder("DIALOGFLOW", "detect_intent", "SUCCESS")
+            FlowEvent.Builder evento = FlowEvent.builder("DIALOGFLOW", "detect_intent", "SUCCESS")
                     .correlation(conversationId, conversationId)
                     .intent(intent, action)
                     .httpStatus(200)
-                    .durationMs(elapsed(inicio))
-                    .build());
+                    .durationMs(elapsed(inicio));
+            if (query != null) {
+                evento.detail("fallback", query.path("intent").path("isFallback").asBoolean(false));
+                if (query.has("intentDetectionConfidence")) {
+                    evento.detail("confianca", query.path("intentDetectionConfidence").asDouble());
+                }
+            }
+            if (curadoriaTexto) {
+                evento.detail("texto", Mascara.texto(consulta));
+            }
+            telemetry.record(evento.build());
             return new RespostaDialogflow(
                     intent,
                     fulfillment,
