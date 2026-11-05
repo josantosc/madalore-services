@@ -1,5 +1,6 @@
 package br.com.mandalore.agendamentoconversa.adapter.out.orcamento;
 
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,14 +23,24 @@ import br.com.mandalore.agendamentoconversa.application.domain.port.out.TabelaPr
 public class PostgresTabelaPrecoAdapter implements TabelaPrecoPort {
 
     private static final String ITENS = """
-            SELECT codigo, nome, sinonimos, valor, prazo
+            SELECT codigo, nome, sinonimos, valor, prazo, updated_at, updated_by
             FROM orcamento.item_preco
             ORDER BY nome
             """;
 
     private static final String INSERIR = """
-            INSERT INTO orcamento.item_preco (codigo, nome, sinonimos, valor, prazo)
-            VALUES (:codigo, :nome, :sinonimos, :valor, :prazo)
+            INSERT INTO orcamento.item_preco (codigo, nome, sinonimos, valor, prazo, updated_by)
+            VALUES (:codigo, :nome, :sinonimos, :valor, :prazo, :usuario)
+            """;
+
+    private static final String SALVAR = INSERIR + """
+            ON CONFLICT (codigo) DO UPDATE SET
+                nome = EXCLUDED.nome,
+                sinonimos = EXCLUDED.sinonimos,
+                valor = EXCLUDED.valor,
+                prazo = EXCLUDED.prazo,
+                updated_by = EXCLUDED.updated_by,
+                updated_at = CURRENT_TIMESTAMP
             """;
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -45,27 +56,48 @@ public class PostgresTabelaPrecoAdapter implements TabelaPrecoPort {
 
     @Override
     public List<Orcamento.ItemPreco> itens() {
-        return jdbc.query(ITENS, (rs, i) -> new Orcamento.ItemPreco(
-                rs.getString("codigo"),
-                rs.getString("nome"),
-                Arrays.stream(rs.getString("sinonimos").split("\\|")).map(String::trim).filter(s -> !s.isEmpty()).toList(),
-                rs.getBigDecimal("valor"),
-                rs.getString("prazo")));
+        return jdbc.query(ITENS, (rs, i) -> {
+            Timestamp atualizado = rs.getTimestamp("updated_at");
+            return new Orcamento.ItemPreco(
+                    rs.getString("codigo"),
+                    rs.getString("nome"),
+                    Arrays.stream(rs.getString("sinonimos").split("\\|")).map(String::trim).filter(s -> !s.isEmpty()).toList(),
+                    rs.getBigDecimal("valor"),
+                    rs.getString("prazo"),
+                    atualizado == null ? null : atualizado.toInstant(),
+                    rs.getString("updated_by"));
+        });
     }
 
     @Override
-    public void substituir(List<Orcamento.ItemPreco> itens) {
+    public void substituir(List<Orcamento.ItemPreco> itens, String usuario) {
         SqlParameterSource[] linhas = itens.stream()
-                .map(item -> new MapSqlParameterSource()
-                        .addValue("codigo", item.codigo())
-                        .addValue("nome", item.nome())
-                        .addValue("sinonimos", String.join("|", item.sinonimos()))
-                        .addValue("valor", item.valor())
-                        .addValue("prazo", item.prazo()))
+                .map(item -> parametros(item, usuario))
                 .toArray(SqlParameterSource[]::new);
         transacao.executeWithoutResult(status -> {
             jdbc.getJdbcTemplate().update("DELETE FROM orcamento.item_preco");
             jdbc.batchUpdate(INSERIR, linhas);
         });
+    }
+
+    @Override
+    public void salvar(Orcamento.ItemPreco item, String usuario) {
+        jdbc.update(SALVAR, parametros(item, usuario));
+    }
+
+    @Override
+    public boolean remover(String codigo) {
+        return jdbc.update("DELETE FROM orcamento.item_preco WHERE codigo = :codigo",
+                new MapSqlParameterSource("codigo", codigo)) > 0;
+    }
+
+    private static MapSqlParameterSource parametros(Orcamento.ItemPreco item, String usuario) {
+        return new MapSqlParameterSource()
+                .addValue("codigo", item.codigo())
+                .addValue("nome", item.nome())
+                .addValue("sinonimos", String.join("|", item.sinonimos()))
+                .addValue("valor", item.valor())
+                .addValue("prazo", item.prazo())
+                .addValue("usuario", usuario);
     }
 }

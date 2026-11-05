@@ -1,6 +1,7 @@
 package br.com.mandalore.agendamentoconversa.application.domain.model;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 public final class Orcamento {
@@ -8,11 +9,23 @@ public final class Orcamento {
     private Orcamento() {
     }
 
-    /** Linha da tabela de preços particular. */
-    public record ItemPreco(String codigo, String nome, List<String> sinonimos, BigDecimal valor, String prazo) {
+    /** Linha da tabela de preços particular; {@code atualizadoEm} e {@code atualizadoPor} vêm do banco. */
+    public record ItemPreco(
+            String codigo,
+            String nome,
+            List<String> sinonimos,
+            BigDecimal valor,
+            String prazo,
+            Instant atualizadoEm,
+            String atualizadoPor
+    ) {
         public ItemPreco {
             sinonimos = sinonimos == null ? List.of() : List.copyOf(sinonimos);
             prazo = prazo == null ? "" : prazo;
+        }
+
+        public ItemPreco(String codigo, String nome, List<String> sinonimos, BigDecimal valor, String prazo) {
+            this(codigo, nome, sinonimos, valor, prazo, null, null);
         }
     }
 

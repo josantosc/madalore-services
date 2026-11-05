@@ -60,4 +60,27 @@ class TabelaPrecoCsvTest {
         assertThatThrownBy(() -> TabelaPrecoCsv.ler("exame;preco\nX;1\n".getBytes(StandardCharsets.UTF_8)))
                 .hasMessageContaining("Cabeçalho");
     }
+
+    @Test
+    void exportaNoFormatoQueAImportacaoLe() {
+        List<ItemPreco> itens = List.of(
+                new ItemPreco("HMG", "Hemograma completo", List.of("HMG", "Hemograma"), new BigDecimal("25"), "1 dia útil"),
+                new ItemPreco("RM", "Ressonância; \"crânio\"", List.of(), new BigDecimal("1250.5"), ""));
+
+        byte[] csv = TabelaPrecoCsv.escrever(itens);
+
+        assertThat(new String(csv, StandardCharsets.UTF_8))
+                .startsWith("\uFEFFcodigo;nome;sinonimos;valor;prazo\r\n")
+                .contains("HMG;Hemograma completo;HMG|Hemograma;25,00;1 dia útil\r\n");
+        assertThat(TabelaPrecoCsv.ler(csv)).isEqualTo(List.of(
+                new ItemPreco("HMG", "Hemograma completo", List.of("HMG", "Hemograma"), new BigDecimal("25.00"), "1 dia útil"),
+                new ItemPreco("RM", "Ressonância; \"crânio\"", List.of(), new BigDecimal("1250.50"), "")));
+    }
+
+    @Test
+    void exportacaoNaoViraFormulaNoExcel() {
+        byte[] csv = TabelaPrecoCsv.escrever(List.of(new ItemPreco("X", "=HYPERLINK(1)", List.of(), BigDecimal.ONE, "")));
+
+        assertThat(new String(csv, StandardCharsets.UTF_8)).contains("X;'=HYPERLINK(1);;1,00;");
+    }
 }

@@ -15,7 +15,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/** Basic Auth da tela de curadoria (falas de pacientes). Sem usuário e senha configurados, nada é liberado. */
+/**
+ * Basic Auth das telas internas (curadoria, tabela de preços). Sem usuário e senha configurados, nada é liberado.
+ * O usuário autenticado fica no atributo {@link #USUARIO} da requisição.
+ */
 public class CuradoriaAuthFilter extends OncePerRequestFilter {
 
     public static final String USUARIO = "curadoria.usuario";
@@ -24,25 +27,33 @@ public class CuradoriaAuthFilter extends OncePerRequestFilter {
 
     private final String usuario;
     private final String senha;
+    private final String area;
+    private final String variaveis;
 
     public CuradoriaAuthFilter(String usuario, String senha) {
+        this(usuario, senha, "Curadoria", "CURADORIA_USER e CURADORIA_PASSWORD");
+    }
+
+    public CuradoriaAuthFilter(String usuario, String senha, String area, String variaveis) {
         this.usuario = usuario == null ? "" : usuario;
         this.senha = senha == null ? "" : senha;
+        this.area = area;
+        this.variaveis = variaveis;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         if (usuario.isBlank() || senha.isBlank()) {
-            response.sendError(HttpStatus.SERVICE_UNAVAILABLE.value(), "Defina CURADORIA_USER e CURADORIA_PASSWORD");
+            response.sendError(HttpStatus.SERVICE_UNAVAILABLE.value(), "Defina " + variaveis);
             return;
         }
         String informado = usuarioValido(request.getHeader("Authorization"));
         if (informado == null) {
             if (request.getHeader("Authorization") != null) {
-                LOG.warn("curadoria acesso recusado ip={}", request.getRemoteAddr());
+                LOG.warn("{} acesso recusado ip={}", area, request.getRemoteAddr());
             }
-            response.setHeader("WWW-Authenticate", "Basic realm=\"Curadoria\", charset=\"UTF-8\"");
+            response.setHeader("WWW-Authenticate", "Basic realm=\"" + area + "\", charset=\"UTF-8\"");
             response.sendError(HttpStatus.UNAUTHORIZED.value());
             return;
         }

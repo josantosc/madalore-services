@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Mandalore - Tabela de preços</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #eef1f5; color: #1f2933; }
+    header { background: #0f5f6e; color: #fff; padding: 12px 22px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 2; flex-wrap: wrap; }
+    header h1 { font-size: 18px; margin: 0; font-weight: 600; flex: 1; min-width: 180px; }
+    header button, header a.botao { background: #fff; color: #0f5f6e; border: 0; border-radius: 6px; padding: 7px 12px; font-weight: 600; cursor: pointer; font-size: 14px; text-decoration: none; font-family: inherit; }
+    header button.principal { background: #f5b85c; color: #3d2600; }
+    main { max-width: 1280px; margin: 0 auto; padding: 18px 22px 40px; display: grid; gap: 18px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .card { background: #fff; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+    .card small { display: block; color: #52606d; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .card strong { display: block; font-size: 26px; margin-top: 4px; }
+    .card span { font-size: 12px; color: #7b8794; }
+    .card.alerta strong { color: #b42318; }
+    section.painel { background: #fff; border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+    .filtros { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .filtros input[type=search] { flex: 1; min-width: 220px; padding: 9px 12px; border: 1px solid #c8d1d9; border-radius: 6px; font-size: 14px; }
+    .filtros label { font-size: 14px; color: #52606d; display: flex; gap: 6px; align-items: center; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; font-size: 12px; color: #52606d; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding: 8px; border-bottom: 1px solid #e4e7eb; }
+    td { padding: 10px 8px; border-bottom: 1px solid #eef1f5; vertical-align: top; }
+    td.valor, th.valor { text-align: right; white-space: nowrap; }
+    td.valor.zero { color: #b42318; font-weight: 600; }
+    code { font-family: Consolas, monospace; font-size: 12px; color: #334e68; }
+    .chips { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .chip { background: #e6f2f4; color: #0f5f6e; border-radius: 10px; padding: 1px 8px; font-size: 12px; }
+    .quando { font-size: 12px; color: #7b8794; white-space: nowrap; }
+    .acoes { display: flex; gap: 6px; justify-content: flex-end; }
+    button.acao { border: 1px solid #c8d1d9; background: #fff; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; font-family: inherit; }
+    button.acao.principal { background: #0f766e; border-color: #0f766e; color: #fff; }
+    button.acao.perigo { color: #b42318; border-color: #f1b5b0; }
+    button.acao:disabled { opacity: .5; cursor: wait; }
+    tr.editor td { background: #f5fbfb; }
+    tr.editor input { width: 100%; padding: 7px 9px; border: 1px solid #c8d1d9; border-radius: 6px; font-size: 14px; font-family: inherit; }
+    tr.editor input.valor { text-align: right; }
+    tr.editor .dica { font-size: 12px; color: #7b8794; margin-top: 3px; }
+    .vazio { color: #7b8794; padding: 18px 0; text-align: center; }
+    #aviso { position: fixed; right: 20px; bottom: 20px; max-width: 460px; padding: 12px 14px; border-radius: 8px; color: #fff; background: #1f2933; box-shadow: 0 6px 18px rgba(0,0,0,.2); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 5; }
+    #aviso.ver { opacity: 1; }
+    #aviso.erro { background: #b42318; }
+    @media (max-width: 800px) { td.quando-col, th.quando-col { display: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tabela de preços particular</h1>
+    <button id="novo" class="principal" type="button">+ Novo exame</button>
+    <a class="botao" href="/precos/api/exportar" title="Baixa a planilha para editar no Excel">Exportar planilha</a>
+    <button id="importar" type="button" title="Substitui a tabela inteira pela planilha">Importar planilha</button>
+    <input id="arquivo" type="file" accept=".csv,text/csv" hidden>
+  </header>
+  <main>
+    <div class="cards" id="cards"></div>
+    <section class="painel">
+      <div class="filtros">
+        <input id="busca" type="search" placeholder="Buscar por código, nome ou sinônimo" autocomplete="off">
+        <label><input id="soZero" type="checkbox"> só exames sem preço</label>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th><th>Exame e sinônimos</th><th class="valor">Valor</th><th>Prazo do resultado</th>
+            <th class="quando-col">Última alteração</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="linhas"></tbody>
+      </table>
+    </section>
+  </main>
+  <div id="aviso"></div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const reais = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+    const dataHora = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    let itens = [];
+    let editando = null;
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => f !== null && f !== undefined && node.append(f));
+      return node;
+    }
+
+    function aviso(texto, erro) {
+      const a = $("aviso");
+      a.textContent = texto;
+      a.className = "ver" + (erro ? " erro" : "");
+      clearTimeout(aviso.t);
+      aviso.t = setTimeout(() => a.className = "", erro ? 7000 : 3500);
+    }
+
+    async function api(caminho, opcoes) {
+      const resp = await fetch(caminho, opcoes);
+      if (resp.status === 204) return null;
+      const corpo = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(corpo.erro || ("Erro " + resp.status));
+      return corpo;
+    }
+
+    function numero(texto) {
+      let limpo = String(texto || "").replace(/R\$|\s/g, "");
+      if (limpo.includes(",")) limpo = limpo.replace(/\./g, "").replace(",", ".");
+      return limpo === "" ? NaN : Number(limpo);
+    }
+
+    function semAcento(texto) {
+      return String(texto || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+    }
+
+    async function carregar() {
+      try {
+        itens = await api("/precos/api/itens");
+        editando = null;
+        desenhar();
+      } catch (e) {
+        aviso("Falha ao carregar a tabela: " + e.message, true);
+      }
+    }
+
+    function desenharCards() {
+      const zero = itens.filter((i) => Number(i.valor) === 0).length;
+      const ultimo = itens.filter((i) => i.atualizadoEm).sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm))[0];
+      $("cards").replaceChildren(
+        el("div", { className: "card" }, el("small", {}, "Exames na tabela"), el("strong", {}, String(itens.length))),
+        el("div", { className: "card" + (zero ? " alerta" : "") },
+          el("small", {}, "Sem preço (R$ 0,00)"), el("strong", {}, String(zero)),
+          el("span", {}, zero ? "Aparecem com valor zero no orçamento" : "Todos com preço")),
+        el("div", { className: "card" }, el("small", {}, "Última alteração"),
+          el("strong", { style: "font-size:18px" }, ultimo ? dataHora.format(new Date(ultimo.atualizadoEm)) : "-"),
+          el("span", {}, ultimo && ultimo.atualizadoPor ? "por " + ultimo.atualizadoPor : ""))
+      );
+    }
+
+    function filtrados() {
+      const termo = semAcento($("busca").value.trim());
+      return itens.filter((i) => {
+        if ($("soZero").checked && Number(i.valor) !== 0) return false;
+        if (!termo) return true;
+        return [i.codigo, i.nome, ...i.sinonimos].some((t) => semAcento(t).includes(termo));
+      });
+    }
+
+    function desenhar() {
+      desenharCards();
+      const corpo = $("linhas");
+      corpo.replaceChildren();
+      if (editando && editando.novo) corpo.append(editor(editando.item, true));
+      const lista = filtrados();
+      lista.forEach((item) => corpo.append(
+        editando && !editando.novo && editando.item.codigo === item.codigo ? editor(item, false) : linha(item)));
+      if (!lista.length && !(editando && editando.novo)) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 6, className: "vazio" },
+          itens.length ? "Nenhum exame encontrado." : "Tabela vazia. Clique em \"+ Novo exame\" ou importe a planilha.")));
+      }
+    }
+
+    function linha(item) {
+      const zero = Number(item.valor) === 0;
+      return el("tr", {},
+        el("td", {}, el("code", {}, item.codigo)),
+        el("td", {}, el("div", {}, item.nome),
+          item.sinonimos.length ? el("div", { className: "chips" }, item.sinonimos.map((s) => el("span", { className: "chip" }, s))) : null),
+        el("td", { className: "valor" + (zero ? " zero" : "") }, reais.format(Number(item.valor))),
+        el("td", {}, item.prazo || "-"),
+        el("td", { className: "quando quando-col" },
+          item.atualizadoEm ? dataHora.format(new Date(item.atualizadoEm)) : "-",
+          item.atualizadoPor ? el("div", {}, item.atualizadoPor) : null),
+        el("td", {}, el("div", { className: "acoes" },
+          el("button", { className: "acao", type: "button", textContent: "Editar",
+            onclick: () => { editando = { item, novo: false }; desenhar(); } }),
+          el("button", { className: "acao perigo", type: "button", textContent: "Excluir",
+            onclick: (ev) => excluir(item, ev.target) })))
+      );
+    }
+
+    function editor(item, novo) {
+      const codigo = el("input", { value: item.codigo || "", placeholder: "Ex.: HMG", disabled: !novo, maxLength: 60 });
+      const nome = el("input", { value: item.nome || "", placeholder: "Ex.: Hemograma completo", maxLength: 200 });
+      const sinonimos = el("input", { value: (item.sinonimos || []).join(", "), placeholder: "Ex.: HMG, Hemograma" });
+      const valor = el("input", { className: "valor", value: novo ? "" : Number(item.valor).toFixed(2).replace(".", ","),
+        placeholder: "0,00", inputMode: "decimal" });
+      const prazo = el("input", { value: item.prazo || "", placeholder: "Ex.: 1 dia útil", maxLength: 100 });
+      const salvar = el("button", { className: "acao principal", type: "button", textContent: "Salvar" });
+      const cancelar = el("button", { className: "acao", type: "button", textContent: "Cancelar",
+        onclick: () => { editando = null; desenhar(); } });
+
+      salvar.onclick = async () => {
+        const v = numero(valor.value);
+        if (!codigo.value.trim() || !nome.value.trim()) return aviso("Código e nome são obrigatórios.", true);
+        if (Number.isNaN(v) || v < 0) return aviso("Valor inválido. Use o formato 25,00.", true);
+        if (novo && itens.some((i) => i.codigo.toLowerCase() === codigo.value.trim().toLowerCase())) {
+          return aviso("Já existe um exame com o código " + codigo.value.trim() + ".", true);
+        }
+        salvar.disabled = true;
+        try {
+          await api("/precos/api/itens/" + encodeURIComponent(codigo.value.trim()), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nome: nome.value,
+              sinonimos: sinonimos.value.split(/[,|]/).map((s) => s.trim()).filter(Boolean),
+              valor: v,
+              prazo: prazo.value
+            })
+          });
+          aviso(nome.value.trim() + " salvo.");
+          await carregar();
+        } catch (e) {
+          aviso(e.message, true);
+          salvar.disabled = false;
+        }
+      };
+      [codigo, nome, sinonimos, valor, prazo].forEach((i) => i.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") salvar.click();
+        if (ev.key === "Escape") cancelar.click();
+      }));
+      setTimeout(() => (novo ? codigo : valor).focus(), 0);
+
+      return el("tr", { className: "editor" },
+        el("td", { style: "width:120px" }, codigo),
+        el("td", {}, nome, el("div", { style: "height:6px" }), sinonimos,
+          el("div", { className: "dica" }, "Sinônimos e siglas separados por vírgula. Ajudam a reconhecer o exame no pedido.")),
+        el("td", { style: "width:130px" }, valor),
+        el("td", { style: "width:170px" }, prazo),
+        el("td", { className: "quando-col" }),
+        el("td", {}, el("div", { className: "acoes" }, salvar, cancelar))
+      );
+    }
+
+    async function excluir(item, botao) {
+      if (!confirm("Excluir \"" + item.nome + "\" da tabela de preços?")) return;
+      botao.disabled = true;
+      try {
+        await api("/precos/api/itens/" + encodeURIComponent(item.codigo), { method: "DELETE" });
+        aviso(item.nome + " excluído.");
+        await carregar();
+      } catch (e) {
+        aviso(e.message, true);
+        botao.disabled = false;
+      }
+    }
+
+    $("novo").onclick = () => {
+      editando = { item: { codigo: "", nome: "", sinonimos: [], valor: 0, prazo: "" }, novo: true };
+      $("busca").value = "";
+      $("soZero").checked = false;
+      desenhar();
+    };
+    $("busca").addEventListener("input", desenhar);
+    $("soZero").addEventListener("change", desenhar);
+    $("importar").onclick = () => $("arquivo").click();
+    $("arquivo").addEventListener("change", async () => {
+      const arquivo = $("arquivo").files[0];
+      $("arquivo").value = "";
+      if (!arquivo) return;
+      if (!confirm("A planilha \"" + arquivo.name + "\" vai SUBSTITUIR a tabela inteira (" + itens.length
+          + " exames hoje). Exames que não estiverem na planilha serão apagados. Continuar?")) return;
+      try {
+        const r = await api("/precos/api/importar", { method: "PUT", headers: { "Content-Type": "text/csv" }, body: arquivo });
+        aviso("Planilha importada: " + r.itens + " exames.");
+        await carregar();
+      } catch (e) {
+        aviso("Planilha não importada. " + e.message, true);
+      }
+    });
+
+    carregar();
+  </script>
+</body>
+</html>

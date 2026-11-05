@@ -44,26 +44,43 @@ final class TabelaPrecoCsv {
             int numero = i + 1;
             List<String> campos = campos(linhas.get(i), separador);
             String codigo = campo(campos, cabecalho, "codigo");
-            String nome = campo(campos, cabecalho, "nome");
-            if (codigo.isBlank() || nome.isBlank()) {
-                throw new IllegalArgumentException("Linha " + numero + ": código e nome são obrigatórios");
-            }
             if (!codigos.add(codigo)) {
                 throw new IllegalArgumentException("Linha " + numero + ": código " + codigo + " repetido");
             }
-            List<String> sinonimos = Arrays.stream(campo(campos, cabecalho, "sinonimos").split("\\|"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-            String prazo = campo(campos, cabecalho, "prazo");
-            if (codigo.length() > 60 || nome.length() > 200 || String.join("|", sinonimos).length() > 1000
-                    || prazo.length() > 100) {
-                throw new IllegalArgumentException("Linha " + numero
-                        + ": texto longo demais (código 60, nome 200, sinônimos 1000, prazo 100 caracteres)");
+            List<String> sinonimos = Arrays.stream(campo(campos, cabecalho, "sinonimos").split("\\|")).toList();
+            try {
+                itens.add(ValidacaoPreco.validar(new ItemPreco(codigo, campo(campos, cabecalho, "nome"), sinonimos,
+                        valor(campo(campos, cabecalho, "valor"), numero), campo(campos, cabecalho, "prazo"))));
+            } catch (IllegalArgumentException ex) {
+                throw ex.getMessage().startsWith("Linha ") ? ex
+                        : new IllegalArgumentException("Linha " + numero + ": " + ex.getMessage());
             }
-            itens.add(new ItemPreco(codigo, nome, sinonimos, valor(campo(campos, cabecalho, "valor"), numero), prazo));
         }
         return itens;
+    }
+
+    /** Mesmo formato da importação, com BOM para o Excel reconhecer UTF-8. */
+    static byte[] escrever(List<ItemPreco> itens) {
+        StringBuilder csv = new StringBuilder("\uFEFF").append(String.join(";", COLUNAS)).append("\r\n");
+        for (ItemPreco item : itens) {
+            csv.append(String.join(";",
+                    celula(item.codigo()),
+                    celula(item.nome()),
+                    celula(String.join("|", item.sinonimos())),
+                    item.valor().setScale(2, RoundingMode.HALF_UP).toPlainString().replace('.', ','),
+                    celula(item.prazo()))).append("\r\n");
+        }
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static String celula(String valor) {
+        String texto = valor == null ? "" : valor;
+        if (!texto.isEmpty() && "=+@".indexOf(texto.charAt(0)) >= 0) {
+            texto = "'" + texto;
+        }
+        return texto.contains(";") || texto.contains("\"")
+                ? "\"" + texto.replace("\"", "\"\"") + "\""
+                : texto;
     }
 
     static BigDecimal valor(String bruto, int linha) {

@@ -43,9 +43,29 @@ Opcionais:
 | `GEMINI_MODEL` | `gemini-3.8-flash` | Outro modelo Gemini |
 
 Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZE_SCHEMA=true`
-(cria `orcamento.item_preco`). Para importar a tabela pela API, também `CURADORIA_ENABLED=true`.
+(cria `orcamento.item_preco`).
 
-## Tabela de preços
+## Tela do financeiro
+
+`https://bs-api.jscinfor.com/precos`, com usuário e senha próprios (separados da curadoria):
+
+```
+PRECOS_USER=financeiro
+PRECOS_PASSWORD=<senha forte>
+```
+
+Sem as duas variáveis a tela responde 503. Na tela:
+
+- buscar por código, nome ou sinônimo; filtrar "só exames sem preço" (valor R$ 0,00 aparece em vermelho);
+- **+ Novo exame**, **Editar** (valor no formato `25,00`, sinônimos separados por vírgula) e **Excluir**;
+- **Exportar planilha**: baixa o CSV atual para editar no Excel em lote;
+- **Importar planilha**: substitui a tabela inteira pelo CSV (pede confirmação).
+
+Cada item guarda data e usuário da última alteração, e o log registra
+`tabela de precos item=HMG valor 25.00 -> 27.00 usuario=financeiro`.
+A alteração vale para o próximo orçamento, sem reiniciar.
+
+## Tabela de preços (planilha)
 
 Planilha com uma linha por exame, salva como **CSV** (no Excel: *Salvar como → CSV (separado por vírgulas)*;
 o Excel em português grava com `;`, que é aceito):
@@ -61,18 +81,19 @@ o Excel em português grava com `;`, que é aceito):
 Modelo com 28 exames comuns e valores zerados: [`deploy/tabela-precos.exemplo.csv`](../deploy/tabela-precos.exemplo.csv).
 Preencha os valores antes de importar.
 
-Importar (substitui a tabela inteira; arquivo com erro não altera nada):
+Importar pela tela ou por linha de comando (substitui a tabela inteira; arquivo com erro não altera nada):
 
 ```bash
-curl -u curadoria -X PUT --data-binary @tabela-precos.csv \
-  -H "Content-Type: text/csv" https://bs-api.jscinfor.com/curadoria/api/tabela-precos
+curl -u financeiro -X PUT --data-binary @tabela-precos.csv \
+  -H "Content-Type: text/csv" https://bs-api.jscinfor.com/precos/api/importar
 # {"itens":28}
 ```
 
-O `curl -u curadoria` pede a senha (`CURADORIA_PASSWORD`) sem deixá-la no histórico do terminal.
+O `curl -u financeiro` pede a senha (`PRECOS_PASSWORD`) sem deixá-la no histórico do terminal.
 Erro de linha volta como `{"erro":"Linha 5: valor inválido \"doze\""}`.
 
-Conferir: `GET /curadoria/api/tabela-precos` (mesmo usuário e senha).
+API da tela (mesmo usuário e senha): `GET /precos/api/itens`, `PUT /precos/api/itens/{codigo}`
+(`{"nome","sinonimos":[],"valor","prazo"}`), `DELETE /precos/api/itens/{codigo}`, `GET /precos/api/exportar`.
 
 Sinônimos melhoram o casamento quando o Gemini não reconhece um nome. Exame que aparece em
 "Sem preço na tabela" com frequência deve entrar na tabela ou ganhar sinônimo.
