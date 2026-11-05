@@ -32,6 +32,9 @@
     .usuario { display: flex; align-items: center; gap: 8px; padding: 8px; border-top: 1px solid var(--borda); margin-top: 6px; }
     .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--marca-suave); color: var(--marca-texto); display: grid; place-items: center; font-size: 12px; font-weight: 600; text-transform: uppercase; }
     .usuario small { display: block; color: var(--texto-3); font-size: 12px; line-height: 1.2; }
+    .usuario .quem { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .usuario form, .sair-celular { margin: 0; }
+    .sair-celular { display: none; }
 
     main { flex: 1; min-width: 0; overflow-y: auto; }
     .conteudo { max-width: 1040px; margin: 0 auto; padding: 32px 32px 48px; }
@@ -115,6 +118,7 @@
 
     @media (max-width: 860px) {
       aside { display: none; }
+      .sair-celular { display: block; }
       .conteudo { padding: 20px 16px 40px; }
       .busca input.campo { width: 100%; }
       .busca { width: 100%; }
@@ -128,7 +132,10 @@
     <a class="nav" href="__CHATWOOT_URL__/app"><svg class="i" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Conversas</a>
     <a class="nav ativo" href="/precos"><svg class="i" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/></svg>Tabela de preços</a>
     <div class="espaco"></div>
-    <div class="usuario"><div class="avatar" id="avatar"></div><div><span id="usuario"></span><small>Financeiro</small></div></div>
+    <div class="usuario"><div class="avatar" id="avatar"></div><div class="quem"><span id="usuario"></span><small>Financeiro</small></div>
+      <form method="post" action="/precos/logout"><button class="btn icone" type="submit" title="Sair">
+        <svg class="i" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg></button></form>
+    </div>
   </aside>
 
   <main>
@@ -146,6 +153,7 @@
             <svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>Importar</button>
           <button class="btn solido" id="novo" type="button">
             <svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Adicionar exame</button>
+          <form class="sair-celular" method="post" action="/precos/logout"><button class="btn cinza" type="submit">Sair</button></form>
           <input id="arquivo" type="file" accept=".csv,text/csv" hidden>
         </div>
       </div>
@@ -240,6 +248,10 @@
 
     async function api(caminho, opcoes) {
       const resp = await fetch(caminho, opcoes);
+      if (resp.status === 401) {
+        location.href = "/precos/login";
+        return new Promise(() => {});
+      }
       if (resp.status === 204) return null;
       const corpo = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(corpo.erro || ("Erro " + resp.status));

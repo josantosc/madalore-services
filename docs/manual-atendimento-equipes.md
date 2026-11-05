@@ -156,6 +156,10 @@ Sem preço na tabela (verificar):
 Os valores do orçamento vêm da **tabela de preços particular**, que o financeiro mantém em
 `https://bs-api.jscinfor.com/precos`, com usuário e senha próprios.
 
+- **Entrar:** a tela de login é igual à do Chatwoot. Depois de 8 horas sem uso, ela pede a senha de novo.
+- **Sair:** botão no rodapé do menu, ao lado do nome. Use sempre em computador compartilhado.
+- Cinco senhas erradas seguidas bloqueiam o acesso por 15 minutos.
+
 - **Adicionar exame:** código, nome, valor, prazo do resultado e sinônimos.
 - **Sinônimos** são outros nomes do mesmo exame, como "HMG" e "Hemograma" para "Hemograma completo". Quanto mais
   sinônimos, mais exames o assistente reconhece no pedido.

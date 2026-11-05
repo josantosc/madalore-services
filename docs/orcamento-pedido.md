@@ -54,7 +54,10 @@ PRECOS_USER=financeiro
 PRECOS_PASSWORD=<senha forte>
 ```
 
-Sem as duas variáveis a tela responde 503. O visual segue o painel do Chatwoot (cor da marca, menu
+Sem as duas variáveis a tela responde 503. O acesso é pela tela de login (`/precos/login`, mesmo visual do login do
+Chatwoot). A sessão expira após 8 horas sem uso, e **Sair** no rodapé do menu encerra na hora. Cinco senhas erradas
+bloqueiam o IP por 15 minutos. O cookie da sessão só trafega por HTTPS; para testar em `http://localhost`, use
+`SESSAO_COOKIE_SECURE=false`. O visual da lista segue o painel do Chatwoot (cor da marca, menu
 lateral com o logo e link para as conversas, vindos de `PRECOS_CHATWOOT_URL`, padrão
 `https://bs-chat.jscinfor.com`). Na tela:
 
