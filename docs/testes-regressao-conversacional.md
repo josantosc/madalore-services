@@ -68,6 +68,11 @@ só é sinalizado na tela, porque não há conversa no Chatwoot para transferir.
 página fica na central de administração e pede o login de `ADMIN_USER`; mesmo
 assim, mantenha `SIMULADOR_ENABLED` desligado em produção fora dos testes.
 
+No modo **Via Chatwoot**, o clipe envia uma foto ou PDF (até 10 MB; o texto digitado vai como
+legenda) e a câmera tira uma foto pelo navegador (traseira no celular, webcam no computador). O
+arquivo segue o caminho real: com `ORCAMENTO_ENABLED=true`, gera o orçamento por foto e a nota
+para o Faturamento. Anexar no modo Dialogflow direto troca o simulador para Via Chatwoot.
+
 ## Robot Framework
 
 As suítes ficam em `tests/robot` e rodam num ambiente virtual próprio
