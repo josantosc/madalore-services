@@ -8,5 +8,7 @@ public interface ChatwootVisitantePort {
 
     void enviar(String tokenVisitante, String texto);
 
+    void enviarArquivo(String tokenVisitante, ConversaVisitante.Arquivo arquivo, String legenda);
+
     ConversaVisitante ler(String tokenVisitante);
 }

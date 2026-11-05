@@ -37,6 +37,16 @@ public class SimuladorChatwootService implements SimularChatwootUseCase {
     }
 
     @Override
+    public ConversaVisitante enviarArquivo(String sessao, ConversaVisitante.Arquivo arquivo, String legenda) {
+        String token = visitantes.computeIfAbsent(sessao, s -> chatwoot.criarVisitante());
+        chatwoot.enviarArquivo(token, arquivo, legenda);
+        ConversaVisitante conversa = chatwoot.ler(token);
+        LOG.info("simulador chatwoot arquivo session={} conversation_id={} tipo={} bytes={}",
+                sessao, conversa.conversationId(), arquivo.tipo(), arquivo.conteudo().length);
+        return conversa;
+    }
+
+    @Override
     public ConversaVisitante ler(String sessao) {
         String token = visitantes.get(sessao);
         if (token == null) {

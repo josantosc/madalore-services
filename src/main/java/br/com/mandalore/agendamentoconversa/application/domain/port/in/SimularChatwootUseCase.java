@@ -6,5 +6,7 @@ public interface SimularChatwootUseCase {
 
     ConversaVisitante enviar(String sessao, String texto);
 
+    ConversaVisitante enviarArquivo(String sessao, ConversaVisitante.Arquivo arquivo, String legenda);
+
     ConversaVisitante ler(String sessao);
 }
