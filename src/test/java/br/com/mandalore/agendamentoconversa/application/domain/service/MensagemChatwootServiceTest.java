@@ -17,11 +17,14 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
+import br.com.mandalore.agendamentoconversa.application.domain.model.Anexo;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDialogflow;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.OrcarPedidoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.DialogflowPort;
 
@@ -34,8 +37,37 @@ class MensagemChatwootServiceTest {
     @Mock
     private ChatwootPort chatwoot;
 
+    @Mock
+    private ObjectProvider<OrcarPedidoUseCase> orcamentos;
+
+    @Mock
+    private OrcarPedidoUseCase orcamento;
+
     @InjectMocks
     private MensagemChatwootService service;
+
+    @Test
+    void fotoDoPedidoVaiParaOrcamento() {
+        when(orcamentos.getIfAvailable()).thenReturn(orcamento);
+        MensagemEntrada foto = comFoto("legenda");
+
+        service.receber(foto);
+
+        verify(orcamento).orcar(foto);
+        verify(dialogflow, never()).detectar(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void fotoComOrcamentoDesligadoPedeTexto() {
+        service.receber(comFoto(null));
+
+        verify(chatwoot).publicar("8", "9", MensagemChatwootService.SEM_TEXTO);
+    }
+
+    private static MensagemEntrada comFoto(String legenda) {
+        return new MensagemEntrada("message_created", "incoming", false, legenda, "20", "8", "9", "pending",
+                Canal.WHATSAPP, java.util.List.of(new Anexo("image", "https://chat/foto.jpg")));
+    }
 
     @Test
     void ignoraMensagemDeSaida() {

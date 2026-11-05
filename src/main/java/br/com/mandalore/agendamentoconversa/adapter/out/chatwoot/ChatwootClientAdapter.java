@@ -1,22 +1,30 @@
 package br.com.mandalore.agendamentoconversa.adapter.out.chatwoot;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 
 @Component
 public class ChatwootClientAdapter implements ChatwootPort {
 
+    private static final int LIMITE_ANEXO = 10 * 1_048_576;
+
     private final RestClient client;
+    private final RestClient download;
+    private final String base;
     private final String tokenGlobal;
     private final ClientesProperties clientes;
     private final Map<Setor, String> equipes;
@@ -39,8 +47,12 @@ public class ChatwootClientAdapter implements ChatwootPort {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(3));
         factory.setReadTimeout(Duration.ofMillis(timeoutMs));
-        String base = baseUrl == null ? "" : baseUrl.replaceAll("/$", "");
+        this.base = baseUrl == null ? "" : baseUrl.trim().replaceAll("/$", "");
         this.client = RestClient.builder().baseUrl(base).requestFactory(factory).build();
+        SimpleClientHttpRequestFactory fabricaDownload = new SimpleClientHttpRequestFactory();
+        fabricaDownload.setConnectTimeout(Duration.ofSeconds(3));
+        fabricaDownload.setReadTimeout(Duration.ofSeconds(20));
+        this.download = RestClient.builder().requestFactory(fabricaDownload).build();
     }
 
     @Override
@@ -76,6 +88,59 @@ public class ChatwootClientAdapter implements ChatwootPort {
                 .retrieve()
                 .toBodilessEntity();
         return true;
+    }
+
+    @Override
+    public void notaPrivada(String accountId, String conversationId, String texto) {
+        client.post()
+                .uri("/api/v1/accounts/{accountId}/conversations/{conversationId}/messages", accountId, conversationId)
+                .header("api_access_token", token(accountId))
+                .body(Map.of("content", texto, "message_type", "outgoing", "private", true))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    @Override
+    public Orcamento.Arquivo baixar(String url) {
+        return download.get()
+                .uri(noChatwoot(url))
+                .exchange((request, response) -> {
+                    if (!response.getStatusCode().is2xxSuccessful()) {
+                        throw new IllegalStateException("Anexo indisponível: HTTP " + response.getStatusCode().value());
+                    }
+                    if (response.getHeaders().getContentLength() > LIMITE_ANEXO) {
+                        throw new IllegalStateException("Anexo acima de " + LIMITE_ANEXO / 1_048_576 + " MB");
+                    }
+                    byte[] conteudo = response.getBody().readNBytes(LIMITE_ANEXO + 1);
+                    if (conteudo.length > LIMITE_ANEXO) {
+                        throw new IllegalStateException("Anexo acima de " + LIMITE_ANEXO / 1_048_576 + " MB");
+                    }
+                    MediaType tipo = response.getHeaders().getContentType();
+                    return new Orcamento.Arquivo(conteudo, tipo == null ? mimePorExtensao(url) : tipo.getType() + "/" + tipo.getSubtype());
+                });
+    }
+
+    /** O data_url usa o domínio público do Chatwoot; baixa pelo CHATWOOT_BASE_URL e nunca de outro host. */
+    URI noChatwoot(String url) {
+        URI anexo = URI.create(url);
+        if (base.isBlank()) {
+            return anexo;
+        }
+        return URI.create(base + anexo.getRawPath() + (anexo.getRawQuery() == null ? "" : "?" + anexo.getRawQuery()));
+    }
+
+    private static String mimePorExtensao(String url) {
+        String caminho = url.split("[?#]", 2)[0].toLowerCase(Locale.ROOT);
+        if (caminho.endsWith(".pdf")) {
+            return "application/pdf";
+        }
+        if (caminho.endsWith(".png")) {
+            return "image/png";
+        }
+        if (caminho.endsWith(".webp")) {
+            return "image/webp";
+        }
+        return "image/jpeg";
     }
 
     String token(String accountId) {

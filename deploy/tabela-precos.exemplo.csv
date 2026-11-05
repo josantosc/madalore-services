@@ -1,0 +1,29 @@
+codigo;nome;sinonimos;valor;prazo
+HMG;Hemograma completo;HMG|Hemograma|Hemograma com plaquetas;0,00;1 dia útil
+GLI;Glicose;Glicemia|Glicemia de jejum|GJ;0,00;1 dia útil
+HBA1C;Hemoglobina glicada;HbA1c|A1C|Glicohemoglobina;0,00;2 dias úteis
+COLT;Colesterol total;CT;0,00;1 dia útil
+HDL;Colesterol HDL;HDL|HDL-C;0,00;1 dia útil
+LDL;Colesterol LDL;LDL|LDL-C;0,00;1 dia útil
+TRI;Triglicerídeos;TG|Triglicérides|Triglicerídios;0,00;1 dia útil
+LIP;Perfil lipídico;Lipidograma|Lipidograma completo;0,00;1 dia útil
+URE;Ureia;U|Uréia;0,00;1 dia útil
+CRE;Creatinina;Cr|Creat;0,00;1 dia útil
+TGO;TGO (AST);TGO|AST|Aspartato aminotransferase;0,00;1 dia útil
+TGP;TGP (ALT);TGP|ALT|Alanina aminotransferase;0,00;1 dia útil
+GGT;Gama GT;GGT|Gama glutamil transferase;0,00;1 dia útil
+AU;Ácido úrico;AU;0,00;1 dia útil
+TSH;TSH;TSH ultrassensível|TSH us;0,00;2 dias úteis
+T4L;T4 livre;T4L|Tiroxina livre;0,00;2 dias úteis
+VITD;Vitamina D;25-OH vitamina D|25 OH D|Vit D;0,00;3 dias úteis
+B12;Vitamina B12;Vit B12|Cobalamina;0,00;3 dias úteis
+FER;Ferritina;;0,00;2 dias úteis
+FE;Ferro sérico;Ferro;0,00;1 dia útil
+PCR;Proteína C reativa;PCR;0,00;1 dia útil
+VHS;VHS;Velocidade de hemossedimentação;0,00;1 dia útil
+EAS;Urina tipo 1;EAS|Sumário de urina|Urina rotina|Urina I;0,00;1 dia útil
+URC;Urocultura;Urocultura com antibiograma;0,00;3 dias úteis
+EPF;Parasitológico de fezes;EPF|Protoparasitológico|PPF;0,00;2 dias úteis
+BHCG;Beta HCG;Beta HCG quantitativo|BHCG|Teste de gravidez;0,00;1 dia útil
+PSA;PSA total;PSA;0,00;2 dias úteis
+TS;Tipagem sanguínea;Grupo sanguíneo e fator Rh|ABO Rh;0,00;1 dia útil

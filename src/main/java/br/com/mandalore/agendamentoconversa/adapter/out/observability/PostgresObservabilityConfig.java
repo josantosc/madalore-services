@@ -56,7 +56,8 @@ public class PostgresObservabilityConfig {
             @Qualifier("observabilityDataSource") DataSource dataSource
     ) {
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator(
-                new ClassPathResource("db/observability/schema.sql")
+                new ClassPathResource("db/observability/schema.sql"),
+                new ClassPathResource("db/orcamento/schema.sql")
         );
         DataSourceInitializer initializer = new DataSourceInitializer();
         initializer.setDataSource(dataSource);

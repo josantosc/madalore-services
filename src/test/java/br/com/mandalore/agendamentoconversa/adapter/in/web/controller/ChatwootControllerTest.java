@@ -65,6 +65,33 @@ class ChatwootControllerTest {
         assertThat(mensagem.getValue().accountId()).isEqualTo("2");
     }
 
+    @Test
+    void leFotoEPdfAnexados() throws Exception {
+        JsonNode corpo = json.readTree("""
+                {
+                  "event": "message_created",
+                  "message_type": "incoming",
+                  "content": null,
+                  "id": 11,
+                  "account": {"id": 2},
+                  "conversation": {"id": 99, "status": "pending", "channel": "Channel::Whatsapp"},
+                  "attachments": [
+                    {"file_type": "audio", "data_url": "https://chat/a.ogg"},
+                    {"file_type": "file", "data_url": "https://chat/rails/blobs/pedido.PDF?disposition=inline"},
+                    {"file_type": "image", "data_url": "https://chat/rails/blobs/foto.jpg"}
+                  ]
+                }
+                """);
+
+        controller.receber("segredo-2", null, null, corpo);
+
+        ArgumentCaptor<MensagemEntrada> mensagem = ArgumentCaptor.forClass(MensagemEntrada.class);
+        verify(useCase).receber(mensagem.capture());
+        assertThat(mensagem.getValue().anexos()).hasSize(3);
+        assertThat(mensagem.getValue().documento()).hasValueSatisfying(
+                anexo -> assertThat(anexo.url()).endsWith("pedido.PDF?disposition=inline"));
+    }
+
     private JsonNode corpo(String accountId, String channel) throws Exception {
         return json.readTree("""
                 {

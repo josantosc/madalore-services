@@ -2,6 +2,8 @@ package br.com.mandalore.agendamentoconversa.adapter.in.web.controller;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Anexo;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMensagemUseCase;
@@ -84,8 +87,17 @@ public class ChatwootController {
                 corpo.path("account").path("id").asText(null),
                 conversation.path("id").asText(null),
                 conversation.path("status").asText(null),
-                canal
+                canal,
+                anexos(corpo.path("attachments"))
         );
+    }
+
+    private List<Anexo> anexos(JsonNode attachments) {
+        List<Anexo> anexos = new ArrayList<>();
+        if (attachments.isArray()) {
+            attachments.forEach(item -> anexos.add(new Anexo(texto(item, "file_type"), texto(item, "data_url"))));
+        }
+        return anexos;
     }
 
     private boolean segredoConfere(String segredo, String informado) {

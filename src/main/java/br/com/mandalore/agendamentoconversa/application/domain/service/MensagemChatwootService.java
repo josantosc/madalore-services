@@ -7,12 +7,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDialogflow;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.OrcarPedidoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMensagemUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.DialogflowPort;
@@ -30,10 +32,16 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
     private final ChatwootPort chatwoot;
     private final Set<String> mensagensVistas = ConcurrentHashMap.newKeySet();
     private final Map<String, Setor> assuntos = new ConcurrentHashMap<>();
+    private final ObjectProvider<OrcarPedidoUseCase> orcamentos;
 
-    public MensagemChatwootService(DialogflowPort dialogflow, ChatwootPort chatwoot) {
+    public MensagemChatwootService(
+            DialogflowPort dialogflow,
+            ChatwootPort chatwoot,
+            ObjectProvider<OrcarPedidoUseCase> orcamentos
+    ) {
         this.dialogflow = dialogflow;
         this.chatwoot = chatwoot;
+        this.orcamentos = orcamentos;
     }
 
     @Override
@@ -53,6 +61,12 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
         String status = "sucesso";
         String intent = "";
         try {
+            OrcarPedidoUseCase orcamento = orcamentos.getIfAvailable();
+            if (orcamento != null && mensagem.documento().isPresent()) {
+                intent = "orcamento.pedido";
+                orcamento.orcar(mensagem);
+                return;
+            }
             if (mensagem.content() == null || mensagem.content().isBlank()) {
                 chatwoot.publicar(mensagem.accountId(), mensagem.conversationId(), SEM_TEXTO);
                 return;
