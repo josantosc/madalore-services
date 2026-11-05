@@ -190,7 +190,21 @@ O **Secret** gerado pelo Chatwoot fica só no painel.
 
 ## Transbordo
 
-O paciente pede atendente. O Dialogflow devolve intent `transbordo.*`. O Mandalore publica o texto e marca a conversa como **aberta**. Ela sai do filtro Pendente e entra em Aberto, para os agentes da caixa.
+O paciente pede atendente. O Dialogflow devolve intent `transbordo.*`. O Mandalore publica o texto, atribui a equipe do assunto e marca a conversa como **aberta**. Ela sai do filtro Pendente e entra em Aberto, para os agentes da caixa.
+
+### Equipe por assunto
+
+O assunto vem de palavras da mensagem do transbordo ou da última mensagem da conversa que tinha assunto:
+
+| Equipe | Palavras (sem acento) | Variável com o ID |
+|---|---|---|
+| Faturamento/Convênios | convenio, guia, autoriza, carteirinha, reembolso, nota fiscal, boleto, pagamento, cobranca, fatura, glosa, orcamento | `CHATWOOT_EQUIPE_FATURAMENTO` |
+| Laboratório | resultado, laudo, coleta, recoleta, amostra, jejum, preparo, urina, fezes, sangue | `CHATWOOT_EQUIPE_LABORATORIO` |
+| Recepção | qualquer outro assunto | `CHATWOOT_EQUIPE_RECEPCAO` |
+
+O ID é o número na URL da equipe em **Configurações → Equipes** (`.../settings/teams/3/edit` → `3`). Variável vazia: a conversa abre sem equipe. Falha ao atribuir não impede a abertura.
+
+Com **Permitir atribuição automática** ligado na equipe, o Chatwoot entrega a conversa a um membro dela. O membro precisa ser também colaborador da caixa.
 
 O atendente responde pelo painel. O paciente vê o nome do perfil de quem escreveu. Para devolver ao bot, o atendente muda o status de volta para **Pendente**.
 

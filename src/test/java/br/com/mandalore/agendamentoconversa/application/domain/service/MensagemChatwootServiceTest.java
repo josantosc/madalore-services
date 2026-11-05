@@ -3,6 +3,7 @@ package br.com.mandalore.agendamentoconversa.application.domain.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDialogflow;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.DialogflowPort;
 
@@ -57,7 +60,45 @@ class MensagemChatwootServiceTest {
         service.receber(mensagem("incoming", "atendente", "3", "pending", Canal.WHATSAPP));
 
         verify(chatwoot).publicar("8", "9", "Vou chamar alguém da equipe.");
+        InOrder ordem = inOrder(chatwoot);
+        ordem.verify(chatwoot).atribuirEquipe("8", "9", Setor.RECEPCAO);
+        ordem.verify(chatwoot).abrirAtendente("8", "9");
+    }
+
+    @Test
+    void transbordoUsaAssuntoDaMensagemAtual() {
+        when(dialogflow.detectar("cw-8-9", "quero falar com alguém sobre a guia do convênio"))
+                .thenReturn(new RespostaDialogflow("transbordo.atendente", "Vou chamar alguém da equipe."));
+
+        service.receber(mensagem("incoming", "quero falar com alguém sobre a guia do convênio", "7", "pending", Canal.SITE));
+
+        verify(chatwoot).atribuirEquipe("8", "9", Setor.FATURAMENTO);
+    }
+
+    @Test
+    void transbordoLembraAssuntoDeMensagemAnterior() {
+        when(dialogflow.detectar("cw-8-9", "cadê o resultado do meu exame?"))
+                .thenReturn(new RespostaDialogflow("texto.fallback", "Não entendi."));
+        when(dialogflow.detectar("cw-8-9", "atendente"))
+                .thenReturn(new RespostaDialogflow("transbordo.atendente", "Vou chamar alguém da equipe."));
+
+        service.receber(mensagem("incoming", "cadê o resultado do meu exame?", "10", "pending", Canal.WHATSAPP));
+        service.receber(mensagem("incoming", "atendente", "11", "pending", Canal.WHATSAPP));
+
+        verify(chatwoot).atribuirEquipe("8", "9", Setor.LABORATORIO);
         verify(chatwoot).abrirAtendente("8", "9");
+    }
+
+    @Test
+    void falhaAoAtribuirEquipeAindaAbreConversa() {
+        when(dialogflow.detectar("cw-8-9", "atendente"))
+                .thenReturn(new RespostaDialogflow("transbordo.atendente", "Vou chamar alguém da equipe."));
+        when(chatwoot.atribuirEquipe("8", "9", Setor.RECEPCAO)).thenThrow(new IllegalStateException("404"));
+
+        service.receber(mensagem("incoming", "atendente", "12", "pending", Canal.SITE));
+
+        verify(chatwoot).abrirAtendente("8", "9");
+        verify(chatwoot, never()).publicar("8", "9", MensagemChatwootService.FALHA);
     }
 
     @Test
