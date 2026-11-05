@@ -17,7 +17,7 @@ USER mandalore
 
 ENV TZ=America/Sao_Paulo \
     HTTP_PORT=8080 \
-    MANDALORE_CLIENTES_FILE=/app/config/clientes.properties \
+    CLIENTES_PROPERTIES_FILE=/app/config/clientes.properties \
     JAVA_OPTS="-Xms256m -Xmx1g -XX:+ExitOnOutOfMemoryError"
 
 EXPOSE 8080

@@ -200,7 +200,7 @@ O atendente responde pelo painel. O paciente vê o nome do perfil de quem escrev
 2. Nova caixa e novo bot, com outro `CHATWOOT_WEBHOOK_SECRET` na URL.
 3. Outro token de acesso.
 4. Agentes convidados só nessa conta.
-5. No Mandalore, cadastre a conta no `clientes.properties` (fora do repositório; outro caminho em `MANDALORE_CLIENTES_FILE`):
+5. No Mandalore, cadastre a conta no `clientes.properties` (fora do repositório; outro caminho em `CLIENTES_PROPERTIES_FILE`; não use variável que comece com `MANDALORE_CLIENTES_`, porque o Spring a lê como uma conta):
 
 ```properties
 mandalore.clientes.3.chatwoot-token=<token do bot da conta 3>
