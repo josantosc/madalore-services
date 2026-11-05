@@ -3,6 +3,8 @@ package br.com.mandalore.agendamentoconversa.adapter.in.web.controller;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,8 @@ import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMe
 
 @RestController
 public class ChatwootController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ChatwootController.class);
 
     private final ReceberMensagemUseCase receberMensagem;
     private final String segredoGlobal;
@@ -46,6 +50,8 @@ public class ChatwootController {
         String informado = primeiro(tokenQuery, tokenHeader, tokenAlternativo);
         MensagemEntrada mensagem = ler(corpo);
         if (!segredoConfere(segredo(mensagem.accountId()), informado)) {
+            LOG.warn("chatwoot webhook recusado account_id={} conversation_id={} token_informado={}",
+                    mensagem.accountId(), mensagem.conversationId(), informado != null);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         receberMensagem.receber(mensagem);
