@@ -1,0 +1,46 @@
+# Perguntas frequentes do bot. Montado no container em /app/config/faq.yaml (Coolify: Storages > File Mount).
+# Troque os textos entre colchetes antes de publicar. Tema sem texto responde
+# "Essa informação eu não tenho por aqui..." e oferece atendente.
+# O bot acrescenta ao final: "Posso ajudar em algo mais? Para marcar consulta ou exame, digite menu."
+# Não informe preços aqui: valores só por uma pessoa.
+
+mandalore:
+  faq:
+    endereco: |
+      Estamos na [Rua, número - Bairro, Cidade - UF].
+      Como chegar: [link do Google Maps]
+    horario: |
+      Atendimento: [segunda a sexta, das 7h às 18h; sábado, das 7h às 12h].
+      Coleta de exames: [segunda a sexta, das 6h30 às 10h].
+      Não abrimos aos domingos e feriados.
+    convenios: |
+      Atendemos particular e os convênios: [lista de convênios].
+      A cobertura de cada exame depende do seu plano. Se quiser confirmar, diga atendente.
+    preparo: |
+      O preparo depende do exame. Ao marcar o exame por aqui, eu envio as orientações completas.
+      Em geral: [jejum de 8 horas para exames de sangue de rotina; água liberada; remédios de uso contínuo
+      só com orientação médica].
+      Se tiver dúvida sobre um exame específico, diga atendente.
+    resultado: |
+      Os resultados ficam prontos no prazo informado no atendimento e saem em [site ou portal do paciente].
+      Para dúvidas sobre o seu resultado, diga atendente.
+    documentos: |
+      Traga no dia:
+      - documento oficial com foto;
+      - cartão do convênio, se for usar;
+      - pedido médico original.
+    estacionamento: |
+      [Temos estacionamento próprio, com entrada pela Rua ...]
+    contato: |
+      Telefone: [(00) 0000-0000]
+      E-mail: [contato@exemplo.com.br]
+    valores: |
+      Os valores dependem dos exames do pedido. Mande aqui uma foto do pedido médico que a equipe do
+      Faturamento te passa o orçamento.
+
+  # Texto diferente numa clínica: mesmo tema dentro da conta do Chatwoot.
+  # clientes:
+  #   "3":
+  #     faq:
+  #       endereco: |
+  #         Estamos na [outro endereço].

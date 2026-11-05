@@ -1126,6 +1126,117 @@ def montar_intents(project: str) -> list:
         intent("texto.resultado.indisponivel", [
             "Não consegui consultar agora. Pode tentar de novo ou pedir um atendente."
         ], events=["RESULTADO_INDISPONIVEL"], mlDisabled=True),
+        intent("texto.resultado.faq", [
+            "$texto"
+        ], events=["RESULTADO_FAQ"], mlDisabled=True, parameters=[
+            parametro("texto", "@sys.any"),
+        ]),
+    ] + perguntas_frequentes()
+
+
+# O texto de cada tema vem da configuração da clínica (mandalore.faq.<tema>), pelo webhook.
+PERGUNTAS_FREQUENTES = {
+    "endereco": [
+        "qual o endereço",
+        "qual o endereco de vocês",
+        "onde fica a clínica",
+        "onde fica o laboratório",
+        "onde vocês ficam",
+        "como chego aí",
+        "como faço para chegar",
+        "qual a localização",
+        "me passa o endereço",
+        "fica em qual rua",
+    ],
+    "horario": [
+        "qual o horário de atendimento",
+        "que horas vocês abrem",
+        "que horas fecha",
+        "até que horas vocês atendem",
+        "vocês abrem sábado",
+        "funciona aos domingos",
+        "abre no feriado",
+        "horário de funcionamento",
+        "qual o horário da coleta",
+        "que horas começa a coleta",
+    ],
+    "convenios": [
+        "quais convênios vocês aceitam",
+        "quais convenios aceitam",
+        "vocês aceitam unimed",
+        "atende pelo meu plano de saúde",
+        "aceitam plano de saúde",
+        "trabalham com quais planos",
+        "quais planos vocês atendem",
+        "meu convênio é aceito",
+        "vocês atendem particular",
+    ],
+    "preparo": [
+        "precisa de jejum",
+        "preciso estar em jejum",
+        "quantas horas de jejum",
+        "qual o jejum para exame de sangue",
+        "como me preparo para o exame",
+        "qual o preparo do exame",
+        "posso tomar água antes do exame",
+        "posso tomar meu remédio antes da coleta",
+        "como colher a urina",
+        "como faço a coleta de fezes",
+    ],
+    "resultado": [
+        "quando sai o resultado",
+        "qual o prazo do resultado",
+        "quanto tempo demora o resultado",
+        "como pego meu resultado",
+        "onde vejo o resultado do exame",
+        "o resultado sai pela internet",
+        "como acesso o laudo",
+        "como retirar o resultado",
+    ],
+    "documentos": [
+        "o que preciso levar",
+        "quais documentos devo levar",
+        "preciso levar o pedido médico",
+        "preciso levar a carteirinha do convênio",
+        "precisa de documento com foto",
+        "o que levar no dia do exame",
+    ],
+    "estacionamento": [
+        "tem estacionamento",
+        "onde posso estacionar",
+        "o estacionamento é pago",
+        "tem vaga para carro",
+        "onde deixo o carro",
+    ],
+    "contato": [
+        "qual o telefone",
+        "qual o telefone de vocês",
+        "tem um número para ligar",
+        "qual o email de vocês",
+        "como falo com vocês por telefone",
+        "qual o whatsapp",
+    ],
+    "valores": [
+        "quanto custa o exame",
+        "qual o valor da consulta",
+        "quanto fica o hemograma",
+        "qual o preço do exame",
+        "quanto custa particular",
+        "vocês fazem orçamento",
+    ],
+}
+
+
+def perguntas_frequentes() -> list:
+    return [
+        intent(
+            f"acao.faq.{tema}",
+            [FALHA],
+            action="faq",
+            webhookState="WEBHOOK_STATE_ENABLED",
+            trainingPhrases=[exemplo(frase) for frase in frases],
+        )
+        for tema, frases in PERGUNTAS_FREQUENTES.items()
     ]
 
 

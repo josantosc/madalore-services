@@ -1,0 +1,76 @@
+{
+  "id": "perguntas-frequentes",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": false,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "acao.faq.horario",
+      "texto": "que horas vocês abrem",
+      "espera": {
+        "evento": "RESULTADO_FAQ",
+        "textoContem": ["Segunda a sexta, das 7h às 18h.", "digite menu"]
+      }
+    },
+    {
+      "intent": "texto.saudacao",
+      "texto": "menu",
+      "espera": {
+        "textoContem": ["Como posso ajudar?"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
+        "contextos": ["paciente", "apos_identificar"]
+      }
+    },
+    {
+      "intent": "acao.consulta.convenios",
+      "texto": "continuar",
+      "espera": {
+        "evento": "RESULTADO_LISTA_CONVENIO",
+        "contextos": ["lista"]
+      }
+    },
+    {
+      "intent": "acao.faq.endereco",
+      "texto": "qual o endereço",
+      "espera": {
+        "evento": "RESULTADO_FAQ",
+        "textoContem": ["Rua Exemplo, 100 - Centro.\n\nPosso ajudar em algo mais?"],
+        "contextos": ["paciente", "lista"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.faq.estacionamento",
+      "texto": "tem estacionamento",
+      "espera": {
+        "evento": "RESULTADO_FAQ",
+        "textoContem": ["Essa informação eu não tenho por aqui", "atendente"],
+        "contextos": ["paciente", "lista"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_TIPO_BUSCA",
+        "contextos": ["tipo_busca"]
+      }
+    }
+  ]
+}

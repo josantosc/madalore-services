@@ -90,7 +90,7 @@ Faça o mesmo agendamento de backup no Postgres do Chatwoot.
 4. **Domain:** `https://api.seudominio.com.br`.
 5. **Health Check:** caminho `/actuator/health/liveness`, porta `8080`.
 6. **Environment Variables:** cole `deploy/mandalore.env.example` preenchido. Marque como secretas as senhas, tokens e `DIALOGFLOW_CREDENTIALS` (o JSON inteiro da conta Google, em uma linha).
-7. **Storages → File Mount:** destino `/app/config/clientes.properties`, conteúdo a partir de `deploy/clientes.properties.example`. Só é necessário com mais de uma clínica ou com credenciais por clínica.
+7. **Storages → File Mount:** destino `/app/config/clientes.properties`, conteúdo a partir de `deploy/clientes.properties.example`. Só é necessário com mais de uma clínica ou com credenciais por clínica. Outro File Mount em `/app/config/faq.yaml`, a partir de `deploy/faq.exemplo.yaml`, traz os textos das [perguntas frequentes](perguntas-frequentes.md).
 8. **Resource limits:** memória de 1,5 GB para o container, compatível com `-Xmx1g`.
 9. Deploy. Ative o deploy automático por push, se quiser.
 

@@ -33,7 +33,8 @@ class DialogflowContractTest {
             "agendar",
             "confirmar",
             "cancelar",
-            "remarcar"
+            "remarcar",
+            "faq"
     );
     private static final Set<String> EVENTOS_BACKEND = Set.of(
             "RESULTADO_PACIENTE_NAO_ENCONTRADO",
@@ -58,7 +59,8 @@ class DialogflowContractTest {
             "RESULTADO_HORARIO_INDISPONIVEL",
             "RESULTADO_AGENDAMENTO_NAO_ENCONTRADO",
             "RESULTADO_SUCESSO_ESCRITA",
-            "RESULTADO_INDISPONIVEL"
+            "RESULTADO_INDISPONIVEL",
+            "RESULTADO_FAQ"
     );
 
     private static JsonNode manifesto;

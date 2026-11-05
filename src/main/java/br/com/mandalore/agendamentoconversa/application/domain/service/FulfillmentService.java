@@ -18,10 +18,16 @@ public class FulfillmentService implements ExecutarFulfillmentUseCase {
     private static final Logger LOG = LoggerFactory.getLogger(FulfillmentService.class);
 
     private final AgendaConsultaService agenda;
+    private final PerguntasFrequentesService perguntas;
     private final FlowTelemetry telemetry;
 
-    public FulfillmentService(AgendaConsultaService agenda, FlowTelemetry telemetry) {
+    public FulfillmentService(
+            AgendaConsultaService agenda,
+            PerguntasFrequentesService perguntas,
+            FlowTelemetry telemetry
+    ) {
         this.agenda = agenda;
+        this.perguntas = perguntas;
         this.telemetry = telemetry;
     }
 
@@ -39,6 +45,8 @@ public class FulfillmentService implements ExecutarFulfillmentUseCase {
                         command.contexto(),
                         CodigoNegocio.INDISPONIVEL
                 );
+            } else if (PerguntasFrequentesService.trata(command.intent())) {
+                resultado = perguntas.responder(command);
             } else {
                 resultado = agenda.executar(command);
             }

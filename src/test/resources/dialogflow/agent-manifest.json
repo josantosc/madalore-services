@@ -3620,6 +3620,782 @@
       "resetContexts": false
     },
     {
+      "displayName": "acao.faq.contato",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o telefone"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o telefone de vocês"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tem um número para ligar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o email de vocês"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como falo com vocês por telefone"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o whatsapp"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
+      "displayName": "acao.faq.convenios",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quais convênios vocês aceitam"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quais convenios aceitam"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "vocês aceitam unimed"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "atende pelo meu plano de saúde"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "aceitam plano de saúde"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "trabalham com quais planos"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quais planos vocês atendem"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "meu convênio é aceito"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "vocês atendem particular"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
+      "displayName": "acao.faq.documentos",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "o que preciso levar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quais documentos devo levar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "preciso levar o pedido médico"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "preciso levar a carteirinha do convênio"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "precisa de documento com foto"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "o que levar no dia do exame"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
+      "displayName": "acao.faq.endereco",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o endereço"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o endereco de vocês"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "onde fica a clínica"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "onde fica o laboratório"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "onde vocês ficam"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como chego aí"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como faço para chegar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual a localização"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "me passa o endereço"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "fica em qual rua"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
+      "displayName": "acao.faq.estacionamento",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tem estacionamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "onde posso estacionar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "o estacionamento é pago"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tem vaga para carro"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "onde deixo o carro"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
+      "displayName": "acao.faq.horario",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o horário de atendimento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "que horas vocês abrem"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "que horas fecha"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "até que horas vocês atendem"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "vocês abrem sábado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "funciona aos domingos"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "abre no feriado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "horário de funcionamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o horário da coleta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "que horas começa a coleta"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
+      "displayName": "acao.faq.preparo",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "precisa de jejum"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "preciso estar em jejum"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quantas horas de jejum"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o jejum para exame de sangue"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como me preparo para o exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o preparo do exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "posso tomar água antes do exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "posso tomar meu remédio antes da coleta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como colher a urina"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como faço a coleta de fezes"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
+      "displayName": "acao.faq.resultado",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quando sai o resultado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o prazo do resultado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quanto tempo demora o resultado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como pego meu resultado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "onde vejo o resultado do exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "o resultado sai pela internet"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como acesso o laudo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "como retirar o resultado"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
+      "displayName": "acao.faq.valores",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_ENABLED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quanto custa o exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o valor da consulta"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quanto fica o hemograma"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "qual o preço do exame"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quanto custa particular"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "vocês fazem orçamento"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false,
+      "action": "faq"
+    },
+    {
       "displayName": "acao.paciente.identificar",
       "priority": 750000,
       "webhookState": "WEBHOOK_STATE_ENABLED",
@@ -4685,6 +5461,38 @@
           "displayName": "acao",
           "entityTypeDisplayName": "@sys.any",
           "value": "$acao",
+          "mandatory": false,
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "$texto"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.resultado.faq",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": true,
+      "events": [
+        "RESULTADO_FAQ"
+      ],
+      "trainingPhrases": [],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [
+        {
+          "displayName": "texto",
+          "entityTypeDisplayName": "@sys.any",
+          "value": "$texto",
           "mandatory": false,
           "isList": false
         }

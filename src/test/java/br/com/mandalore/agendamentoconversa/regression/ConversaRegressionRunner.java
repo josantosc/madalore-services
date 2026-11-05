@@ -11,6 +11,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +34,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.service.AgendaCon
 import br.com.mandalore.agendamentoconversa.application.domain.service.ContextoCodec;
 import br.com.mandalore.agendamentoconversa.application.domain.service.FulfillmentService;
 import br.com.mandalore.agendamentoconversa.application.domain.service.IdentidadeSessao;
+import br.com.mandalore.agendamentoconversa.application.domain.service.PerguntasFrequentesService;
 
 final class ConversaRegressionRunner {
 
@@ -40,6 +42,10 @@ final class ConversaRegressionRunner {
     private static final Pattern PLACEHOLDER = Pattern.compile("\\$([A-Za-z0-9_]+)");
     private static final String USUARIO = "regression";
     private static final String SENHA = "regression-secret";
+    private static final Map<String, String> PERGUNTAS_FREQUENTES = Map.of(
+            "endereco", "Rua Exemplo, 100 - Centro.\n",
+            "horario", "Segunda a sexta, das 7h às 18h."
+    );
 
     private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
     private final Map<String, ObjectNode> intentsPorNome = new LinkedHashMap<>();
@@ -58,8 +64,11 @@ final class ConversaRegressionRunner {
                 new IdentidadeSessao(),
                 telemetry
         );
+        PerguntasFrequentesService perguntas = new PerguntasFrequentesService(
+                tema -> Optional.ofNullable(PERGUNTAS_FREQUENTES.get(tema))
+        );
         WebhookController controller = new WebhookController(
-                new FulfillmentService(agenda, telemetry),
+                new FulfillmentService(agenda, perguntas, telemetry),
                 new ContextoCodec(mapper),
                 telemetry,
                 USUARIO,

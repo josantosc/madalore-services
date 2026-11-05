@@ -11,7 +11,8 @@ public enum CodigoNegocio {
     SUCESSO("sucesso"),
     INDISPONIVEL("indisponivel"),
     SEM_AGENDAMENTO("sem_agendamento"),
-    JA_TEM_AGENDAMENTO("ja_tem_agendamento");
+    JA_TEM_AGENDAMENTO("ja_tem_agendamento"),
+    FAQ_SEM_RESPOSTA("faq_sem_resposta");
 
     private final String valor;
 

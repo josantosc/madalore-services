@@ -11,7 +11,9 @@ equipe ela vai e o que cada um faz a partir daí.
 
 1. O paciente escreve no site ou no WhatsApp.
 2. O **assistente virtual** responde primeiro. Ele agenda, remarca, cancela e consulta horários, convênios e
-   especialidades.
+   especialidades. Também responde dúvidas comuns: endereço, horário, convênios aceitos, preparo e jejum, prazo de
+   resultado, documentos, estacionamento e contato. Se o texto de uma dúvida estiver desatualizado, avise o
+   administrador.
 3. A conversa passa para uma pessoa em dois casos:
    - o paciente **pede um atendente**;
    - o paciente **manda a foto ou o PDF de um pedido médico**.
