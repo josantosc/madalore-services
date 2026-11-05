@@ -54,12 +54,15 @@ PRECOS_USER=financeiro
 PRECOS_PASSWORD=<senha forte>
 ```
 
-Sem as duas variáveis a tela responde 503. Na tela:
+Sem as duas variáveis a tela responde 503. O visual segue o painel do Chatwoot (cor da marca, menu
+lateral com o logo e link para as conversas, vindos de `PRECOS_CHATWOOT_URL`, padrão
+`https://bs-chat.jscinfor.com`). Na tela:
 
-- buscar por código, nome ou sinônimo; filtrar "só exames sem preço" (valor R$ 0,00 aparece em vermelho);
-- **+ Novo exame**, **Editar** (valor no formato `25,00`, sinônimos separados por vírgula) e **Excluir**;
-- **Exportar planilha**: baixa o CSV atual para editar no Excel em lote;
-- **Importar planilha**: substitui a tabela inteira pelo CSV (pede confirmação).
+- buscar por código, nome ou sinônimo; aba **Sem preço** lista os exames com valor R$ 0,00;
+- **Adicionar exame**, editar (lápis) e excluir (lixeira), em janelas de confirmação como no Chatwoot;
+  valor no formato `25,00`, sinônimos como etiquetas (Enter ou vírgula adiciona);
+- **Exportar**: baixa o CSV atual para editar no Excel em lote;
+- **Importar**: substitui a tabela inteira pelo CSV (pede confirmação).
 
 Cada item guarda data e usuário da última alteração, e o log registra
 `tabela de precos item=HMG valor 25.00 -> 27.00 usuario=financeiro`.

@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
@@ -33,9 +34,15 @@ public class TabelaPrecoController {
     private static final int LIMITE_ARQUIVO = 2 * 1_048_576;
 
     private final TabelaPrecoUseCase tabela;
+    private final String chatwootUrl;
 
-    public TabelaPrecoController(TabelaPrecoUseCase tabela) {
+    public TabelaPrecoController(
+            TabelaPrecoUseCase tabela,
+            @Value("${precos.chatwoot-url:}") String chatwootUrl
+    ) {
         this.tabela = tabela;
+        String url = chatwootUrl == null ? "" : chatwootUrl.trim().replaceAll("/+$", "");
+        this.chatwootUrl = url.matches("https?://[A-Za-z0-9.:-]+") ? url : "";
     }
 
     public record ItemRequest(String nome, List<String> sinonimos, BigDecimal valor, String prazo) {
@@ -44,10 +51,16 @@ public class TabelaPrecoController {
     @GetMapping("/precos")
     public ResponseEntity<byte[]> pagina() throws IOException {
         try (InputStream html = new ClassPathResource("precos/index.html").getInputStream()) {
+            String pagina = new String(html.readAllBytes(), StandardCharsets.UTF_8).replace("__CHATWOOT_URL__", chatwootUrl);
             return ResponseEntity.ok()
                     .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
-                    .body(html.readAllBytes());
+                    .body(pagina.getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    @GetMapping(value = "/precos/api/eu", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Map<String, String> eu(@RequestAttribute(CuradoriaAuthFilter.USUARIO) String usuario) {
+        return Map.of("usuario", usuario);
     }
 
     @GetMapping(value = "/precos/api/itens", produces = MediaType.APPLICATION_JSON_VALUE)

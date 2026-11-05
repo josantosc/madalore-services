@@ -4,83 +4,216 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Mandalore - Tabela de preços</title>
+  <title>Tabela de preços</title>
+  <link rel="icon" href="__CHATWOOT_URL__/favicon-32x32.png">
   <style>
+    :root {
+      --fundo: #fdfdfd; --solido: #ffffff; --alpha-1: rgba(0, 0, 51, .03); --alpha-2: rgba(0, 0, 59, .055);
+      --borda: #e8e8ec; --borda-forte: #d9d9e0;
+      --texto: #1c2024; --texto-2: #60646c; --texto-3: #8b8d98;
+      --marca: #0b5c7a; --marca-hover: #0a536e; --marca-suave: #e7eff2; --marca-texto: #094b64;
+      --rubi: #e54666; --rubi-hover: #dc3b5d; --rubi-suave: #feeaed; --rubi-texto: #ca244d;
+      --ambar-suave: #fff7c2; --ambar-texto: #ab6400;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #eef1f5; color: #1f2933; }
-    header { background: #0f5f6e; color: #fff; padding: 12px 22px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 2; flex-wrap: wrap; }
-    header h1 { font-size: 18px; margin: 0; font-weight: 600; flex: 1; min-width: 180px; }
-    header button, header a.botao { background: #fff; color: #0f5f6e; border: 0; border-radius: 6px; padding: 7px 12px; font-weight: 600; cursor: pointer; font-size: 14px; text-decoration: none; font-family: inherit; }
-    header button.principal { background: #f5b85c; color: #3d2600; }
-    main { max-width: 1280px; margin: 0 auto; padding: 18px 22px 40px; display: grid; gap: 18px; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-    .card { background: #fff; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
-    .card small { display: block; color: #52606d; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-    .card strong { display: block; font-size: 26px; margin-top: 4px; }
-    .card span { font-size: 12px; color: #7b8794; }
-    .card.alerta strong { color: #b42318; }
-    section.painel { background: #fff; border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
-    .filtros { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-    .filtros input[type=search] { flex: 1; min-width: 220px; padding: 9px 12px; border: 1px solid #c8d1d9; border-radius: 6px; font-size: 14px; }
-    .filtros label { font-size: 14px; color: #52606d; display: flex; gap: 6px; align-items: center; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th { text-align: left; font-size: 12px; color: #52606d; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding: 8px; border-bottom: 1px solid #e4e7eb; }
-    td { padding: 10px 8px; border-bottom: 1px solid #eef1f5; vertical-align: top; }
-    td.valor, th.valor { text-align: right; white-space: nowrap; }
-    td.valor.zero { color: #b42318; font-weight: 600; }
-    code { font-family: Consolas, monospace; font-size: 12px; color: #334e68; }
-    .chips { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
-    .chip { background: #e6f2f4; color: #0f5f6e; border-radius: 10px; padding: 1px 8px; font-size: 12px; }
-    .quando { font-size: 12px; color: #7b8794; white-space: nowrap; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; background: var(--fundo); color: var(--texto);
+      font: 14px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; }
+    svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    aside { width: 200px; flex: none; border-right: 1px solid var(--borda); display: flex; flex-direction: column; padding: 10px 8px; gap: 2px; }
+    .conta { display: flex; align-items: center; gap: 8px; padding: 6px 8px 14px; font-weight: 600; font-size: 14px; }
+    .conta img { width: 24px; height: 24px; border-radius: 6px; }
+    .nav { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: 8px; color: var(--texto-2); text-decoration: none; font-size: 14px; }
+    .nav:hover { background: var(--alpha-2); color: var(--texto); }
+    .nav.ativo { background: var(--alpha-2); color: var(--texto); font-weight: 500; }
+    .espaco { flex: 1; }
+    .usuario { display: flex; align-items: center; gap: 8px; padding: 8px; border-top: 1px solid var(--borda); margin-top: 6px; }
+    .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--marca-suave); color: var(--marca-texto); display: grid; place-items: center; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .usuario small { display: block; color: var(--texto-3); font-size: 12px; line-height: 1.2; }
+
+    main { flex: 1; min-width: 0; overflow-y: auto; }
+    .conteudo { max-width: 1040px; margin: 0 auto; padding: 32px 32px 48px; }
+    .cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
+    .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 560px; }
+    .botoes { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px;
+      border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .12s; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.solido { background: var(--marca); color: #fff; }
+    .btn.solido:hover:not(:disabled) { background: var(--marca-hover); }
+    .btn.cinza { background: var(--alpha-2); color: var(--texto); }
+    .btn.cinza:hover:not(:disabled) { background: rgba(0, 0, 59, .09); }
+    .btn.perigo { background: var(--rubi); color: #fff; }
+    .btn.perigo:hover:not(:disabled) { background: var(--rubi-hover); }
+    .btn.icone { width: 28px; height: 28px; padding: 0; border-radius: 6px; background: var(--alpha-1); color: var(--texto-2); }
+    .btn.icone:hover { background: var(--alpha-2); color: var(--texto); }
+    .btn.icone.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
+    .btn.icone.rubi:hover { background: #fdd8de; }
+
+    .barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 24px; border-bottom: 1px solid var(--borda); flex-wrap: wrap; }
+    .abas { display: flex; gap: 20px; }
+    .aba { background: none; border: 0; padding: 8px 0 10px; font: inherit; font-size: 14px; color: var(--texto-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
+    .aba:hover { color: var(--texto); }
+    .aba.ativa { color: var(--marca); border-color: var(--marca); font-weight: 500; }
+    .contador { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+    .aba.ativa .contador { background: var(--marca-suave); color: var(--marca-texto); }
+    .busca { position: relative; margin-bottom: 8px; }
+    .busca svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--texto-3); }
+    .busca input.campo { width: 280px; padding-left: 32px; }
+
+    input.campo { height: 36px; width: 100%; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1);
+      outline: 1px solid var(--borda); font: inherit; font-size: 14px; color: var(--texto); }
+    input.campo:focus { outline: 1px solid var(--marca); background: var(--solido); }
+    input.campo:disabled { color: var(--texto-2); cursor: not-allowed; }
+    input.campo.erro { outline-color: var(--rubi); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th { text-align: left; font-weight: 500; color: var(--texto-2); padding: 12px 16px 12px 0; font-size: 13px; }
+    td { padding: 14px 16px 14px 0; border-top: 1px solid var(--borda); vertical-align: top; }
+    th.num, td.num { text-align: right; white-space: nowrap; }
+    .nome { font-weight: 500; }
+    .codigo { color: var(--texto-3); font-size: 12px; margin-left: 6px; font-weight: 400; }
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .tag { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 20px; display: inline-flex; align-items: center; gap: 2px; }
+    .sem-preco { background: var(--ambar-suave); color: var(--ambar-texto); border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 500; }
+    .quando { color: var(--texto-2); font-size: 13px; white-space: nowrap; }
+    .quando small { display: block; color: var(--texto-3); font-size: 12px; }
     .acoes { display: flex; gap: 6px; justify-content: flex-end; }
-    button.acao { border: 1px solid #c8d1d9; background: #fff; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; font-family: inherit; }
-    button.acao.principal { background: #0f766e; border-color: #0f766e; color: #fff; }
-    button.acao.perigo { color: #b42318; border-color: #f1b5b0; }
-    button.acao:disabled { opacity: .5; cursor: wait; }
-    tr.editor td { background: #f5fbfb; }
-    tr.editor input { width: 100%; padding: 7px 9px; border: 1px solid #c8d1d9; border-radius: 6px; font-size: 14px; font-family: inherit; }
-    tr.editor input.valor { text-align: right; }
-    tr.editor .dica { font-size: 12px; color: #7b8794; margin-top: 3px; }
-    .vazio { color: #7b8794; padding: 18px 0; text-align: center; }
-    #aviso { position: fixed; right: 20px; bottom: 20px; max-width: 460px; padding: 12px 14px; border-radius: 8px; color: #fff; background: #1f2933; box-shadow: 0 6px 18px rgba(0,0,0,.2); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 5; }
-    #aviso.ver { opacity: 1; }
-    #aviso.erro { background: #b42318; }
-    @media (max-width: 800px) { td.quando-col, th.quando-col { display: none; } }
+    .vazio { text-align: center; color: var(--texto-2); padding: 56px 0; }
+    .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
+
+    dialog { border: 0; padding: 24px; border-radius: 12px; width: min(480px, calc(100vw - 32px)); color: var(--texto);
+      box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
+    dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
+    dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
+    dialog p.sub { color: var(--texto-2); margin: 4px 0 0; }
+    .form { display: grid; gap: 16px; margin-top: 20px; }
+    .form label, .form .rotulo { display: grid; gap: 6px; font-weight: 500; }
+    .form .dica { font-weight: 400; color: var(--texto-3); font-size: 12px; }
+    .form .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 12px; }
+    .linha2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .prefixo { position: relative; }
+    .prefixo span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--texto-3); }
+    .prefixo input.campo { padding-left: 34px; }
+    .caixa-tags { min-height: 36px; border-radius: 8px; background: var(--alpha-1); outline: 1px solid var(--borda); padding: 5px 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; cursor: text; }
+    .caixa-tags:focus-within { outline-color: var(--marca); background: var(--solido); }
+    .caixa-tags input { border: 0; outline: 0; background: transparent; font: inherit; font-size: 14px; flex: 1; min-width: 120px; height: 24px; }
+    .caixa-tags .tag button { border: 0; background: none; padding: 0; color: inherit; cursor: pointer; display: grid; }
+    .caixa-tags .tag svg { width: 12px; height: 12px; }
+    .rodape { display: flex; gap: 12px; margin-top: 24px; }
+    .rodape .btn { flex: 1; height: 36px; }
+
+    #aviso { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px); background: var(--texto); color: #fff;
+      padding: 10px 16px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; pointer-events: none;
+      transition: opacity .15s, transform .15s; max-width: calc(100vw - 32px); display: flex; gap: 8px; align-items: center; }
+    #aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+    #aviso.erro::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rubi); flex: none; }
+
+    @media (max-width: 860px) {
+      aside { display: none; }
+      .conteudo { padding: 20px 16px 40px; }
+      .busca input.campo { width: 100%; }
+      .busca { width: 100%; }
+      .col-quando { display: none; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Tabela de preços particular</h1>
-    <button id="novo" class="principal" type="button">+ Novo exame</button>
-    <a class="botao" href="/precos/api/exportar" title="Baixa a planilha para editar no Excel">Exportar planilha</a>
-    <button id="importar" type="button" title="Substitui a tabela inteira pela planilha">Importar planilha</button>
-    <input id="arquivo" type="file" accept=".csv,text/csv" hidden>
-  </header>
+  <aside>
+    <div class="conta"><img src="__CHATWOOT_URL__/brand-assets/logo_thumbnail.svg" alt="">BioSaúde</div>
+    <a class="nav" href="__CHATWOOT_URL__/app"><svg class="i" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Conversas</a>
+    <a class="nav ativo" href="/precos"><svg class="i" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/></svg>Tabela de preços</a>
+    <div class="espaco"></div>
+    <div class="usuario"><div class="avatar" id="avatar"></div><div><span id="usuario"></span><small>Financeiro</small></div></div>
+  </aside>
+
   <main>
-    <div class="cards" id="cards"></div>
-    <section class="painel">
-      <div class="filtros">
-        <input id="busca" type="search" placeholder="Buscar por código, nome ou sinônimo" autocomplete="off">
-        <label><input id="soZero" type="checkbox"> só exames sem preço</label>
+    <div class="conteudo">
+      <div class="cabecalho">
+        <div>
+          <h1>Tabela de preços</h1>
+          <p class="descricao">Valores particulares usados no orçamento por foto do pedido médico. A alteração vale para o próximo orçamento.</p>
+          <p class="descricao" id="ultima"></p>
+        </div>
+        <div class="botoes">
+          <a class="btn cinza" href="/precos/api/exportar" title="Baixa a planilha para editar no Excel">
+            <svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Exportar</a>
+          <button class="btn cinza" id="importar" type="button" title="Substitui a tabela inteira pela planilha">
+            <svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>Importar</button>
+          <button class="btn solido" id="novo" type="button">
+            <svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Adicionar exame</button>
+          <input id="arquivo" type="file" accept=".csv,text/csv" hidden>
+        </div>
       </div>
+
+      <div class="barra">
+        <div class="abas">
+          <button class="aba ativa" type="button" data-filtro="todos">Todos <span class="contador" id="nTodos">0</span></button>
+          <button class="aba" type="button" data-filtro="zero">Sem preço <span class="contador" id="nZero">0</span></button>
+        </div>
+        <div class="busca">
+          <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input class="campo" id="busca" type="search" placeholder="Buscar exame, código ou sinônimo" autocomplete="off">
+        </div>
+      </div>
+
       <table>
-        <thead>
-          <tr>
-            <th>Código</th><th>Exame e sinônimos</th><th class="valor">Valor</th><th>Prazo do resultado</th>
-            <th class="quando-col">Última alteração</th><th></th>
-          </tr>
-        </thead>
+        <thead><tr><th>Exame</th><th class="num">Valor</th><th>Prazo do resultado</th><th class="col-quando">Última alteração</th><th></th></tr></thead>
         <tbody id="linhas"></tbody>
       </table>
-    </section>
+    </div>
   </main>
-  <div id="aviso"></div>
+
+  <dialog id="dlgItem">
+    <form method="dialog" id="formItem" novalidate>
+      <h2 id="dlgTitulo"></h2>
+      <p class="sub">Sinônimos e siglas ajudam a reconhecer o exame escrito no pedido.</p>
+      <div class="form">
+        <div class="linha2">
+          <label>Código<input class="campo" id="fCodigo" maxlength="60" placeholder="Ex.: HMG"></label>
+          <label>Valor<span class="prefixo"><span>R$</span><input class="campo" id="fValor" inputmode="decimal" placeholder="0,00"></span></label>
+        </div>
+        <label>Nome do exame<input class="campo" id="fNome" maxlength="200" placeholder="Ex.: Hemograma completo"></label>
+        <div class="rotulo">Sinônimos<div class="caixa-tags" id="caixaTags"><input id="fSinonimo" placeholder="Digite e tecle Enter" aria-label="Sinônimo"></div>
+          <span class="dica">Enter ou vírgula adiciona. Ex.: HMG, Hemograma com plaquetas</span></div>
+        <label>Prazo do resultado<input class="campo" id="fPrazo" maxlength="100" placeholder="Ex.: 1 dia útil"></label>
+        <span class="msg-erro" id="fErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn solido" type="submit" id="fSalvar">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgConfirma">
+    <h2 id="cTitulo"></h2>
+    <p class="sub" id="cTexto"></p>
+    <div class="rodape">
+      <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+      <button class="btn perigo" type="button" id="cOk"></button>
+    </div>
+  </dialog>
+
+  <div id="aviso" role="status"></div>
+
   <script>
     const $ = (id) => document.getElementById(id);
     const reais = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
     const dataHora = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    const ICONES = {
+      editar: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>',
+      excluir: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+      fechar: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
+    };
     let itens = [];
+    let filtro = "todos";
     let editando = null;
+    let sinonimos = [];
 
     function el(tag, attrs, ...filhos) {
       const node = document.createElement(tag);
@@ -89,12 +222,20 @@
       return node;
     }
 
+    function icone(nome) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("class", "i");
+      svg.innerHTML = ICONES[nome];
+      return svg;
+    }
+
     function aviso(texto, erro) {
       const a = $("aviso");
       a.textContent = texto;
       a.className = "ver" + (erro ? " erro" : "");
       clearTimeout(aviso.t);
-      aviso.t = setTimeout(() => a.className = "", erro ? 7000 : 3500);
+      aviso.t = setTimeout(() => a.className = erro ? "erro" : "", erro ? 6000 : 3000);
     }
 
     async function api(caminho, opcoes) {
@@ -111,167 +252,190 @@
       return limpo === "" ? NaN : Number(limpo);
     }
 
-    function semAcento(texto) {
-      return String(texto || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-    }
+    const semAcento = (t) => String(t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+    const zerado = (i) => Number(i.valor) === 0;
 
     async function carregar() {
       try {
         itens = await api("/precos/api/itens");
-        editando = null;
         desenhar();
       } catch (e) {
-        aviso("Falha ao carregar a tabela: " + e.message, true);
+        aviso("Não foi possível carregar a tabela. " + e.message, true);
       }
     }
 
-    function desenharCards() {
-      const zero = itens.filter((i) => Number(i.valor) === 0).length;
-      const ultimo = itens.filter((i) => i.atualizadoEm).sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm))[0];
-      $("cards").replaceChildren(
-        el("div", { className: "card" }, el("small", {}, "Exames na tabela"), el("strong", {}, String(itens.length))),
-        el("div", { className: "card" + (zero ? " alerta" : "") },
-          el("small", {}, "Sem preço (R$ 0,00)"), el("strong", {}, String(zero)),
-          el("span", {}, zero ? "Aparecem com valor zero no orçamento" : "Todos com preço")),
-        el("div", { className: "card" }, el("small", {}, "Última alteração"),
-          el("strong", { style: "font-size:18px" }, ultimo ? dataHora.format(new Date(ultimo.atualizadoEm)) : "-"),
-          el("span", {}, ultimo && ultimo.atualizadoPor ? "por " + ultimo.atualizadoPor : ""))
-      );
-    }
-
-    function filtrados() {
-      const termo = semAcento($("busca").value.trim());
-      return itens.filter((i) => {
-        if ($("soZero").checked && Number(i.valor) !== 0) return false;
-        if (!termo) return true;
-        return [i.codigo, i.nome, ...i.sinonimos].some((t) => semAcento(t).includes(termo));
-      });
-    }
-
     function desenhar() {
-      desenharCards();
+      $("nTodos").textContent = itens.length;
+      $("nZero").textContent = itens.filter(zerado).length;
+      const ultimo = itens.filter((i) => i.atualizadoEm).sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm))[0];
+      $("ultima").textContent = ultimo
+        ? "Última alteração em " + dataHora.format(new Date(ultimo.atualizadoEm)) + (ultimo.atualizadoPor ? " por " + ultimo.atualizadoPor : "") + "."
+        : "";
+
+      const termo = semAcento($("busca").value.trim());
+      const lista = itens.filter((i) => (filtro !== "zero" || zerado(i))
+        && (!termo || [i.codigo, i.nome, ...i.sinonimos].some((t) => semAcento(t).includes(termo))));
+
       const corpo = $("linhas");
-      corpo.replaceChildren();
-      if (editando && editando.novo) corpo.append(editor(editando.item, true));
-      const lista = filtrados();
-      lista.forEach((item) => corpo.append(
-        editando && !editando.novo && editando.item.codigo === item.codigo ? editor(item, false) : linha(item)));
-      if (!lista.length && !(editando && editando.novo)) {
-        corpo.append(el("tr", {}, el("td", { colSpan: 6, className: "vazio" },
-          itens.length ? "Nenhum exame encontrado." : "Tabela vazia. Clique em \"+ Novo exame\" ou importe a planilha.")));
+      corpo.replaceChildren(...lista.map(linha));
+      if (!lista.length) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 5, className: "vazio" },
+          itens.length
+            ? [el("strong", {}, "Nenhum exame encontrado"), "Tente outro termo de busca."]
+            : [el("strong", {}, "A tabela está vazia"), "Adicione exames um a um ou importe a planilha."])));
       }
     }
 
     function linha(item) {
-      const zero = Number(item.valor) === 0;
       return el("tr", {},
-        el("td", {}, el("code", {}, item.codigo)),
-        el("td", {}, el("div", {}, item.nome),
-          item.sinonimos.length ? el("div", { className: "chips" }, item.sinonimos.map((s) => el("span", { className: "chip" }, s))) : null),
-        el("td", { className: "valor" + (zero ? " zero" : "") }, reais.format(Number(item.valor))),
-        el("td", {}, item.prazo || "-"),
-        el("td", { className: "quando quando-col" },
+        el("td", {},
+          el("span", { className: "nome" }, item.nome), el("span", { className: "codigo" }, item.codigo),
+          item.sinonimos.length ? el("div", { className: "tags" }, item.sinonimos.map((s) => el("span", { className: "tag" }, s))) : null),
+        el("td", { className: "num" }, zerado(item) ? el("span", { className: "sem-preco" }, "Sem preço") : reais.format(Number(item.valor))),
+        el("td", {}, item.prazo || el("span", { className: "quando" }, "-")),
+        el("td", { className: "quando col-quando" },
           item.atualizadoEm ? dataHora.format(new Date(item.atualizadoEm)) : "-",
-          item.atualizadoPor ? el("div", {}, item.atualizadoPor) : null),
+          item.atualizadoPor ? el("small", {}, item.atualizadoPor) : null),
         el("td", {}, el("div", { className: "acoes" },
-          el("button", { className: "acao", type: "button", textContent: "Editar",
-            onclick: () => { editando = { item, novo: false }; desenhar(); } }),
-          el("button", { className: "acao perigo", type: "button", textContent: "Excluir",
-            onclick: (ev) => excluir(item, ev.target) })))
+          el("button", { className: "btn icone", type: "button", title: "Editar", onclick: () => abrirEditor(item) }, icone("editar")),
+          el("button", { className: "btn icone rubi", type: "button", title: "Excluir", onclick: () => confirmarExclusao(item) }, icone("excluir"))))
       );
     }
 
-    function editor(item, novo) {
-      const codigo = el("input", { value: item.codigo || "", placeholder: "Ex.: HMG", disabled: !novo, maxLength: 60 });
-      const nome = el("input", { value: item.nome || "", placeholder: "Ex.: Hemograma completo", maxLength: 200 });
-      const sinonimos = el("input", { value: (item.sinonimos || []).join(", "), placeholder: "Ex.: HMG, Hemograma" });
-      const valor = el("input", { className: "valor", value: novo ? "" : Number(item.valor).toFixed(2).replace(".", ","),
-        placeholder: "0,00", inputMode: "decimal" });
-      const prazo = el("input", { value: item.prazo || "", placeholder: "Ex.: 1 dia útil", maxLength: 100 });
-      const salvar = el("button", { className: "acao principal", type: "button", textContent: "Salvar" });
-      const cancelar = el("button", { className: "acao", type: "button", textContent: "Cancelar",
-        onclick: () => { editando = null; desenhar(); } });
-
-      salvar.onclick = async () => {
-        const v = numero(valor.value);
-        if (!codigo.value.trim() || !nome.value.trim()) return aviso("Código e nome são obrigatórios.", true);
-        if (Number.isNaN(v) || v < 0) return aviso("Valor inválido. Use o formato 25,00.", true);
-        if (novo && itens.some((i) => i.codigo.toLowerCase() === codigo.value.trim().toLowerCase())) {
-          return aviso("Já existe um exame com o código " + codigo.value.trim() + ".", true);
-        }
-        salvar.disabled = true;
-        try {
-          await api("/precos/api/itens/" + encodeURIComponent(codigo.value.trim()), {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              nome: nome.value,
-              sinonimos: sinonimos.value.split(/[,|]/).map((s) => s.trim()).filter(Boolean),
-              valor: v,
-              prazo: prazo.value
-            })
-          });
-          aviso(nome.value.trim() + " salvo.");
-          await carregar();
-        } catch (e) {
-          aviso(e.message, true);
-          salvar.disabled = false;
-        }
-      };
-      [codigo, nome, sinonimos, valor, prazo].forEach((i) => i.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter") salvar.click();
-        if (ev.key === "Escape") cancelar.click();
-      }));
-      setTimeout(() => (novo ? codigo : valor).focus(), 0);
-
-      return el("tr", { className: "editor" },
-        el("td", { style: "width:120px" }, codigo),
-        el("td", {}, nome, el("div", { style: "height:6px" }), sinonimos,
-          el("div", { className: "dica" }, "Sinônimos e siglas separados por vírgula. Ajudam a reconhecer o exame no pedido.")),
-        el("td", { style: "width:130px" }, valor),
-        el("td", { style: "width:170px" }, prazo),
-        el("td", { className: "quando-col" }),
-        el("td", {}, el("div", { className: "acoes" }, salvar, cancelar))
-      );
+    function desenharTags() {
+      const caixa = $("caixaTags");
+      caixa.querySelectorAll(".tag").forEach((t) => t.remove());
+      sinonimos.forEach((s, i) => caixa.insertBefore(el("span", { className: "tag" }, s,
+        el("button", { type: "button", title: "Remover", onclick: () => { sinonimos.splice(i, 1); desenharTags(); } }, icone("fechar"))),
+        $("fSinonimo")));
     }
 
-    async function excluir(item, botao) {
-      if (!confirm("Excluir \"" + item.nome + "\" da tabela de preços?")) return;
-      botao.disabled = true;
-      try {
-        await api("/precos/api/itens/" + encodeURIComponent(item.codigo), { method: "DELETE" });
-        aviso(item.nome + " excluído.");
-        await carregar();
-      } catch (e) {
-        aviso(e.message, true);
-        botao.disabled = false;
-      }
+    function adicionarSinonimo() {
+      $("fSinonimo").value.split(/[,|]/).map((s) => s.trim()).filter(Boolean).forEach((s) => {
+        if (!sinonimos.some((x) => x.toLowerCase() === s.toLowerCase())) sinonimos.push(s);
+      });
+      $("fSinonimo").value = "";
+      desenharTags();
     }
 
-    $("novo").onclick = () => {
-      editando = { item: { codigo: "", nome: "", sinonimos: [], valor: 0, prazo: "" }, novo: true };
-      $("busca").value = "";
-      $("soZero").checked = false;
-      desenhar();
-    };
-    $("busca").addEventListener("input", desenhar);
-    $("soZero").addEventListener("change", desenhar);
-    $("importar").onclick = () => $("arquivo").click();
-    $("arquivo").addEventListener("change", async () => {
-      const arquivo = $("arquivo").files[0];
-      $("arquivo").value = "";
-      if (!arquivo) return;
-      if (!confirm("A planilha \"" + arquivo.name + "\" vai SUBSTITUIR a tabela inteira (" + itens.length
-          + " exames hoje). Exames que não estiverem na planilha serão apagados. Continuar?")) return;
+    function abrirEditor(item) {
+      editando = item;
+      $("dlgTitulo").textContent = item ? "Editar exame" : "Adicionar exame";
+      $("fCodigo").value = item ? item.codigo : "";
+      $("fCodigo").disabled = !!item;
+      $("fNome").value = item ? item.nome : "";
+      $("fValor").value = item ? Number(item.valor).toFixed(2).replace(".", ",") : "";
+      $("fPrazo").value = item ? item.prazo : "";
+      $("fSinonimo").value = "";
+      $("fErro").textContent = "";
+      document.querySelectorAll("#formItem .campo").forEach((c) => c.classList.remove("erro"));
+      sinonimos = item ? [...item.sinonimos] : [];
+      desenharTags();
+      $("dlgItem").showModal();
+      (item ? $("fValor") : $("fCodigo")).focus();
+    }
+
+    function erroCampo(campo, texto) {
+      campo.classList.add("erro");
+      campo.focus();
+      $("fErro").textContent = texto;
+    }
+
+    $("formItem").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      adicionarSinonimo();
+      document.querySelectorAll("#formItem .campo").forEach((c) => c.classList.remove("erro"));
+      const codigo = $("fCodigo").value.trim();
+      const valor = numero($("fValor").value);
+      if (!/^[A-Za-z0-9._-]{1,60}$/.test(codigo)) return erroCampo($("fCodigo"), "Código obrigatório: letras, números, ponto, hífen ou sublinhado.");
+      if (!editando && itens.some((i) => i.codigo.toLowerCase() === codigo.toLowerCase())) return erroCampo($("fCodigo"), "Já existe um exame com esse código.");
+      if (Number.isNaN(valor) || valor < 0) return erroCampo($("fValor"), "Informe o valor no formato 25,00.");
+      if (!$("fNome").value.trim()) return erroCampo($("fNome"), "Informe o nome do exame.");
+      $("fSalvar").disabled = true;
       try {
-        const r = await api("/precos/api/importar", { method: "PUT", headers: { "Content-Type": "text/csv" }, body: arquivo });
-        aviso("Planilha importada: " + r.itens + " exames.");
+        await api("/precos/api/itens/" + encodeURIComponent(codigo), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome: $("fNome").value, sinonimos, valor, prazo: $("fPrazo").value })
+        });
+        $("dlgItem").close();
+        aviso(editando ? "Exame atualizado" : "Exame adicionado");
         await carregar();
       } catch (e) {
-        aviso("Planilha não importada. " + e.message, true);
+        $("fErro").textContent = e.message;
+      } finally {
+        $("fSalvar").disabled = false;
       }
     });
 
+    $("fSinonimo").addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === ",") {
+        if ($("fSinonimo").value.trim()) { ev.preventDefault(); adicionarSinonimo(); }
+      } else if (ev.key === "Backspace" && !$("fSinonimo").value && sinonimos.length) {
+        sinonimos.pop();
+        desenharTags();
+      }
+    });
+    $("caixaTags").addEventListener("click", () => $("fSinonimo").focus());
+
+    function confirmar(titulo, texto, botao, acao) {
+      $("cTitulo").textContent = titulo;
+      $("cTexto").textContent = texto;
+      $("cOk").textContent = botao;
+      $("cOk").disabled = false;
+      $("cOk").onclick = async () => {
+        $("cOk").disabled = true;
+        try {
+          await acao();
+          $("dlgConfirma").close();
+        } catch (e) {
+          aviso(e.message, true);
+          $("cOk").disabled = false;
+        }
+      };
+      $("dlgConfirma").showModal();
+    }
+
+    function confirmarExclusao(item) {
+      confirmar("Excluir exame?", "\"" + item.nome + "\" sai da tabela e deixa de aparecer nos orçamentos.", "Excluir", async () => {
+        await api("/precos/api/itens/" + encodeURIComponent(item.codigo), { method: "DELETE" });
+        aviso("Exame excluído");
+        await carregar();
+      });
+    }
+
+    $("arquivo").addEventListener("change", () => {
+      const arquivo = $("arquivo").files[0];
+      $("arquivo").value = "";
+      if (!arquivo) return;
+      confirmar("Substituir a tabela inteira?",
+        "A planilha \"" + arquivo.name + "\" vai substituir os " + itens.length
+          + " exames atuais. Exames que não estiverem na planilha serão apagados.", "Importar", async () => {
+          const r = await api("/precos/api/importar", { method: "PUT", headers: { "Content-Type": "text/csv" }, body: arquivo });
+          aviso("Planilha importada: " + r.itens + " exames");
+          await carregar();
+        });
+    });
+
+    document.querySelectorAll("[data-fechar]").forEach((b) => b.onclick = () => b.closest("dialog").close());
+    document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (ev) => {
+      const r = d.getBoundingClientRect();
+      const fora = ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom;
+      if (ev.target === d && fora) d.close();
+    }));
+    document.querySelectorAll(".aba").forEach((aba) => aba.onclick = () => {
+      document.querySelectorAll(".aba").forEach((a) => a.classList.toggle("ativa", a === aba));
+      filtro = aba.dataset.filtro;
+      desenhar();
+    });
+    $("busca").addEventListener("input", desenhar);
+    $("novo").onclick = () => abrirEditor(null);
+    $("importar").onclick = () => $("arquivo").click();
+
+    api("/precos/api/eu").then((eu) => {
+      $("usuario").textContent = eu.usuario;
+      $("avatar").textContent = eu.usuario.slice(0, 2);
+    }).catch(() => {});
     carregar();
   </script>
 </body>
