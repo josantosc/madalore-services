@@ -10,6 +10,8 @@ target/
 !*.env.example
 clientes.properties
 credentials*.json
+hostinger
+hostinger.pub
 *-service-account.json
 tests/robot/.venv/
 tests/robot/results/
