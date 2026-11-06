@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -27,10 +29,12 @@ public class AdminAuthFilter extends OncePerRequestFilter {
     public static final String USUARIO = "admin.usuario";
     /** Login completo ({@link AdminAcesso.Login}): a agenda confere por ele as clínicas que o usuário enxerga. */
     public static final String LOGIN = "admin.login.atual";
-    static final String SESSAO = "admin.login";
+    public static final String SESSAO = "admin.login";
     static final String[] CAMINHOS = {
             "/admin", "/admin/*", "/curadoria", "/curadoria/*", "/precos", "/precos/*", "/simulador", "/simulador/*",
-            "/agenda", "/agenda/*"};
+            "/agenda", "/agenda/*", "/funil", "/funil/*", "/usuarios", "/usuarios/*"};
+    /** Com senha provisória, só estes caminhos abrem até a troca. */
+    static final Set<String> LIVRES_NA_TROCA = Set.of("/admin/senha", "/admin/api/senha", "/admin/api/eu");
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminAuthFilter.class);
 
@@ -59,6 +63,19 @@ public class AdminAuthFilter extends OncePerRequestFilter {
         }
 
         Optional<AdminAcesso.Login> login = daSessao(request);
+        if (login.isPresent()) {
+            try {
+                if (!acesso.vigente(login.get())) {
+                    LOG.info("admin sessao encerrada usuario={}: acesso alterado ou desativado", login.get().usuario());
+                    request.getSession().invalidate();
+                    login = Optional.empty();
+                }
+            } catch (DataAccessException ex) {
+                LOG.warn("admin sessao sem banco: {}", ex.getMessage());
+                json(response, HttpStatus.SERVICE_UNAVAILABLE, "Banco de dados indisponível. Tente de novo em instantes.");
+                return;
+            }
+        }
         String authorization = request.getHeader("Authorization");
         if (login.isEmpty() && authorization != null) {
             String ip = AdminAcesso.ip(request);
@@ -82,6 +99,14 @@ public class AdminAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (login.get().trocarSenha() && !LIVRES_NA_TROCA.contains(caminho)) {
+            if (paginaHtml(request, caminho)) {
+                response.sendRedirect(request.getContextPath() + "/admin/senha");
+            } else {
+                json(response, HttpStatus.FORBIDDEN, "Troque a senha provisória antes de continuar");
+            }
+            return;
+        }
         Optional<Modulo> modulo = Modulo.doCaminho(caminho);
         if (modulo.isPresent() && !login.get().modulos().contains(modulo.get())) {
             if (paginaHtml(request, caminho)) {

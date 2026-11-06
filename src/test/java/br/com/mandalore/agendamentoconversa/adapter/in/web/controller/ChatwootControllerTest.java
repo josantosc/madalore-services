@@ -6,7 +6,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties;
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties.Cliente;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.FunilUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMensagemUseCase;
 
 class ChatwootControllerTest {
@@ -90,6 +94,63 @@ class ChatwootControllerTest {
         assertThat(mensagem.getValue().anexos()).hasSize(3);
         assertThat(mensagem.getValue().documento()).hasValueSatisfying(
                 anexo -> assertThat(anexo.url()).endsWith("pedido.PDF?disposition=inline"));
+    }
+
+    @Test
+    void respostaDoAtendenteComConversaAbertaVaiParaOFunil() throws Exception {
+        FunilUseCase funil = mock(FunilUseCase.class);
+        controller = new ChatwootController(useCase, "segredo-global", new ClientesProperties(Map.of()),
+                (Supplier<FunilUseCase>) () -> funil);
+
+        controller.receber("segredo-global", null, null, json.readTree("""
+                {"event": "message_created", "message_type": "outgoing", "private": false, "id": 12,
+                 "account": {"id": 1}, "sender": {"id": 3, "name": "Ana", "type": "user"},
+                 "conversation": {"id": 7, "status": "open"}}
+                """));
+
+        verify(funil).registrar(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_ATENDENTE, "1", "7", "Ana", null));
+    }
+
+    @Test
+    void respostaDoBotNotaPrivadaEConversaPendenteNaoContamComoAtendente() throws Exception {
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "message_created", "message_type": "outgoing", "sender": {"type": "agent_bot"},
+                 "conversation": {"id": 7, "status": "open"}}
+                """), "1")).isEmpty();
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "message_created", "message_type": "outgoing", "private": true, "sender": {"type": "user"},
+                 "conversation": {"id": 7, "status": "open"}}
+                """), "1")).isEmpty();
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "message_created", "message_type": "outgoing", "sender": {"type": "user"},
+                 "conversation": {"id": 7, "status": "pending"}}
+                """), "1")).isEmpty();
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "message_created", "message_type": "incoming", "conversation": {"id": 7, "status": "pending"}}
+                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_PACIENTE, "1", "7", null, null));
+    }
+
+    @Test
+    void etiquetaSoContaQuandoAcabaDeSerAdicionada() throws Exception {
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "conversation_updated", "id": 7, "account_id": 1, "labels": ["vip", "orcamento"],
+                 "changed_attributes": [{"label_list": {"previous_value": ["vip"], "current_value": ["vip", "orcamento"]}}]}
+                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, "1", "7", null, List.of("orcamento")));
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "conversation_updated", "id": 7, "labels": ["orcamento"],
+                 "changed_attributes": [{"status": {"previous_value": "open", "current_value": "resolved"}}]}
+                """), "1")).isEmpty();
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "conversation_updated", "id": 7,
+                 "changed_attributes": [{"cached_label_list": {"previous_value": "vip", "current_value": "vip,orcamento"}}]}
+                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, "1", "7", null, List.of("orcamento")));
+    }
+
+    @Test
+    void eventoDeConversaUsaOSegredoDaContaPeloAccountId() throws Exception {
+        assertThat(controller.receber("segredo-2", null, null, json.readTree("""
+                {"event": "conversation_updated", "id": 7, "account_id": 2, "changed_attributes": []}
+                """)).getStatusCode().value()).isEqualTo(200);
     }
 
     private JsonNode corpo(String accountId, String channel) throws Exception {

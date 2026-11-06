@@ -29,7 +29,7 @@ body.adm-layout { display: flex !important; flex-direction: row !important; heig
 .adm-quem span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adm-quem small { display: block; color: var(--adm-texto-3); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adm-sair { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border: 0; border-radius: 6px; cursor: pointer;
-  background: var(--adm-alpha-1); color: var(--adm-texto-2); padding: 0; }
+  background: var(--adm-alpha-1); color: var(--adm-texto-2); padding: 0; text-decoration: none; }
 .adm-sair:hover { background: var(--adm-alpha-2); color: var(--adm-texto); }
 
 @media (max-width: 860px) {

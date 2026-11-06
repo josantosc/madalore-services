@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Usuários</title>
+  <link rel="stylesheet" href="/admin/assets/nav.css">
+  <script src="/admin/assets/nav.js"></script>
+  <style>
+    :root {
+      --fundo: #fdfdfd; --solido: #ffffff; --alpha-1: rgba(0, 0, 51, .03); --alpha-2: rgba(0, 0, 59, .055);
+      --borda: #e8e8ec; --borda-forte: #d9d9e0;
+      --texto: #1c2024; --texto-2: #60646c; --texto-3: #8b8d98;
+      --marca: #0b5c7a; --marca-hover: #0a536e; --marca-suave: #e7eff2; --marca-texto: #094b64;
+      --rubi: #e54666; --rubi-hover: #dc3b5d; --rubi-suave: #feeaed; --rubi-texto: #ca244d;
+      --ambar-suave: #fff7c2; --ambar-texto: #ab6400;
+      --verde-suave: #e6f6eb; --verde-texto: #218358;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; background: var(--fundo); color: var(--texto);
+      font: 14px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; }
+    svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    main { flex: 1; min-width: 0; overflow-y: auto; }
+    .conteudo { max-width: 1280px; margin: 0 auto; padding: 32px 32px 48px; }
+    .topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
+    .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 640px; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px;
+      border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .12s; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.solido { background: var(--marca); color: #fff; }
+    .btn.solido:hover:not(:disabled) { background: var(--marca-hover); }
+    .btn.cinza { background: var(--alpha-2); color: var(--texto); }
+    .btn.cinza:hover:not(:disabled) { background: rgba(0, 0, 59, .09); }
+    .btn.perigo { background: var(--rubi); color: #fff; }
+    .btn.perigo:hover:not(:disabled) { background: var(--rubi-hover); }
+    .btn.icone { width: 28px; height: 28px; padding: 0; border-radius: 6px; background: var(--alpha-1); color: var(--texto-2); }
+    .btn.icone:hover { background: var(--alpha-2); color: var(--texto); }
+    .btn.icone.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
+    .btn.icone.verde { background: var(--verde-suave); color: var(--verde-texto); }
+
+    .barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 24px; border-bottom: 1px solid var(--borda); flex-wrap: wrap; }
+    .abas { display: flex; gap: 20px; }
+    .aba { background: none; border: 0; padding: 8px 0 10px; font: inherit; font-size: 14px; color: var(--texto-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
+    .aba:hover { color: var(--texto); }
+    .aba.ativa { color: var(--marca); border-color: var(--marca); font-weight: 500; }
+    .contador { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+    .aba.ativa .contador { background: var(--marca-suave); color: var(--marca-texto); }
+    .busca { height: 32px; width: 240px; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1); outline: 1px solid var(--borda); font: inherit; font-size: 14px; margin-bottom: 8px; }
+    .busca:focus { outline: 1px solid var(--marca); background: var(--solido); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th { text-align: left; font-weight: 500; color: var(--texto-2); padding: 12px 16px 12px 0; font-size: 13px; }
+    td { padding: 14px 16px 14px 0; border-top: 1px solid var(--borda); vertical-align: middle; }
+    tr.inativo td { color: var(--texto-3); }
+    .acoes { display: flex; gap: 6px; justify-content: flex-end; }
+    .vazio { text-align: center; color: var(--texto-2); padding: 56px 0; }
+    .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
+    .sub { color: var(--texto-3); font-size: 12px; display: block; }
+    .selo { border-radius: 6px; padding: 1px 8px; font-size: 12px; font-weight: 500; white-space: nowrap; background: var(--alpha-2); color: var(--texto-2); display: inline-block; }
+    .selo.ativo { background: var(--verde-suave); color: var(--verde-texto); }
+    .selo.provisoria { background: var(--ambar-suave); color: var(--ambar-texto); }
+    .selo.ADMINISTRADOR { background: var(--marca-suave); color: var(--marca-texto); }
+    .selo.LOGIN_RECUSADO, .selo.USUARIO_DESATIVADO { background: var(--rubi-suave); color: var(--rubi-texto); }
+
+    dialog { border: 0; padding: 24px; border-radius: 12px; width: min(480px, calc(100vw - 32px)); color: var(--texto);
+      box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
+    dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
+    dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
+    dialog p.sub { color: var(--texto-2); margin: 4px 0 0; font-size: 14px; }
+    .form { display: grid; gap: 16px; margin-top: 20px; }
+    .form label, .form fieldset { display: grid; gap: 6px; font-weight: 500; }
+    .form fieldset { border: 0; padding: 0; margin: 0; }
+    .form legend { padding: 0; margin-bottom: 6px; }
+    .form .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 12px; }
+    .opcoes { display: flex; flex-wrap: wrap; gap: 8px 16px; font-weight: 400; }
+    .opcoes label { display: flex; gap: 6px; align-items: center; font-weight: 400; }
+    select.campo, input.campo { height: 36px; width: 100%; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1);
+      outline: 1px solid var(--borda); font: inherit; font-size: 14px; color: var(--texto); }
+    select.campo:focus, input.campo:focus { outline: 1px solid var(--marca); background: var(--solido); }
+    .nova-conta { display: flex; gap: 8px; }
+    .senha-gerada { margin-top: 20px; display: flex; gap: 8px; align-items: center; }
+    .senha-gerada code { flex: 1; font: 500 18px/36px ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .06em;
+      background: var(--alpha-1); outline: 1px solid var(--borda); border-radius: 8px; padding: 0 12px; }
+    .rodape { display: flex; gap: 12px; margin-top: 24px; }
+    .rodape .btn { flex: 1; height: 36px; }
+
+    #aviso { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px); background: var(--texto); color: #fff;
+      padding: 10px 16px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; pointer-events: none;
+      transition: opacity .15s, transform .15s; max-width: calc(100vw - 32px); display: flex; gap: 8px; align-items: center; }
+    #aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+    #aviso.erro::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rubi); flex: none; }
+
+    @media (max-width: 860px) {
+      .conteudo { padding: 20px 16px 40px; }
+      .col-opcional { display: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="/admin/assets/tema.css">
+</head>
+<body>
+  <main>
+    <div class="conteudo">
+      <div class="topo">
+        <div>
+          <h1>Usuários</h1>
+          <p class="descricao">Cada pessoa entra com o próprio e-mail. A senha provisória aparece uma vez e é trocada no primeiro acesso. Usuários não são apagados: desative quem saiu da equipe.</p>
+        </div>
+        <button class="btn solido" type="button" id="btnNovo">Adicionar usuário</button>
+      </div>
+
+      <div class="barra">
+        <div class="abas">
+          <button class="aba ativa" type="button" data-aba="usuarios">Usuários <span class="contador" id="cUsuarios">0</span></button>
+          <button class="aba" type="button" data-aba="acessos">Acessos</button>
+        </div>
+        <input class="busca" id="busca" type="search" placeholder="Buscar por nome ou e-mail" aria-label="Buscar">
+      </div>
+
+      <section id="secUsuarios">
+        <table>
+          <thead><tr><th>Nome</th><th>Perfil</th><th class="col-opcional">Clínicas</th><th>Situação</th><th class="col-opcional">Último acesso</th><th></th></tr></thead>
+          <tbody id="linhas"></tbody>
+        </table>
+      </section>
+      <section id="secAcessos" hidden>
+        <table>
+          <thead><tr><th>Quando</th><th>Evento</th><th>Usuário</th><th class="col-opcional">Feito por</th><th class="col-opcional">IP</th></tr></thead>
+          <tbody id="acessos"></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="dlgUsuario">
+    <form method="dialog" id="formUsuario">
+      <h2 id="uTitulo">Adicionar usuário</h2>
+      <p class="sub" id="uSub">O Mandalore gera uma senha provisória para você passar à pessoa.</p>
+      <div class="form">
+        <label>Nome<input class="campo" id="fNome" maxlength="200" autocomplete="off"></label>
+        <label>E-mail<input class="campo" id="fEmail" type="email" maxlength="200" autocomplete="off"></label>
+        <label>Perfil<select class="campo" id="fPerfil"></select></label>
+        <fieldset id="fsContas">
+          <legend>Clínicas</legend>
+          <div class="opcoes" id="fContas"></div>
+          <div class="nova-conta" id="novaConta" hidden>
+            <input class="campo" id="fNovaConta" placeholder="Id da conta no Chatwoot" maxlength="40">
+            <button class="btn cinza" type="button" id="btnConta">Incluir</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Telas</legend>
+          <div class="opcoes" id="fTelas"></div>
+          <span class="sub">Marcadas pelo perfil. Marque ou desmarque para ajustar só para esta pessoa.</span>
+        </fieldset>
+        <span class="msg-erro" id="uErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn solido" type="submit" id="uOk">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgConfirma">
+    <form method="dialog" id="formConfirma">
+      <h2 id="cTitulo"></h2>
+      <p class="sub" id="cTexto"></p>
+      <span class="msg-erro" id="cErro"></span>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn perigo" type="submit" id="cOk"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgSenha">
+    <form method="dialog">
+      <h2>Senha provisória</h2>
+      <p class="sub" id="sTexto"></p>
+      <div class="senha-gerada"><code id="sSenha"></code><button class="btn cinza" type="button" id="btnCopiar">Copiar</button></div>
+      <p class="sub">Ela não aparece de novo. Se perder, resete a senha.</p>
+      <div class="rodape"><button class="btn solido" type="submit">Pronto</button></div>
+    </form>
+  </dialog>
+
+  <div id="aviso" role="status"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const dataHora = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    const EVENTOS = { LOGIN: "Entrou", LOGIN_RECUSADO: "Senha errada", SENHA_TROCADA: "Trocou a senha", SENHA_RESETADA: "Senha resetada",
+      USUARIO_CRIADO: "Usuário criado", USUARIO_ALTERADO: "Acesso alterado", USUARIO_DESATIVADO: "Desativado", USUARIO_REATIVADO: "Reativado" };
+    const ICONES = {
+      editar: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>',
+      senha: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+      desativar: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+      reativar: '<path d="M20 6 9 17l-5-5"/>'
+    };
+    let dados = { usuarios: [], perfis: [], telas: [], contas: [], geral: false, eu: null };
+    let acessos = [];
+    let aba = "usuarios";
+    let editando = null;
+    let contasExtras = [];
+    let confirmar = null;
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => f !== null && f !== undefined && node.append(f));
+      return node;
+    }
+
+    function icone(nome) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("class", "i");
+      svg.innerHTML = ICONES[nome];
+      return svg;
+    }
+
+    function aviso(texto, erro) {
+      const a = $("aviso");
+      a.textContent = texto;
+      a.className = "ver" + (erro ? " erro" : "");
+      clearTimeout(aviso.t);
+      aviso.t = setTimeout(() => a.className = erro ? "erro" : "", erro ? 6000 : 3000);
+    }
+
+    async function api(caminho, opcoes) {
+      const resp = await fetch(caminho, opcoes);
+      if (resp.status === 204) return null;
+      const corpo = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(corpo.erro || ("Erro " + resp.status));
+      return corpo;
+    }
+
+    const enviar = (metodo, caminho, corpo) => api(caminho, { method: metodo, headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo || {}) });
+    const perfil = (id) => dados.perfis.find((p) => p.id === id) || { id, titulo: id, telas: [] };
+    const tituloPerfil = (id) => id === "ADMINISTRADOR" ? "Administrador geral" : perfil(id).titulo;
+    const quando = (instante) => instante ? dataHora.format(new Date(instante)) : "-";
+
+    async function carregar() {
+      try {
+        dados = await api("/usuarios/api/usuarios");
+        $("cUsuarios").textContent = dados.usuarios.filter((u) => u.ativo).length;
+        desenhar();
+      } catch (e) {
+        aviso("Não foi possível carregar os usuários. " + e.message, true);
+      }
+    }
+
+    async function carregarAcessos() {
+      try {
+        acessos = await api("/usuarios/api/acessos");
+        desenhar();
+      } catch (e) {
+        aviso("Não foi possível carregar os acessos. " + e.message, true);
+      }
+    }
+
+    function desenhar() {
+      $("secUsuarios").hidden = aba !== "usuarios";
+      $("secAcessos").hidden = aba !== "acessos";
+      document.querySelectorAll(".aba").forEach((b) => b.classList.toggle("ativa", b.dataset.aba === aba));
+      const termo = $("busca").value.trim().toLowerCase();
+      if (aba === "usuarios") desenharUsuarios(termo); else desenharAcessos(termo);
+    }
+
+    function situacao(u) {
+      if (!u.ativo) return el("span", { className: "selo" }, "Inativo");
+      if (u.trocarSenha) return el("span", { className: "selo provisoria" }, "Senha provisória");
+      return el("span", { className: "selo ativo" }, "Ativo");
+    }
+
+    function desenharUsuarios(termo) {
+      const lista = dados.usuarios.filter((u) => !termo || u.nome.toLowerCase().includes(termo) || u.email.includes(termo));
+      const corpo = $("linhas");
+      corpo.replaceChildren();
+      if (!lista.length) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 6, className: "vazio" },
+          el("strong", {}, termo ? "Ninguém encontrado" : "Nenhum usuário cadastrado"),
+          termo ? "Confira o nome ou o e-mail." : "Adicione as pessoas da equipe. Os logins das variáveis de ambiente continuam valendo até serem apagados.")));
+        return;
+      }
+      lista.forEach((u) => {
+        const ajustes = u.telasExtras.length || u.telasRetiradas.length ? el("span", { className: "sub" }, "telas ajustadas") : null;
+        const proprio = u.id === dados.eu;
+        corpo.append(el("tr", { className: u.ativo ? "" : "inativo" },
+          el("td", {}, u.nome, el("span", { className: "sub" }, u.email)),
+          el("td", {}, el("span", { className: "selo " + u.perfil }, tituloPerfil(u.perfil)), ajustes),
+          el("td", { className: "col-opcional" }, u.contas.length ? u.contas.join(", ") : "Todas"),
+          el("td", {}, situacao(u)),
+          el("td", { className: "col-opcional" }, quando(u.ultimoAcessoEm)),
+          el("td", {}, el("div", { className: "acoes" },
+            el("button", { className: "btn icone", type: "button", title: "Editar", onclick: () => abrirUsuario(u) }, icone("editar")),
+            u.ativo ? el("button", { className: "btn icone", type: "button", title: "Resetar senha", onclick: () => resetar(u) }, icone("senha")) : null,
+            proprio ? null : u.ativo
+              ? el("button", { className: "btn icone rubi", type: "button", title: "Desativar", onclick: () => ativar(u, false) }, icone("desativar"))
+              : el("button", { className: "btn icone verde", type: "button", title: "Reativar", onclick: () => ativar(u, true) }, icone("reativar"))))));
+      });
+    }
+
+    function desenharAcessos(termo) {
+      const lista = acessos.filter((a) => !termo || (a.alvo || "").toLowerCase().includes(termo) || (a.autor || "").toLowerCase().includes(termo));
+      const corpo = $("acessos");
+      corpo.replaceChildren();
+      if (!lista.length) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 5, className: "vazio" }, el("strong", {}, "Nenhum acesso registrado"))));
+        return;
+      }
+      lista.forEach((a) => corpo.append(el("tr", {},
+        el("td", {}, quando(a.quando)),
+        el("td", {}, el("span", { className: "selo " + a.tipo }, EVENTOS[a.tipo] || a.tipo)),
+        el("td", {}, a.alvo || "-"),
+        el("td", { className: "col-opcional" }, a.autor === "-" ? "" : a.autor),
+        el("td", { className: "col-opcional" }, a.ip || ""))));
+    }
+
+    function caixa(nome, valor, marcado, rotulo) {
+      return el("label", {}, el("input", { type: "checkbox", name: nome, value: valor, checked: marcado }), rotulo);
+    }
+
+    function desenharContas(marcadas) {
+      const todas = [...new Set([...dados.contas, ...contasExtras, ...marcadas])].sort();
+      $("fContas").replaceChildren(...todas.map((c) => caixa("conta", c, marcadas.includes(c), "Conta " + c)));
+      if (!todas.length) $("fContas").append(el("span", { className: "sub" }, "Nenhuma clínica configurada. Inclua o id da conta."));
+    }
+
+    function desenharTelas(marcadas) {
+      $("fTelas").replaceChildren(...dados.telas.map((t) => caixa("tela", t.id, marcadas.includes(t.id), t.titulo)));
+    }
+
+    function marcados(nome) {
+      return [...document.querySelectorAll("#formUsuario input[name=" + nome + "]:checked")].map((i) => i.value);
+    }
+
+    function trocarPerfil() {
+      const id = $("fPerfil").value;
+      $("fsContas").hidden = id === "ADMINISTRADOR";
+      desenharTelas(perfil(id).telas);
+    }
+
+    function abrirUsuario(u) {
+      editando = u;
+      contasExtras = [];
+      $("uTitulo").textContent = u ? "Editar usuário" : "Adicionar usuário";
+      $("uSub").textContent = u ? "Mudar perfil, clínicas ou telas encerra a sessão aberta da pessoa." : "O Mandalore gera uma senha provisória para você passar à pessoa.";
+      $("uOk").textContent = u ? "Salvar" : "Adicionar";
+      $("uErro").textContent = "";
+      $("fNome").value = u ? u.nome : "";
+      $("fEmail").value = u ? u.email : "";
+      const opcoes = [...dados.perfis];
+      if (u && !opcoes.some((p) => p.id === u.perfil)) opcoes.push(perfil(u.perfil));
+      $("fPerfil").replaceChildren(...opcoes.map((p) => el("option", { value: p.id }, p.titulo)));
+      $("fPerfil").value = u ? u.perfil : (opcoes.find((p) => p.id === "RECEPCAO") || opcoes[0]).id;
+      $("fsContas").hidden = $("fPerfil").value === "ADMINISTRADOR";
+      $("novaConta").hidden = !dados.geral;
+      desenharContas(u ? u.contas : (dados.contas.length === 1 ? [...dados.contas] : []));
+      desenharTelas(u ? u.telas : perfil($("fPerfil").value).telas);
+      $("dlgUsuario").showModal();
+      $("fNome").focus();
+    }
+
+    async function salvarUsuario(evento) {
+      evento.preventDefault();
+      const perfilId = $("fPerfil").value;
+      const base = perfil(perfilId).telas;
+      const visiveis = dados.telas.map((t) => t.id);
+      const telas = marcados("tela");
+      const mantidas = editando ? editando.telasRetiradas.filter((t) => !visiveis.includes(t)) : [];
+      const corpo = {
+        nome: $("fNome").value,
+        email: $("fEmail").value,
+        perfil: perfilId,
+        contas: perfilId === "ADMINISTRADOR" ? [] : marcados("conta"),
+        telasExtras: telas.filter((t) => !base.includes(t)),
+        telasRetiradas: [...base.filter((t) => visiveis.includes(t) && !telas.includes(t)), ...mantidas]
+      };
+      $("uOk").disabled = true;
+      try {
+        if (editando) {
+          await enviar("PUT", "/usuarios/api/usuarios/" + editando.id, corpo);
+          $("dlgUsuario").close();
+          aviso("Usuário salvo");
+        } else {
+          const r = await enviar("POST", "/usuarios/api/usuarios", corpo);
+          $("dlgUsuario").close();
+          mostrarSenha(corpo.nome.trim(), r.senha);
+        }
+        await carregar();
+      } catch (e) {
+        $("uErro").textContent = e.message;
+      } finally {
+        $("uOk").disabled = false;
+      }
+    }
+
+    function mostrarSenha(nome, senha) {
+      $("sTexto").textContent = "Passe esta senha para " + nome + " por um canal seguro. No primeiro acesso, o Mandalore pede uma senha nova.";
+      $("sSenha").textContent = senha;
+      $("dlgSenha").showModal();
+    }
+
+    function pedirConfirmacao(titulo, texto, botao, acao) {
+      $("cTitulo").textContent = titulo;
+      $("cTexto").textContent = texto;
+      $("cOk").textContent = botao;
+      $("cErro").textContent = "";
+      confirmar = acao;
+      $("dlgConfirma").showModal();
+    }
+
+    function resetar(u) {
+      pedirConfirmacao("Resetar a senha de " + u.nome + "?", "A senha atual deixa de valer e a sessão aberta é encerrada. Você recebe uma senha provisória para passar à pessoa.",
+        "Resetar senha", async () => {
+          const r = await enviar("POST", "/usuarios/api/usuarios/" + u.id + "/senha");
+          $("dlgConfirma").close();
+          mostrarSenha(u.nome, r.senha);
+        });
+    }
+
+    function ativar(u, ativo) {
+      const fazer = async () => {
+        await enviar("POST", "/usuarios/api/usuarios/" + u.id + "/ativo", { ativo });
+        $("dlgConfirma").close();
+        aviso(ativo ? "Usuário reativado" : "Usuário desativado");
+      };
+      if (ativo) {
+        fazer().then(carregar).catch((e) => aviso(e.message, true));
+        return;
+      }
+      pedirConfirmacao("Desativar " + u.nome + "?", "A pessoa não entra mais e a sessão aberta é encerrada. O histórico continua guardado e dá para reativar depois.",
+        "Desativar", fazer);
+    }
+
+    $("formConfirma").addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      $("cOk").disabled = true;
+      try {
+        await confirmar();
+        await carregar();
+      } catch (e) {
+        $("cErro").textContent = e.message;
+      } finally {
+        $("cOk").disabled = false;
+      }
+    });
+
+    $("btnConta").addEventListener("click", () => {
+      const conta = $("fNovaConta").value.trim();
+      if (!/^[A-Za-z0-9_-]{1,40}$/.test(conta)) {
+        $("uErro").textContent = "Id de conta inválido";
+        return;
+      }
+      const marcadas = [...marcados("conta"), conta];
+      contasExtras.push(conta);
+      $("fNovaConta").value = "";
+      $("uErro").textContent = "";
+      desenharContas(marcadas);
+    });
+
+    $("btnCopiar").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText($("sSenha").textContent);
+        aviso("Senha copiada");
+      } catch (e) {
+        aviso("Não foi possível copiar. Selecione e copie a senha.", true);
+      }
+    });
+
+    $("btnNovo").addEventListener("click", () => abrirUsuario(null));
+    $("fPerfil").addEventListener("change", trocarPerfil);
+    $("formUsuario").addEventListener("submit", salvarUsuario);
+    $("busca").addEventListener("input", desenhar);
+    document.querySelectorAll("[data-fechar]").forEach((b) => b.addEventListener("click", () => b.closest("dialog").close()));
+    document.querySelectorAll(".aba").forEach((b) => b.addEventListener("click", () => {
+      aba = b.dataset.aba;
+      if (aba === "acessos") carregarAcessos();
+      desenhar();
+    }));
+
+    carregar();
+  </script>
+</body>
+</html>

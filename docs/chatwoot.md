@@ -14,7 +14,9 @@ O paciente escreve na caixa. O Chatwoot avisa o Mandalore. O Dialogflow monta a 
 | Aberto | Atendente humano. O Mandalore registra `conversa_aberta` e não responde |
 | Pendente de novo | O atendente devolveu a conversa ao bot. O Mandalore volta a responder |
 
-O Mandalore só trata evento `message_created`, mensagem do paciente (`incoming`), não privada. Nota interna e resposta do próprio bot são ignoradas.
+O bot só trata evento `message_created`, mensagem do paciente (`incoming`), não privada. Nota interna e resposta do próprio bot são ignoradas.
+
+Com o funil de orçamento ligado (`FUNIL_ENABLED`), o Mandalore também lê a resposta do atendente e o evento `conversation_updated` (etiqueta `orcamento` adicionada), só para atualizar o funil. Marque **Conversa atualizada** no webhook. Detalhes em [`funil-orcamento.md`](funil-orcamento.md).
 
 Quando a intent começa com `transbordo.`, o Mandalore publica o texto e muda o status para **aberto**.
 

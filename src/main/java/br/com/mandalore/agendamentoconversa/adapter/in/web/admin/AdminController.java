@@ -7,8 +7,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -24,8 +24,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import br.com.mandalore.agendamentoconversa.application.domain.model.Usuario;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.UsuarioUseCase;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -35,7 +39,8 @@ import jakarta.servlet.http.HttpSession;
 public class AdminController {
 
     static final Duration SESSAO_INATIVA = Duration.ofHours(8);
-    private static final Pattern VOLTA = Pattern.compile("/(admin|curadoria|precos|simulador|agenda)([/?][A-Za-z0-9/?&=._%-]*)?");
+    private static final Pattern VOLTA = Pattern.compile(
+            "/(admin|curadoria|precos|simulador|agenda|funil|usuarios)([/?][A-Za-z0-9/?&=._%-]*)?");
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminController.class);
 
@@ -57,13 +62,45 @@ public class AdminController {
     public record ModuloResposta(String id, String titulo, String descricao, String caminho, boolean ativo) {
     }
 
-    /** administrador: entra em todos os módulos e em todas as clínicas. */
-    public record EuResposta(String usuario, String nome, String chatwootUrl, List<ModuloResposta> modulos, boolean administrador) {
+    /**
+     * administrador: entra em todos os módulos e em todas as clínicas. pessoa: nome do usuário cadastrado (nulo nos
+     * logins das variáveis). cadastrado: pode trocar a própria senha.
+     */
+    public record EuResposta(String usuario, String nome, String chatwootUrl, List<ModuloResposta> modulos,
+                             boolean administrador, String pessoa, boolean cadastrado, boolean trocarSenha) {
+    }
+
+    public record TrocaSenha(String atual, String nova) {
     }
 
     @GetMapping("/admin")
     public ResponseEntity<byte[]> central() throws IOException {
         return html("admin/index.html");
+    }
+
+    @GetMapping("/admin/senha")
+    public ResponseEntity<byte[]> senha() throws IOException {
+        return html("admin/senha.html");
+    }
+
+    @PostMapping(value = "/admin/api/senha", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> trocarSenha(@RequestBody TrocaSenha troca,
+                                                           @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
+                                                           HttpServletRequest request) {
+        Optional<UsuarioUseCase> usuarios = acesso.usuarios();
+        if (!login.doBanco() || usuarios.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("erro",
+                    "Este login vem da configuração do servidor. A senha muda nas variáveis de ambiente."));
+        }
+        try {
+            Usuario.Cadastro atualizado = usuarios.get().trocarSenha(login.id(), troca.atual(), troca.nova(),
+                    AdminAcesso.ip(request));
+            request.getSession().setAttribute(AdminAuthFilter.SESSAO, AdminAcesso.Login.de(atualizado));
+            LOG.info("admin senha trocada usuario={}", login.usuario());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("erro", ex.getMessage()));
+        }
     }
 
     @GetMapping("/admin/login")
@@ -90,10 +127,12 @@ public class AdminController {
         Optional<AdminAcesso.Login> login = acesso.autenticar(usuario, senha);
         if (login.isEmpty()) {
             acesso.registrarFalha(ip);
+            acesso.registrarRecusado(usuario, ip);
             LOG.warn("admin login recusado ip={}", ip);
             return ir("/admin/login?erro=" + (acesso.bloqueado(ip) ? "bloqueado" : "senha") + sufixo);
         }
         acesso.limpar(ip);
+        acesso.registrarLogin(login.get(), ip);
         HttpSession anterior = request.getSession(false);
         if (anterior != null) {
             anterior.invalidate();
@@ -102,7 +141,7 @@ public class AdminController {
         sessao.setAttribute(AdminAuthFilter.SESSAO, login.get());
         sessao.setMaxInactiveInterval((int) SESSAO_INATIVA.toSeconds());
         LOG.info("admin login usuario={} modulos={} ip={}", login.get().usuario(), login.get().modulos(), ip);
-        return ir(destino(volta));
+        return ir(login.get().trocarSenha() ? "/admin/senha" : destino(volta));
     }
 
     @PostMapping("/admin/logout")
@@ -121,9 +160,10 @@ public class AdminController {
                 .filter(m -> !(login instanceof AdminAcesso.Login l) || l.modulos().contains(m))
                 .map(m -> new ModuloResposta(m.name().toLowerCase(), m.titulo(), m.descricao(), m.caminho(), acesso.ativo(m)))
                 .toList();
-        boolean administrador = login instanceof AdminAcesso.Login l
-                && l.modulos().containsAll(EnumSet.allOf(Modulo.class)) && l.contas().isEmpty();
-        return new EuResposta(usuario, nome, chatwootUrl, modulos, administrador);
+        if (!(login instanceof AdminAcesso.Login l)) {
+            return new EuResposta(usuario, nome, chatwootUrl, modulos, false, null, false, false);
+        }
+        return new EuResposta(usuario, nome, chatwootUrl, modulos, l.geral(), l.nome(), l.doBanco(), l.trocarSenha());
     }
 
     @GetMapping("/admin/assets/{arquivo:(?:nav\\.(?:js|css)|tema\\.css)}")

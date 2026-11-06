@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.FunilUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.LeitorPedidoPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.TabelaPrecoPort;
@@ -59,6 +61,29 @@ class OrcamentoPedidoServiceTest {
         ordem.verify(chatwoot).notaPrivada(eq("1"), eq("7"), contains("- Hemograma completo: R$ 25,00"));
         ordem.verify(chatwoot).atribuirEquipe("1", "7", Setor.FATURAMENTO);
         ordem.verify(chatwoot).abrirAtendente("1", "7");
+    }
+
+    @Test
+    void pedidoLidoAbreOportunidadeNoFunilComTotalEQuantidade() {
+        FunilUseCase funil = mock(FunilUseCase.class);
+        service = new OrcamentoPedidoService(chatwoot, leitor, tabela, Runnable::run, () -> funil);
+        when(leitor.ler(FOTO, List.of("Hemograma completo"))).thenReturn(new Orcamento.PedidoLido(true, List.of(
+                new Orcamento.ExameLido("HMG", "Hemograma completo"), new Orcamento.ExameLido("Anti-TPO", null))));
+
+        service.orcar(mensagem());
+
+        verify(funil).abrirOrcamento("1", "7", new BigDecimal("25"), 2);
+    }
+
+    @Test
+    void imagemQueNaoEPedidoNaoAbreOportunidade() {
+        FunilUseCase funil = mock(FunilUseCase.class);
+        service = new OrcamentoPedidoService(chatwoot, leitor, tabela, Runnable::run, () -> funil);
+        when(leitor.ler(any(), anyList())).thenReturn(new Orcamento.PedidoLido(false, List.of()));
+
+        service.orcar(mensagem());
+
+        verifyNoInteractions(funil);
     }
 
     @Test

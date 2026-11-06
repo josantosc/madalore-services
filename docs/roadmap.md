@@ -1,6 +1,6 @@
 # Roteiro de evolução do Mandalore
 
-Ordem sugerida das próximas entregas, o que já existe de cada uma e o que falta. Situação em 05/11/2026.
+Ordem sugerida das próximas entregas, o que já existe de cada uma e o que falta. Situação em 06/11/2026.
 
 | Prioridade | Item | Esforço | Por quê | Situação |
 |---|---|---|---|---|
@@ -223,12 +223,18 @@ Um motor de envio só (rotina agendada, template aprovado na Meta, tabela de env
 3. Satisfação e convite de avaliação no Google (item 6).
 4. **Retomada de agendamento abandonado.** A trilha mostra quem começou a marcar e parou. Dentro da janela de 24
    horas do WhatsApp a retomada vai como mensagem livre, sem template: uma por conversa, só se o paciente não
-   marcou nem falou com atendente depois.
+   marcou nem falou com atendente depois. Desenho completo em [`retomada-agendamento.md`](retomada-agendamento.md).
 5. **Lista de espera e encaixe.** O paciente sem horário entra na fila da especialidade ou do exame. Quando um
    horário é liberado (cancelamento pelo bot ou resposta ao lembrete), o primeiro da fila recebe a oferta, com
    prazo para aceitar antes de passar ao próximo.
+6. **Funil de orçamento.** Primeira versão feita. Cada orçamento (por foto ou pela etiqueta `orcamento`) vira uma
+   oportunidade com responsável e data de retorno, no lugar de um CRM separado. Fecha como ganho quando o assistente
+   marca na conversa e como perdido depois de 15 dias sem resposta. Tela `/funil` na central e retorno do dia como
+   nota privada no Chatwoot. Falta fechar pelo agendamento da recepção no Tasy e o painel lateral no Chatwoot.
+   Detalhes em [`funil-orcamento.md`](funil-orcamento.md).
 
-Indicadores: faltas, confirmações, horários reaproveitados e retomadas que viraram agendamento.
+Indicadores: faltas, confirmações, horários reaproveitados, retomadas que viraram agendamento e orçamentos que
+viraram agendamento.
 
 ### Fase 2 — Atendimento híbrido com contexto
 
@@ -265,6 +271,16 @@ Indicadores: tempo de atendimento depois do transbordo e transbordos evitados.
 1. Agente com ferramentas só de leitura para perguntas fora dos fluxos. Qualquer gravação no Tasy passa pelo
    fluxo do Dialogflow.
 2. Atendimento por voz com transbordo para a Recepção.
+
+### Base para várias clínicas
+
+Antes da segunda clínica, porque com mais de uma o login compartilhado impede saber quem acessou o quê (LGPD).
+
+1. **Usuários e perfis da central.** Feito em 06/11/2026: um login por pessoa, guardado no PostgreSQL, com perfis
+   prontos (Gestor da clínica, Recepção, Faturamento, Curadoria), tela `/usuarios`, troca de senha e auditoria de
+   acesso. Falta o "esqueci a senha" (depende de envio de e-mail) e migrar a equipe para apagar os logins das
+   variáveis. Detalhes em [`usuarios-perfis.md`](usuarios-perfis.md).
+2. **Relatórios por clínica** (Fase 3, item 2).
 
 ### Módulos comerciais
 

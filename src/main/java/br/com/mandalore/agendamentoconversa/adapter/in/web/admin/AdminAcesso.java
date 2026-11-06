@@ -16,20 +16,30 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Usuario;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.UsuarioUseCase;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Logins da central de administração. ADMIN_USER entra em tudo; CURADORIA_USER, PRECOS_USER e AGENDA_USER só no
- * próprio módulo; a recepção de cada clínica só na agenda da própria conta.
+ * Logins da central de administração. Primeiro as variáveis de ambiente: ADMIN_USER entra em tudo (e é o acesso de
+ * emergência, sem banco); CURADORIA_USER, PRECOS_USER, AGENDA_USER e FUNIL_USER só no próprio módulo; a recepção de
+ * cada clínica só na agenda da própria conta. Depois os usuários cadastrados em /usuarios (login pelo e-mail).
  * Senhas erradas bloqueiam o IP por {@link #BLOQUEIO}.
  */
 @Component
@@ -38,12 +48,21 @@ public class AdminAcesso {
     static final int MAX_FALHAS = 5;
     static final Duration BLOQUEIO = Duration.ofMinutes(15);
     private static final int MAX_IPS = 10_000;
+    private static final Logger LOG = LoggerFactory.getLogger(AdminAcesso.class);
 
-    /** contas: contas do Chatwoot (clínicas) que o login enxerga na agenda; vazio = todas. */
-    public record Login(String usuario, Set<Modulo> modulos, Set<String> contas) implements Serializable {
+    /**
+     * contas: contas do Chatwoot (clínicas) que o login enxerga; vazio = todas. id e versao: só dos usuários
+     * cadastrados no banco (nulo nos logins das variáveis).
+     */
+    public record Login(String usuario, Set<Modulo> modulos, Set<String> contas, Long id, int versao,
+                        boolean trocarSenha, String nome) implements Serializable {
 
         public Login {
             contas = contas == null ? Set.of() : Set.copyOf(contas);
+        }
+
+        public Login(String usuario, Set<Modulo> modulos, Set<String> contas) {
+            this(usuario, modulos, contas, null, 0, false, null);
         }
 
         public Login(String usuario, Set<Modulo> modulos) {
@@ -52,6 +71,26 @@ public class AdminAcesso {
 
         public boolean podeVer(String conta) {
             return contas.isEmpty() || contas.contains(conta);
+        }
+
+        public boolean doBanco() {
+            return id != null;
+        }
+
+        public boolean geral() {
+            return contas.isEmpty() && modulos.containsAll(EnumSet.allOf(Modulo.class));
+        }
+
+        public Usuario.Ator ator() {
+            return new Usuario.Ator(usuario, id, geral(), contas,
+                    modulos.stream().map(Modulo::name).collect(Collectors.toSet()));
+        }
+
+        public static Login de(Usuario.Cadastro usuario) {
+            Set<Modulo> modulos = EnumSet.noneOf(Modulo.class);
+            usuario.telas().forEach(tela -> modulos.add(Modulo.valueOf(tela)));
+            return new Login(usuario.email(), Set.copyOf(modulos), usuario.contas(), usuario.id(), usuario.versao(),
+                    usuario.trocarSenha(), usuario.nome());
         }
     }
 
@@ -72,21 +111,31 @@ public class AdminAcesso {
     private final List<Credencial> credenciais;
     private final Map<Modulo, Boolean> ativos;
     private final Clock relogio;
+    private final Supplier<UsuarioUseCase> usuarios;
     private final Map<String, Falhas> falhas = new ConcurrentHashMap<>();
 
-    @Autowired
     public AdminAcesso(Environment env) {
         this(credenciais(env), ativos(env), Clock.systemUTC());
     }
 
+    @Autowired
+    public AdminAcesso(Environment env, ObjectProvider<UsuarioUseCase> usuarios) {
+        this(credenciais(env), ativos(env), Clock.systemUTC(), usuarios::getIfAvailable);
+    }
+
     AdminAcesso(List<Credencial> credenciais, Map<Modulo, Boolean> ativos, Clock relogio) {
+        this(credenciais, ativos, relogio, () -> null);
+    }
+
+    AdminAcesso(List<Credencial> credenciais, Map<Modulo, Boolean> ativos, Clock relogio, Supplier<UsuarioUseCase> usuarios) {
         this.credenciais = credenciais.stream().filter(Credencial::preenchida).toList();
         this.ativos = ativos;
         this.relogio = relogio;
+        this.usuarios = usuarios;
     }
 
     public boolean configurado() {
-        return !credenciais.isEmpty();
+        return !credenciais.isEmpty() || usuarios.get() != null;
     }
 
     public boolean ativo(Modulo modulo) {
@@ -109,8 +158,56 @@ public class AdminAcesso {
                 contas.addAll(credencial.contas());
             }
         }
-        return modulos.isEmpty() ? Optional.empty()
-                : Optional.of(new Login(nome, Set.copyOf(modulos), todasContas ? Set.of() : contas));
+        if (!modulos.isEmpty()) {
+            return Optional.of(new Login(nome, Set.copyOf(modulos), todasContas ? Set.of() : contas));
+        }
+        UsuarioUseCase cadastro = usuarios.get();
+        if (cadastro == null || !nome.contains("@")) {
+            return Optional.empty();
+        }
+        try {
+            return cadastro.autenticar(nome, senha).map(Login::de);
+        } catch (DataAccessException ex) {
+            LOG.warn("admin login sem banco: {}", ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * A sessão de um usuário do banco ainda vale (ativo e sem alteração de acesso ou senha desde o login).
+     * Lança {@link DataAccessException} com o banco fora do ar.
+     */
+    public boolean vigente(Login login) {
+        UsuarioUseCase cadastro = usuarios.get();
+        return !login.doBanco() || cadastro != null && cadastro.vigente(login.id(), login.versao());
+    }
+
+    public Optional<UsuarioUseCase> usuarios() {
+        return Optional.ofNullable(usuarios.get());
+    }
+
+    public void registrarLogin(Login login, String ip) {
+        auditar(cadastro -> {
+            if (login.doBanco()) {
+                cadastro.registrarLogin(login.id(), login.usuario(), ip);
+            }
+        });
+    }
+
+    public void registrarRecusado(String usuario, String ip) {
+        auditar(cadastro -> cadastro.registrarLoginRecusado(usuario, ip));
+    }
+
+    private void auditar(Consumer<UsuarioUseCase> acao) {
+        UsuarioUseCase cadastro = usuarios.get();
+        if (cadastro == null) {
+            return;
+        }
+        try {
+            acao.accept(cadastro);
+        } catch (DataAccessException ex) {
+            LOG.warn("auditoria de acesso nao gravada: {}", ex.getMessage());
+        }
     }
 
     /** Login de um cabeçalho Basic (scripts, como o curl da importação). */
@@ -172,7 +269,8 @@ public class AdminAcesso {
                 credencial(env, "admin", EnumSet.allOf(Modulo.class)),
                 credencial(env, "curadoria", EnumSet.of(Modulo.CURADORIA)),
                 credencial(env, "precos", EnumSet.of(Modulo.PRECOS)),
-                credencial(env, "agenda", EnumSet.of(Modulo.AGENDA))));
+                credencial(env, "agenda", EnumSet.of(Modulo.AGENDA)),
+                credencial(env, "funil", EnumSet.of(Modulo.FUNIL))));
         Binder.get(env)
                 .bind("mandalore.clientes", Bindable.mapOf(String.class, ClientesProperties.Cliente.class))
                 .orElse(Map.of())
@@ -199,6 +297,8 @@ public class AdminAcesso {
         ativos.put(Modulo.PRECOS, postgres && env.getProperty("orcamento.enabled", Boolean.class, false));
         ativos.put(Modulo.SIMULADOR, env.getProperty("simulador.enabled", Boolean.class, false));
         ativos.put(Modulo.AGENDA, postgres && env.getProperty("agenda.enabled", Boolean.class, false));
+        ativos.put(Modulo.FUNIL, postgres && env.getProperty("funil.enabled", Boolean.class, false));
+        ativos.put(Modulo.USUARIOS, postgres);
         return ativos;
     }
 

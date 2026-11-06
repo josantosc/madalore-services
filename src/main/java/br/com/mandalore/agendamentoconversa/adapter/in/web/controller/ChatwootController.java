@@ -4,9 +4,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +25,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Anexo;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.FunilUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMensagemUseCase;
 
 @RestController
@@ -32,15 +38,28 @@ public class ChatwootController {
     private final ReceberMensagemUseCase receberMensagem;
     private final String segredoGlobal;
     private final ClientesProperties clientes;
+    private final Supplier<FunilUseCase> funil;
 
+    @Autowired
     public ChatwootController(
             ReceberMensagemUseCase receberMensagem,
             @Value("${chatwoot.webhook-secret:}") String segredo,
-            ClientesProperties clientes
+            ClientesProperties clientes,
+            ObjectProvider<FunilUseCase> funil
     ) {
+        this(receberMensagem, segredo, clientes, (Supplier<FunilUseCase>) funil::getIfAvailable);
+    }
+
+    public ChatwootController(ReceberMensagemUseCase receberMensagem, String segredo, ClientesProperties clientes) {
+        this(receberMensagem, segredo, clientes, (Supplier<FunilUseCase>) () -> null);
+    }
+
+    ChatwootController(ReceberMensagemUseCase receberMensagem, String segredo, ClientesProperties clientes,
+                       Supplier<FunilUseCase> funil) {
         this.receberMensagem = receberMensagem;
         this.segredoGlobal = segredo;
         this.clientes = clientes;
+        this.funil = funil;
     }
 
     @PostMapping("/chatwoot")
@@ -58,7 +77,51 @@ public class ChatwootController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         receberMensagem.receber(mensagem);
+        FunilUseCase oportunidades = funil.get();
+        if (oportunidades != null) {
+            eventoFunil(corpo, mensagem.accountId()).ifPresent(evento -> {
+                try {
+                    oportunidades.registrar(evento);
+                } catch (RuntimeException ex) {
+                    LOG.warn("conversation_id={} funil evento={} falhou: {}",
+                            evento.conversa(), evento.tipo(), ex.getClass().getSimpleName());
+                }
+            });
+        }
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Mensagem do paciente, resposta do atendente (conversa aberta, não privada, não do bot) e mudança de etiquetas.
+     * A resposta do bot sai pela API com a conversa pendente; por isso só conta a mensagem com a conversa aberta.
+     */
+    static Optional<Funil.Evento> eventoFunil(JsonNode corpo, String accountId) {
+        String event = corpo.path("event").asText("");
+        if (accountId == null) {
+            return Optional.empty();
+        }
+        if ("conversation_updated".equals(event)) {
+            String conversa = corpo.path("id").asText(null);
+            List<String> adicionadas = etiquetasAdicionadas(corpo.path("changed_attributes"));
+            return conversa == null || adicionadas.isEmpty() ? Optional.empty()
+                    : Optional.of(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, accountId, conversa, null, adicionadas));
+        }
+        String conversa = corpo.path("conversation").path("id").asText(null);
+        if (!"message_created".equals(event) || conversa == null || corpo.path("private").asBoolean(false)) {
+            return Optional.empty();
+        }
+        String tipo = corpo.path("message_type").asText("");
+        if ("incoming".equalsIgnoreCase(tipo) || "0".equals(tipo)) {
+            return Optional.of(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_PACIENTE, accountId, conversa, null, null));
+        }
+        JsonNode sender = corpo.path("sender");
+        boolean atendente = ("outgoing".equalsIgnoreCase(tipo) || "1".equals(tipo))
+                && "open".equalsIgnoreCase(corpo.path("conversation").path("status").asText(""))
+                && !"agent_bot".equalsIgnoreCase(sender.path("type").asText(""));
+        return atendente
+                ? Optional.of(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_ATENDENTE, accountId, conversa,
+                        sender.path("name").asText(null), null))
+                : Optional.empty();
     }
 
     private String segredo(String accountId) {
@@ -84,12 +147,44 @@ public class ChatwootController {
                 corpo.path("private").asBoolean(false),
                 texto(corpo, "content"),
                 corpo.path("id").isMissingNode() ? null : corpo.path("id").asText(),
-                corpo.path("account").path("id").asText(null),
+                corpo.path("account").path("id").asText(corpo.path("account_id").asText(null)),
                 conversation.path("id").asText(null),
                 conversation.path("status").asText(null),
                 canal,
                 anexos(corpo.path("attachments"))
         );
+    }
+
+    /** changed_attributes: [{"label_list": {"previous_value": [...], "current_value": [...]}}]; a lista pode vir como texto "a,b". */
+    private static List<String> etiquetasAdicionadas(JsonNode mudancas) {
+        List<String> adicionadas = new ArrayList<>();
+        if (!mudancas.isArray()) {
+            return adicionadas;
+        }
+        mudancas.forEach(mudanca -> List.of("label_list", "cached_label_list").forEach(campo -> {
+            JsonNode etiquetas = mudanca.path(campo);
+            if (etiquetas.isObject()) {
+                List<String> antes = lista(etiquetas.path("previous_value"));
+                lista(etiquetas.path("current_value")).stream()
+                        .filter(e -> !antes.contains(e) && !adicionadas.contains(e))
+                        .forEach(adicionadas::add);
+            }
+        }));
+        return adicionadas;
+    }
+
+    private static List<String> lista(JsonNode valor) {
+        List<String> itens = new ArrayList<>();
+        if (valor.isArray()) {
+            valor.forEach(item -> itens.add(item.asText().trim()));
+        } else if (valor.isTextual()) {
+            for (String item : valor.asText().split(",")) {
+                if (!item.isBlank()) {
+                    itens.add(item.trim());
+                }
+            }
+        }
+        return itens;
     }
 
     private List<Anexo> anexos(JsonNode attachments) {

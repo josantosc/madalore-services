@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Funil de orçamentos</title>
+  <link rel="stylesheet" href="/admin/assets/nav.css">
+  <script src="/admin/assets/nav.js"></script>
+  <style>
+    :root {
+      --fundo: #fdfdfd; --solido: #ffffff; --alpha-1: rgba(0, 0, 51, .03); --alpha-2: rgba(0, 0, 59, .055);
+      --borda: #e8e8ec; --borda-forte: #d9d9e0;
+      --texto: #1c2024; --texto-2: #60646c; --texto-3: #8b8d98;
+      --marca: #0b5c7a; --marca-hover: #0a536e; --marca-suave: #e7eff2; --marca-texto: #094b64;
+      --rubi: #e54666; --rubi-hover: #dc3b5d; --rubi-suave: #feeaed; --rubi-texto: #ca244d;
+      --ambar-suave: #fff7c2; --ambar-texto: #ab6400;
+      --verde-suave: #e6f6eb; --verde-texto: #218358;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; background: var(--fundo); color: var(--texto);
+      font: 14px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; }
+    svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    main { flex: 1; min-width: 0; overflow-y: auto; }
+    .conteudo { max-width: 1280px; margin: 0 auto; padding: 32px 32px 48px; }
+    h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
+    .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 640px; }
+
+    .numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 24px; }
+    .numero { border: 1px solid var(--borda); border-radius: 12px; padding: 14px 16px; background: var(--solido); }
+    .numero small { display: block; color: var(--texto-2); font-size: 13px; }
+    .numero strong { font-size: 20px; font-weight: 500; }
+    .numero span { color: var(--texto-3); font-size: 13px; margin-left: 6px; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px;
+      border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .12s; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.solido { background: var(--marca); color: #fff; }
+    .btn.solido:hover:not(:disabled) { background: var(--marca-hover); }
+    .btn.cinza { background: var(--alpha-2); color: var(--texto); }
+    .btn.cinza:hover:not(:disabled) { background: rgba(0, 0, 59, .09); }
+    .btn.perigo { background: var(--rubi); color: #fff; }
+    .btn.perigo:hover:not(:disabled) { background: var(--rubi-hover); }
+    .btn.icone { width: 28px; height: 28px; padding: 0; border-radius: 6px; background: var(--alpha-1); color: var(--texto-2); }
+    .btn.icone:hover { background: var(--alpha-2); color: var(--texto); }
+    .btn.icone.verde { background: var(--verde-suave); color: var(--verde-texto); }
+    .btn.icone.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
+
+    .barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 24px; border-bottom: 1px solid var(--borda); flex-wrap: wrap; }
+    .abas { display: flex; gap: 20px; }
+    .aba { background: none; border: 0; padding: 8px 0 10px; font: inherit; font-size: 14px; color: var(--texto-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
+    .aba:hover { color: var(--texto); }
+    .aba.ativa { color: var(--marca); border-color: var(--marca); font-weight: 500; }
+    .contador { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+    .aba.ativa .contador { background: var(--marca-suave); color: var(--marca-texto); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th { text-align: left; font-weight: 500; color: var(--texto-2); padding: 12px 16px 12px 0; font-size: 13px; }
+    td { padding: 14px 16px 14px 0; border-top: 1px solid var(--borda); vertical-align: middle; }
+    th.num, td.num { text-align: right; white-space: nowrap; }
+    .acoes { display: flex; gap: 6px; justify-content: flex-end; }
+    .vazio { text-align: center; color: var(--texto-2); padding: 56px 0; }
+    .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
+    .sub { color: var(--texto-3); font-size: 12px; display: block; }
+    a.conversa { color: var(--marca); font-weight: 500; text-decoration: none; }
+    a.conversa:hover { text-decoration: underline; }
+
+    .selo { border-radius: 6px; padding: 1px 8px; font-size: 12px; font-weight: 500; white-space: nowrap; background: var(--alpha-2); color: var(--texto-2); }
+    .selo.NOVO { background: var(--ambar-suave); color: var(--ambar-texto); }
+    .selo.ORCAMENTO_ENVIADO, .selo.EM_NEGOCIACAO { background: var(--marca-suave); color: var(--marca-texto); }
+    .selo.AGENDADO { background: var(--verde-suave); color: var(--verde-texto); }
+    .selo.PERDIDO { background: var(--rubi-suave); color: var(--rubi-texto); }
+    .atrasado { color: var(--rubi-texto); font-weight: 500; }
+
+    .quadro { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; overflow-x: auto; padding-bottom: 8px; }
+    .coluna { background: var(--alpha-1); border-radius: 12px; padding: 10px; min-height: 240px; display: flex; flex-direction: column; gap: 8px; }
+    .coluna.alvo { outline: 2px dashed var(--marca); }
+    .coluna header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 2px 4px 6px; }
+    .coluna header strong { font-weight: 500; }
+    .coluna header span { color: var(--texto-2); font-size: 12px; white-space: nowrap; }
+    .cartao { background: var(--solido); border: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px; cursor: grab; display: grid; gap: 2px; }
+    .cartao:hover { border-color: var(--borda-forte); }
+    .cartao .linha { display: flex; justify-content: space-between; gap: 8px; }
+    .cartao .valor { font-weight: 500; }
+
+    dialog { border: 0; padding: 24px; border-radius: 12px; width: min(440px, calc(100vw - 32px)); color: var(--texto);
+      box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
+    dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
+    dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
+    dialog p.sub { color: var(--texto-2); margin: 4px 0 0; font-size: 14px; }
+    .form { display: grid; gap: 16px; margin-top: 20px; }
+    .form label { display: grid; gap: 6px; font-weight: 500; }
+    .form .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 12px; }
+    select.campo, input.campo { height: 36px; width: 100%; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1);
+      outline: 1px solid var(--borda); font: inherit; font-size: 14px; color: var(--texto); }
+    select.campo:focus, input.campo:focus { outline: 1px solid var(--marca); background: var(--solido); }
+    .rodape { display: flex; gap: 12px; margin-top: 24px; }
+    .rodape .btn { flex: 1; height: 36px; }
+
+    #aviso { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px); background: var(--texto); color: #fff;
+      padding: 10px 16px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; pointer-events: none;
+      transition: opacity .15s, transform .15s; max-width: calc(100vw - 32px); display: flex; gap: 8px; align-items: center; }
+    #aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+    #aviso.erro::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rubi); flex: none; }
+
+    @media (max-width: 860px) {
+      .conteudo { padding: 20px 16px 40px; }
+      .col-opcional { display: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="/admin/assets/tema.css">
+</head>
+<body>
+  <main>
+    <div class="conteudo">
+      <h1>Funil de orçamentos</h1>
+      <p class="descricao">Cada orçamento enviado ao paciente fica aqui até virar agendamento ou ser perdido. O agendamento pelo assistente fecha sozinho; o que foi marcado pela recepção, marque como Agendado.</p>
+
+      <div class="numeros">
+        <div class="numero"><small>Em aberto</small><strong id="nAbertas">0</strong><span id="vAbertas"></span></div>
+        <div class="numero"><small>Retornos para hoje</small><strong id="nRetornos">0</strong><span id="nAtrasados"></span></div>
+        <div class="numero"><small>Agendados (30 dias)</small><strong id="nGanhas">0</strong><span id="vGanhas"></span></div>
+        <div class="numero"><small>Conversão (30 dias)</small><strong id="conversao">-</strong><span id="nPerdidas"></span></div>
+      </div>
+
+      <div class="barra">
+        <div class="abas">
+          <button class="aba ativa" type="button" data-aba="hoje">Hoje <span class="contador" id="cHoje">0</span></button>
+          <button class="aba" type="button" data-aba="quadro">Quadro <span class="contador" id="cQuadro">0</span></button>
+        </div>
+      </div>
+
+      <section id="secHoje">
+        <table>
+          <thead><tr><th>Conversa</th><th>Etapa</th><th class="num">Valor</th><th class="col-opcional">Responsável</th><th>Retorno</th><th></th></tr></thead>
+          <tbody id="linhas"></tbody>
+        </table>
+      </section>
+      <section id="secQuadro" hidden>
+        <div class="quadro" id="quadro"></div>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="dlgPerdido">
+    <form method="dialog" id="formPerdido">
+      <h2>Marcar como perdido</h2>
+      <p class="sub">O motivo aparece no relatório para a clínica rever preço, convênio ou agenda.</p>
+      <div class="form">
+        <label>Motivo
+          <select class="campo" id="fMotivo">
+            <option value="PRECO">Achou caro</option>
+            <option value="CONVENIO_NAO_ATENDIDO">Convênio não atendido</option>
+            <option value="FEZ_EM_OUTRO_LUGAR">Fez em outro lugar</option>
+            <option value="SEM_HORARIO">Sem horário que servisse</option>
+            <option value="DESISTIU">Desistiu</option>
+            <option value="SEM_RESPOSTA">Não respondeu</option>
+          </select>
+        </label>
+        <span class="msg-erro" id="pErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn perigo" type="submit" id="pOk">Marcar perdido</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgRetorno">
+    <form method="dialog" id="formRetorno">
+      <h2>Adiar retorno</h2>
+      <p class="sub">Nesse dia, às 8h, a conversa volta a abrir no Chatwoot com uma nota para o atendente.</p>
+      <div class="form">
+        <label>Data do retorno<input class="campo" id="fData" type="date"></label>
+        <span class="msg-erro" id="rErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn solido" type="submit" id="rOk">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="aviso" role="status"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const reais = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+    const diaCurto = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "UTC" });
+    const ETAPAS = [
+      ["NOVO", "Novo"], ["ORCAMENTO_ENVIADO", "Orçamento enviado"], ["EM_NEGOCIACAO", "Em negociação"],
+      ["AGENDADO", "Agendado"], ["PERDIDO", "Perdido"]];
+    const NOME_ETAPA = Object.fromEntries(ETAPAS);
+    const MOTIVOS = { PRECO: "achou caro", CONVENIO_NAO_ATENDIDO: "convênio não atendido", FEZ_EM_OUTRO_LUGAR: "fez em outro lugar",
+      SEM_HORARIO: "sem horário", DESISTIU: "desistiu", SEM_RESPOSTA: "não respondeu" };
+    const ABERTAS = ["NOVO", "ORCAMENTO_ENVIADO", "EM_NEGOCIACAO"];
+    const ICONES = {
+      agendado: '<path d="M20 6 9 17l-5-5"/>',
+      perdido: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+      adiar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>'
+    };
+    let chatwootUrl = "";
+    let hoje = "";
+    let oportunidades = [];
+    let aba = "hoje";
+    let selecionada = null;
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => f !== null && f !== undefined && node.append(f));
+      return node;
+    }
+
+    function icone(nome) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("class", "i");
+      svg.innerHTML = ICONES[nome];
+      return svg;
+    }
+
+    function aviso(texto, erro) {
+      const a = $("aviso");
+      a.textContent = texto;
+      a.className = "ver" + (erro ? " erro" : "");
+      clearTimeout(aviso.t);
+      aviso.t = setTimeout(() => a.className = erro ? "erro" : "", erro ? 6000 : 3000);
+    }
+
+    async function api(caminho, opcoes) {
+      const resp = await fetch(caminho, opcoes);
+      if (resp.status === 204) return null;
+      const corpo = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(corpo.erro || ("Erro " + resp.status));
+      return corpo;
+    }
+
+    const post = (caminho, corpo) => api(caminho, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    const valor = (o) => o.valor === null || o.valor === undefined ? null : Number(o.valor);
+    const soma = (lista) => lista.reduce((t, o) => t + (valor(o) || 0), 0);
+    const aberta = (o) => ABERTAS.includes(o.etapa);
+    const retornoHoje = (o) => aberta(o) && o.proximaAcao && o.proximaAcao <= hoje;
+
+    async function carregar() {
+      try {
+        const painel = await api("/funil/api/oportunidades");
+        hoje = painel.hoje;
+        oportunidades = painel.oportunidades;
+        desenhar();
+      } catch (e) {
+        aviso("Não foi possível carregar o funil. " + e.message, true);
+      }
+    }
+
+    function conversa(o) {
+      const texto = "Conversa #" + o.conversa;
+      const link = chatwootUrl
+        ? el("a", { className: "conversa", href: chatwootUrl + "/app/accounts/" + encodeURIComponent(o.conta) + "/conversations/" + encodeURIComponent(o.conversa), target: "_blank", rel: "noopener" }, texto)
+        : el("span", {}, texto);
+      return [link, el("span", { className: "sub" }, o.origem === "ORCAMENTO_FOTO" ? "Orçamento por foto" : "Orçamento manual")];
+    }
+
+    function retorno(o) {
+      if (!aberta(o)) return el("span", { className: "sub" }, o.etapa === "PERDIDO" && o.motivoPerda ? MOTIVOS[o.motivoPerda] : "-");
+      if (!o.proximaAcao) return "-";
+      const texto = o.proximaAcao === hoje ? "Hoje" : diaCurto.format(new Date(o.proximaAcao));
+      return el("span", { className: o.proximaAcao < hoje ? "atrasado" : "" }, o.proximaAcao < hoje ? texto + " (atrasado)" : texto);
+    }
+
+    function textoValor(o) {
+      if (valor(o) === null) return el("span", { className: "sub" }, "sem valor");
+      return [reais.format(valor(o)), o.qtdItens ? el("span", { className: "sub" }, o.qtdItens + (o.qtdItens === 1 ? " exame" : " exames")) : null];
+    }
+
+    function acoes(o) {
+      if (!aberta(o)) return null;
+      return el("div", { className: "acoes" },
+        el("button", { className: "btn icone verde", type: "button", title: "Agendado", onclick: () => mudar(o, "AGENDADO") }, icone("agendado")),
+        el("button", { className: "btn icone rubi", type: "button", title: "Perdido", onclick: () => abrirPerdido(o) }, icone("perdido")),
+        el("button", { className: "btn icone", type: "button", title: "Adiar retorno", onclick: () => abrirRetorno(o) }, icone("adiar")));
+    }
+
+    function desenhar() {
+      const abertas = oportunidades.filter(aberta);
+      const ganhas = oportunidades.filter((o) => o.etapa === "AGENDADO");
+      const perdidas = oportunidades.filter((o) => o.etapa === "PERDIDO");
+      const doDia = abertas.filter(retornoHoje);
+      const atrasados = doDia.filter((o) => o.proximaAcao < hoje).length;
+      $("nAbertas").textContent = abertas.length;
+      $("vAbertas").textContent = reais.format(soma(abertas));
+      $("nRetornos").textContent = doDia.length;
+      $("nAtrasados").textContent = atrasados ? atrasados + (atrasados === 1 ? " atrasado" : " atrasados") : "";
+      $("nGanhas").textContent = ganhas.length;
+      $("vGanhas").textContent = reais.format(soma(ganhas));
+      const fechadas = ganhas.length + perdidas.length;
+      $("conversao").textContent = fechadas ? Math.round(100 * ganhas.length / fechadas) + "%" : "-";
+      $("nPerdidas").textContent = perdidas.length ? perdidas.length + (perdidas.length === 1 ? " perdido" : " perdidos") : "";
+      $("cHoje").textContent = doDia.length;
+      $("cQuadro").textContent = oportunidades.length;
+      $("secHoje").hidden = aba !== "hoje";
+      $("secQuadro").hidden = aba !== "quadro";
+      desenharHoje(doDia);
+      desenharQuadro();
+    }
+
+    function desenharHoje(lista) {
+      const corpo = $("linhas");
+      corpo.replaceChildren(...lista.map((o) => el("tr", {},
+        el("td", {}, conversa(o)),
+        el("td", {}, el("span", { className: "selo " + o.etapa }, NOME_ETAPA[o.etapa])),
+        el("td", { className: "num" }, textoValor(o)),
+        el("td", { className: "col-opcional" }, o.responsavel || el("span", { className: "sub" }, "-")),
+        el("td", {}, retorno(o)),
+        el("td", {}, acoes(o)))));
+      if (!lista.length) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 6, className: "vazio" },
+          el("strong", {}, "Nenhum retorno para hoje"), "Os orçamentos em aberto estão no Quadro.")));
+      }
+    }
+
+    function desenharQuadro() {
+      $("quadro").replaceChildren(...ETAPAS.map(([etapa, nome]) => {
+        const lista = oportunidades.filter((o) => o.etapa === etapa);
+        const coluna = el("div", { className: "coluna" },
+          el("header", {}, el("strong", {}, nome + " · " + lista.length), el("span", {}, reais.format(soma(lista)))),
+          lista.map(cartao));
+        coluna.addEventListener("dragover", (ev) => { ev.preventDefault(); coluna.classList.add("alvo"); });
+        coluna.addEventListener("dragleave", () => coluna.classList.remove("alvo"));
+        coluna.addEventListener("drop", (ev) => {
+          ev.preventDefault();
+          coluna.classList.remove("alvo");
+          const o = oportunidades.find((x) => String(x.id) === ev.dataTransfer.getData("text/plain"));
+          if (!o || o.etapa === etapa) return;
+          if (etapa === "PERDIDO") abrirPerdido(o); else mudar(o, etapa);
+        });
+        return coluna;
+      }));
+    }
+
+    function cartao(o) {
+      const c = el("div", { className: "cartao", draggable: true },
+        el("div", { className: "linha" }, conversa(o)[0], el("span", { className: "valor" }, valor(o) === null ? "" : reais.format(valor(o)))),
+        el("div", { className: "linha sub" }, el("span", {}, o.responsavel || "sem responsável"), retorno(o)));
+      c.addEventListener("dragstart", (ev) => ev.dataTransfer.setData("text/plain", String(o.id)));
+      return c;
+    }
+
+    async function mudar(o, etapa, motivo) {
+      try {
+        await post("/funil/api/oportunidades/" + o.id + "/etapa", { etapa, motivo: motivo || null });
+        aviso("Conversa #" + o.conversa + ": " + NOME_ETAPA[etapa].toLowerCase());
+        await carregar();
+      } catch (e) {
+        aviso(e.message, true);
+        throw e;
+      }
+    }
+
+    function abrirPerdido(o) {
+      selecionada = o;
+      $("fMotivo").value = "PRECO";
+      $("pErro").textContent = "";
+      $("dlgPerdido").showModal();
+    }
+
+    function abrirRetorno(o) {
+      selecionada = o;
+      $("fData").min = hoje;
+      $("fData").value = o.proximaAcao && o.proximaAcao > hoje ? o.proximaAcao : hoje;
+      $("rErro").textContent = "";
+      $("dlgRetorno").showModal();
+    }
+
+    $("formPerdido").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      $("pOk").disabled = true;
+      try {
+        await mudar(selecionada, "PERDIDO", $("fMotivo").value);
+        $("dlgPerdido").close();
+      } catch (e) {
+        $("pErro").textContent = e.message;
+      } finally {
+        $("pOk").disabled = false;
+      }
+    });
+
+    $("formRetorno").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      $("rOk").disabled = true;
+      try {
+        await post("/funil/api/oportunidades/" + selecionada.id + "/retorno", { data: $("fData").value });
+        $("dlgRetorno").close();
+        aviso("Retorno adiado");
+        await carregar();
+      } catch (e) {
+        $("rErro").textContent = e.message;
+      } finally {
+        $("rOk").disabled = false;
+      }
+    });
+
+    document.querySelectorAll("[data-fechar]").forEach((b) => b.onclick = () => b.closest("dialog").close());
+    document.querySelectorAll(".aba").forEach((botao) => botao.onclick = () => {
+      document.querySelectorAll(".aba").forEach((a) => a.classList.toggle("ativa", a === botao));
+      aba = botao.dataset.aba;
+      desenhar();
+    });
+    document.addEventListener("adm:usuario", (ev) => {
+      chatwootUrl = ev.detail.chatwootUrl || "";
+      if (oportunidades.length) desenhar();
+    });
+
+    carregar();
+    setInterval(() => { if (!document.hidden && !document.querySelector("dialog[open]")) carregar(); }, 60000);
+  </script>
+</body>
+</html>

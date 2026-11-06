@@ -13,7 +13,11 @@ public enum Modulo {
     SIMULADOR("/simulador", "Simulador de conversa",
             "Converse com o assistente como paciente, direto no Dialogflow ou pelo Chatwoot."),
     AGENDA("/agenda", "Agenda da clínica",
-            "Consultas do bot e da recepção, pendências para lançar no sistema da clínica e conferência diária.");
+            "Consultas do bot e da recepção, pendências para lançar no sistema da clínica e conferência diária."),
+    FUNIL("/funil", "Funil de orçamentos",
+            "Orçamentos que ainda não viraram agendamento, retornos do dia e motivos de perda."),
+    USUARIOS("/usuarios", "Usuários",
+            "Quem entra na central, com qual perfil e em quais clínicas. Senhas provisórias e histórico de acesso.");
 
     private final String caminho;
     private final String titulo;

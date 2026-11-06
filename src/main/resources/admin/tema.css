@@ -1,6 +1,6 @@
 /*
  * Tema escuro da central de administração, no estilo da tela de login. Carregado depois do estilo de cada página
- * (/admin, /curadoria, /precos, /simulador, /agenda): redefine as variáveis de cor e veste os componentes.
+ * (/admin, /curadoria, /precos, /simulador, /agenda, /funil): redefine as variáveis de cor e veste os componentes.
  */
 @property --bs-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 
