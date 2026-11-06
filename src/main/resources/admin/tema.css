@@ -1,0 +1,236 @@
+/*
+ * Tema escuro da central de administração, no estilo da tela de login. Carregado depois do estilo de cada página
+ * (/admin, /curadoria, /precos, /simulador, /agenda): redefine as variáveis de cor e veste os componentes.
+ */
+@property --bs-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+:root {
+  color-scheme: dark;
+  --bs-primary: #0b5c7a; --bs-glow: #12a4a8; --bs-accent: #e53935;
+  --bs-vidro: rgba(8, 24, 34, .55); --bs-vidro-forte: rgba(9, 26, 37, .94);
+  --bs-linha: rgba(255, 255, 255, .08); --bs-linha-forte: rgba(255, 255, 255, .16);
+  --bs-texto: #e6f4f8; --bs-texto-2: rgba(230, 244, 248, .68); --bs-texto-3: rgba(230, 244, 248, .45);
+
+  --fundo: transparent; --solido: rgba(10, 28, 40, .72);
+  --alpha-1: rgba(255, 255, 255, .035); --alpha-2: rgba(255, 255, 255, .075);
+  --borda: var(--bs-linha); --borda-forte: var(--bs-linha-forte);
+  --texto: var(--bs-texto); --texto-2: var(--bs-texto-2); --texto-3: var(--bs-texto-3);
+  --marca: var(--bs-glow); --marca-hover: #19bfc3; --marca-suave: rgba(18, 164, 168, .16); --marca-texto: #8ee6e8;
+  --rubi: #e5484d; --rubi-hover: #f05b60; --rubi-suave: rgba(229, 72, 77, .16); --rubi-texto: #ff9fa2;
+  --ambar-suave: rgba(245, 184, 92, .14); --ambar-texto: #f6c67c;
+  --verde-suave: rgba(48, 164, 108, .16); --verde-texto: #74dca3;
+
+  --adm-fundo: transparent; --adm-solido: var(--bs-vidro); --adm-alpha-1: var(--alpha-1); --adm-alpha-2: var(--alpha-2);
+  --adm-borda: var(--bs-linha); --adm-texto: var(--bs-texto); --adm-texto-2: var(--bs-texto-2); --adm-texto-3: var(--bs-texto-3);
+  --adm-marca: var(--bs-glow); --adm-marca-hover: #19bfc3; --adm-marca-suave: rgba(18, 164, 168, .16); --adm-marca-texto: #8ee6e8;
+}
+
+/* ---------- Fundo ---------- */
+html { background: #04101a; }
+body {
+  color: var(--bs-texto) !important; position: relative; isolation: isolate;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, color-mix(in srgb, var(--bs-primary) 50%, transparent), transparent 60%),
+    radial-gradient(50rem 35rem at 110% 110%, color-mix(in srgb, var(--bs-accent) 22%, transparent), transparent 60%),
+    linear-gradient(160deg, #04101a 0%, #0a1f2b 55%, #050d15 100%) fixed !important;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse at 60% 40%, #000 15%, transparent 75%);
+  mask-image: radial-gradient(ellipse at 60% 40%, #000 15%, transparent 75%);
+  animation: bs-grid 24s linear infinite;
+}
+::selection { background: color-mix(in srgb, var(--bs-glow) 45%, transparent); color: #fff; }
+* { scrollbar-color: rgba(255, 255, 255, .18) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .14); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .24); background-clip: padding-box; }
+
+/* ---------- Menu lateral ---------- */
+.adm-nav {
+  background: rgba(5, 16, 24, .6) !important; border-right: 1px solid var(--bs-linha) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 1px 0 40px -10px color-mix(in srgb, var(--bs-glow) 30%, transparent);
+}
+.adm-marca span { background: linear-gradient(90deg, #fff, var(--bs-glow)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.adm-marca img { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--bs-glow) 60%, transparent)); }
+.adm-item { position: relative; transition: background .15s, color .15s; }
+.adm-item.ativo { background: linear-gradient(90deg, color-mix(in srgb, var(--bs-glow) 22%, transparent), transparent) !important; color: #fff !important; }
+.adm-item.ativo::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 3px;
+  background: var(--bs-glow); box-shadow: 0 0 10px var(--bs-glow); }
+.adm-item.ativo svg { color: var(--bs-glow); filter: drop-shadow(0 0 6px var(--bs-glow)); }
+.adm-avatar { background: linear-gradient(135deg, var(--bs-primary), var(--bs-glow)) !important; color: #fff !important;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--bs-glow) 50%, transparent); }
+
+/* ---------- Títulos ---------- */
+main h1, .conteudo h1, header h1 {
+  background: linear-gradient(90deg, #ffffff, var(--bs-glow)); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  font-weight: 600 !important; letter-spacing: .01em;
+}
+h2, h3 { color: var(--bs-texto); }
+.descricao, p.sub { color: var(--bs-texto-2) !important; }
+code { color: #9fe3e5 !important; }
+
+/* ---------- Superfícies de vidro ---------- */
+.modulo, .card, section.painel, .cartao, .dia, aside, dialog {
+  -webkit-backdrop-filter: blur(16px) saturate(140%); backdrop-filter: blur(16px) saturate(140%);
+}
+.card, section.painel, .cartao {
+  background: var(--bs-vidro) !important; border: 1px solid var(--bs-linha); outline: 0 !important;
+  box-shadow: 0 20px 50px -24px rgba(0, 0, 0, .7) !important; color: var(--bs-texto);
+}
+.cartao.atrasada { border-color: color-mix(in srgb, var(--rubi) 70%, transparent); box-shadow: 0 0 24px -6px color-mix(in srgb, var(--rubi) 55%, transparent) !important; }
+.cartao.destaque { border-color: var(--bs-glow); box-shadow: 0 0 28px -4px color-mix(in srgb, var(--bs-glow) 60%, transparent) !important; }
+
+/* Cartões da central com borda giratória no hover, como o cartão do login */
+.modulo {
+  position: relative; background: var(--bs-vidro) !important; border: 1px solid var(--bs-linha);
+  box-shadow: 0 20px 50px -24px rgba(0, 0, 0, .7) !important; animation: bs-rise .6s cubic-bezier(.2, .8, .2, 1) both;
+}
+.modulo:nth-child(2) { animation-delay: .05s; } .modulo:nth-child(3) { animation-delay: .1s; }
+.modulo:nth-child(4) { animation-delay: .15s; } .modulo:nth-child(5) { animation-delay: .2s; } .modulo:nth-child(6) { animation-delay: .25s; }
+a.modulo::before {
+  content: ""; position: absolute; inset: -1px; padding: 1px; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .25s;
+  background: conic-gradient(from var(--bs-angle), transparent 0 65%, var(--bs-glow) 80%, var(--bs-accent) 90%, transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+  animation: bs-spin 5s linear infinite;
+}
+a.modulo:hover { transform: translateY(-3px) !important;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .8), 0 0 40px -10px color-mix(in srgb, var(--bs-glow) 55%, transparent) !important; }
+a.modulo:hover::before { opacity: 1; }
+.modulo.desligado { background: rgba(255, 255, 255, .02) !important; opacity: .7; }
+.modulo .icone { background: linear-gradient(135deg, color-mix(in srgb, var(--bs-primary) 70%, transparent), color-mix(in srgb, var(--bs-glow) 45%, transparent)) !important;
+  color: #fff !important; box-shadow: 0 0 18px -4px color-mix(in srgb, var(--bs-glow) 70%, transparent); }
+.modulo.desligado .icone { background: rgba(255, 255, 255, .06) !important; color: var(--bs-texto-3) !important; box-shadow: none; }
+.modulo .abrir { color: var(--bs-glow) !important; }
+.selo { background: rgba(255, 255, 255, .06) !important; }
+
+/* ---------- Botões ---------- */
+.btn.solido, button.acao.principal, #form button[type=submit], header button, dialog.camera .tirar {
+  position: relative; overflow: hidden; border: 0 !important; color: #fff !important;
+  background: linear-gradient(110deg, var(--bs-primary), var(--bs-glow) 50%, var(--bs-primary)) !important; background-size: 200% 100% !important;
+  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--bs-glow) 85%, transparent);
+  transition: transform .15s, box-shadow .2s, background-position .6s !important;
+}
+.btn.solido:hover:not(:disabled), button.acao.principal:hover:not(:disabled), #form button[type=submit]:hover:not(:disabled),
+header button:hover, dialog.camera .tirar:hover {
+  background-position: 100% 0 !important; transform: translateY(-1px);
+  box-shadow: 0 14px 34px -12px color-mix(in srgb, var(--bs-glow) 95%, transparent);
+}
+.btn.solido::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, .28) 50%, transparent 70%);
+  transform: translateX(-100%); animation: bs-shine 4s ease-in-out infinite; }
+.btn.cinza, button.acao, .atalhos button, dialog.camera .cancelar, header select {
+  background: rgba(255, 255, 255, .06) !important; color: var(--bs-texto) !important;
+  border: 1px solid var(--bs-linha) !important; transition: background .15s, border-color .15s, box-shadow .15s;
+}
+.btn.cinza:hover:not(:disabled), button.acao:hover:not(:disabled):not(.principal), .atalhos button:hover, dialog.camera .cancelar:hover {
+  background: rgba(255, 255, 255, .1) !important; border-color: color-mix(in srgb, var(--bs-glow) 50%, transparent) !important;
+  box-shadow: 0 0 16px -6px color-mix(in srgb, var(--bs-glow) 70%, transparent);
+}
+.btn.perigo { background: linear-gradient(110deg, #b4232a, var(--rubi)) !important; box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--rubi) 85%, transparent); }
+.btn.icone:hover { color: var(--bs-glow) !important; }
+.btn.icone.rubi:hover { background: rgba(229, 72, 77, .26) !important; }
+header select option, select option { background: #0b1d28; color: var(--bs-texto); }
+
+/* ---------- Campos ---------- */
+input.campo, select.campo, textarea.campo, .caixa-tags, .form-ensinar input, #form input {
+  background: rgba(255, 255, 255, .04) !important; color: var(--bs-texto) !important; caret-color: var(--bs-glow);
+  outline: 0 !important; border: 1px solid rgba(255, 255, 255, .13) !important;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+input.campo:focus, select.campo:focus, textarea.campo:focus, .caixa-tags:focus-within, .form-ensinar input:focus,
+#form input:focus {
+  background: rgba(255, 255, 255, .07) !important; border-color: var(--bs-glow) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bs-glow) 26%, transparent), 0 0 22px color-mix(in srgb, var(--bs-glow) 35%, transparent);
+}
+input.campo.erro { border-color: var(--rubi) !important; }
+input::placeholder, textarea::placeholder { color: var(--bs-texto-3); }
+input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #0d2330 inset; -webkit-text-fill-color: var(--bs-texto); }
+input[type=checkbox], input[type=radio] { accent-color: var(--bs-glow); }
+
+/* ---------- Abas, semana e tabelas ---------- */
+.barra { border-bottom-color: var(--bs-linha) !important; }
+.aba.ativa { color: #fff !important; border-color: var(--bs-glow) !important; text-shadow: 0 0 14px color-mix(in srgb, var(--bs-glow) 80%, transparent); }
+.aba.ativa .contador { background: var(--marca-suave) !important; color: var(--marca-texto) !important; }
+.dia { background: var(--bs-vidro) !important; outline: 0 !important; border: 1px solid var(--bs-linha) !important; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.dia:hover { border-color: color-mix(in srgb, var(--bs-glow) 45%, transparent) !important; transform: translateY(-1px); }
+.dia.ativo { border-color: var(--bs-glow) !important; background: color-mix(in srgb, var(--bs-glow) 14%, rgba(8, 24, 34, .6)) !important;
+  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--bs-glow) 70%, transparent); }
+th { color: var(--bs-texto-3) !important; border-bottom-color: var(--bs-linha) !important; letter-spacing: .03em; }
+td { border-top-color: var(--bs-linha) !important; border-bottom-color: var(--bs-linha) !important; }
+tbody tr { transition: background .12s; }
+tbody tr:hover td { background-color: rgba(255, 255, 255, .025); }
+tr.editor td { background: rgba(18, 164, 168, .06) !important; }
+
+/* ---------- Avisos e etiquetas ---------- */
+.alerta { border: 1px solid color-mix(in srgb, var(--ambar-texto) 30%, transparent); }
+.alerta.ok { border-color: color-mix(in srgb, var(--verde-texto) 30%, transparent); }
+.alerta.atraso { border-color: color-mix(in srgb, var(--rubi-texto) 35%, transparent); box-shadow: 0 0 24px -10px var(--rubi); }
+section.painel h2 .contador { background: var(--rubi-suave) !important; color: var(--rubi-texto) !important; }
+.tag.fallback { background: var(--rubi-suave) !important; color: var(--rubi-texto) !important; }
+.tag.baixa, .marcador { background: var(--ambar-suave) !important; color: var(--ambar-texto) !important; }
+.tag.media { background: var(--verde-suave) !important; color: var(--verde-texto) !important; }
+.card small, .card span, .legenda, svg text { color: var(--bs-texto-3) !important; fill: var(--bs-texto-3) !important; }
+.card strong { color: #fff; text-shadow: 0 0 18px color-mix(in srgb, var(--bs-glow) 45%, transparent); }
+.card.alerta strong { color: var(--rubi-texto) !important; }
+.card.bom strong { color: var(--verde-texto) !important; }
+section.painel svg line { stroke: rgba(255, 255, 255, .14) !important; }
+.intent .barra { background: rgba(255, 255, 255, .05) !important; }
+.intent .barra div { background: linear-gradient(90deg, color-mix(in srgb, var(--bs-primary) 80%, transparent), color-mix(in srgb, var(--bs-glow) 55%, transparent)) !important; }
+.vazio, .dica { color: var(--bs-texto-3) !important; }
+.vazio strong { color: var(--bs-texto) !important; }
+#aviso {
+  background: var(--bs-vidro-forte) !important; color: var(--bs-texto) !important; border: 1px solid color-mix(in srgb, var(--bs-glow) 40%, transparent);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, .8), 0 0 30px -10px color-mix(in srgb, var(--bs-glow) 60%, transparent) !important;
+}
+#aviso.erro { border-color: color-mix(in srgb, var(--rubi) 60%, transparent); }
+
+/* ---------- Diálogos ---------- */
+dialog {
+  background: var(--bs-vidro-forte) !important; color: var(--bs-texto) !important; border: 1px solid var(--bs-linha) !important;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8), 0 0 60px -14px color-mix(in srgb, var(--bs-primary) 70%, transparent) !important;
+  border-radius: 18px !important;
+}
+dialog[open] { animation: bs-rise .35s cubic-bezier(.2, .8, .2, 1) both; }
+dialog::backdrop { background: rgba(2, 8, 13, .6) !important; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+dialog pre, .cartao pre, pre { background: rgba(255, 255, 255, .04) !important; border: 1px solid var(--bs-linha) !important; color: var(--bs-texto) !important; }
+.form .info { border: 1px solid color-mix(in srgb, var(--bs-glow) 30%, transparent); }
+
+/* ---------- Curadoria e simulador (cabeçalho próprio) ---------- */
+header:not(.cabecalho) {
+  background: rgba(5, 16, 24, .55) !important; color: var(--bs-texto) !important; border-bottom: 1px solid var(--bs-linha);
+  -webkit-backdrop-filter: blur(16px) saturate(140%); backdrop-filter: blur(16px) saturate(140%);
+}
+header small { color: var(--bs-texto-3); }
+
+/* ---------- Simulador ---------- */
+.chat { background: transparent !important; }
+.mensagens { background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, .05) 1px, transparent 0); background-size: 22px 22px; }
+.msg { box-shadow: 0 8px 24px -14px rgba(0, 0, 0, .8) !important; border: 1px solid var(--bs-linha); color: var(--bs-texto); }
+.msg.usuario { background: linear-gradient(135deg, color-mix(in srgb, var(--bs-primary) 85%, transparent), color-mix(in srgb, var(--bs-glow) 55%, transparent)) !important;
+  border-color: color-mix(in srgb, var(--bs-glow) 35%, transparent); color: #fff; }
+.msg.bot { background: var(--bs-vidro) !important; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.msg.bot.selecionada { outline: 1px solid var(--bs-glow) !important; box-shadow: 0 0 24px -6px color-mix(in srgb, var(--bs-glow) 70%, transparent) !important; }
+.msg.erro, .alerta:not(.ok):not(.atraso) { background: var(--rubi-suave) !important; color: var(--rubi-texto) !important; }
+.msg.humano { background: var(--ambar-suave) !important; }
+.msg .meta { color: var(--bs-texto-3) !important; }
+.msg a.arquivo { color: var(--bs-glow) !important; }
+.ok { background: var(--verde-suave) !important; color: var(--verde-texto) !important; }
+.aviso { background: var(--ambar-suave) !important; color: var(--ambar-texto) !important; }
+.ctx { background: var(--marca-suave) !important; color: var(--marca-texto) !important; }
+aside { background: rgba(5, 16, 24, .5) !important; border-left-color: var(--bs-linha) !important; color: var(--bs-texto); }
+aside h3, .linha b { color: var(--bs-texto-3) !important; }
+form .icone { background: rgba(255, 255, 255, .06) !important; color: var(--bs-texto-2) !important; border: 1px solid var(--bs-linha) !important; }
+form .icone:hover { color: var(--bs-glow) !important; border-color: var(--bs-glow) !important; }
+
+/* ---------- Animações ---------- */
+@keyframes bs-grid { to { background-position: 0 48px, 48px 0; } }
+@keyframes bs-spin { to { --bs-angle: 360deg; } }
+@keyframes bs-rise { from { opacity: 0; transform: translateY(12px) scale(.985); } }
+@keyframes bs-shine { 0%, 60% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

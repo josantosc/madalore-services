@@ -126,7 +126,7 @@ public class AdminController {
         return new EuResposta(usuario, nome, chatwootUrl, modulos, administrador);
     }
 
-    @GetMapping("/admin/assets/{arquivo:nav\\.(?:js|css)}")
+    @GetMapping("/admin/assets/{arquivo:(?:nav\\.(?:js|css)|tema\\.css)}")
     public ResponseEntity<byte[]> asset(@PathVariable String arquivo) throws IOException {
         MediaType tipo = arquivo.endsWith(".js")
                 ? new MediaType("text", "javascript", StandardCharsets.UTF_8)
