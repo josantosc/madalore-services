@@ -201,6 +201,7 @@ O assunto vem de palavras da mensagem do transbordo ou da última mensagem da co
 | Faturamento/Convênios | convenio, guia, autoriza, carteirinha, reembolso, nota fiscal, boleto, pagamento, cobranca, fatura, glosa, orcamento | `CHATWOOT_EQUIPE_FATURAMENTO` |
 | Laboratório | resultado, laudo, coleta, recoleta, amostra, jejum, preparo, urina, fezes, sangue | `CHATWOOT_EQUIPE_LABORATORIO` |
 | Recepção | qualquer outro assunto | `CHATWOOT_EQUIPE_RECEPCAO` |
+| Agendamento | não é transbordo: conversa com pendência da [agenda do Mandalore](agenda-mandalore.md), que continua pendente com o bot | `CHATWOOT_EQUIPE_AGENDAMENTO` (vazio usa a Recepção) |
 
 O ID é o número na URL da equipe em **Configurações → Equipes** (`.../settings/teams/3/edit` → `3`). Variável vazia: a conversa abre sem equipe. Falha ao atribuir não impede a abertura.
 

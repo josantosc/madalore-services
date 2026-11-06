@@ -12,13 +12,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AgendaMandalorePort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 
 /**
  * Avisa a recepção no Chatwoot: nota privada na conversa do paciente com o que lançar no sistema da clínica e a
- * etiqueta {@value #ETIQUETA}, que sai quando a conversa não tem mais pendência aberta. Falha no Chatwoot não
- * desfaz o agendamento: a pendência continua na tela /agenda.
+ * etiqueta {@value #ETIQUETA}, que sai quando a conversa não tem mais pendência aberta, e a equipe de agendamento.
+ * A conversa continua pendente, com o bot respondendo. Falha no Chatwoot não desfaz o agendamento: a pendência
+ * continua na tela /agenda.
  */
 @Component
 @ConditionalOnProperty(name = {"agenda.enabled", "observability.postgres.enabled"}, havingValue = "true")
@@ -55,6 +57,8 @@ public class AvisoPendencia {
                 tentar(pendencia.conversaId(), "nota", () -> chatwoot.notaPrivada(conta, pendencia.conversaId(), nota(pendencia)));
                 tentar(pendencia.conversaId(), "etiqueta", () -> chatwoot.etiqueta(conta, pendencia.conversaId(), ETIQUETA, true));
             }
+            naConversa.stream().map(Agenda.Pendencia::conversaId).distinct().forEach(conversa ->
+                    tentar(conversa, "equipe", () -> chatwoot.atribuirEquipe(conta, conversa, Setor.AGENDAMENTO)));
         });
     }
 

@@ -12,12 +12,17 @@ para o bot oferecer horários e para a recepção não esquecer nada: toda alter
 
 | Quem faz | Onde | O que acontece |
 |---|---|---|
-| Paciente pelo bot | WhatsApp, site | Grava na agenda do Mandalore e cria a pendência. A conversa no Chatwoot recebe uma nota privada com os dados para lançar e a etiqueta `lancar-sistema` |
+| Paciente pelo bot | WhatsApp, site | Grava na agenda do Mandalore e cria a pendência. A conversa no Chatwoot recebe uma nota privada com os dados para lançar, a etiqueta `lancar-sistema` e a equipe de agendamento |
 | Recepção pelo balcão ou telefone | Tela `/agenda` | Grava na agenda do Mandalore. Se a recepção já lançou no sistema da clínica, informa o código de lá e não fica pendência |
 | Recepção direto no sistema da clínica | Sistema da clínica | Use "Ocupar horário" na tela `/agenda` para o bot não oferecer o mesmo horário |
 | Recepção resolve a pendência | Aba Pendências | Copia o texto, lança no sistema da clínica e clica em "Feito no sistema", informando o código de lá |
 
-A etiqueta `lancar-sistema` sai da conversa quando todas as pendências dela forem resolvidas.
+A etiqueta `lancar-sistema` sai da conversa quando todas as pendências dela forem resolvidas. A equipe fica, como
+registro de quem cuidou.
+
+A conversa **continua pendente**, com o bot respondendo: se o paciente voltar para cancelar ou remarcar, o bot
+atende. Por isso ela não aparece em "Minhas" nem em "Não atribuídas", que mostram as abertas. Crie no Chatwoot uma
+**visão salva** com equipe de agendamento + etiqueta `lancar-sistema` e fixe na barra lateral: é a fila da recepção.
 
 O bot só oferece consultas, e só nos horários da grade marcados como "Oferece no bot", com a antecedência mínima
 configurada. Exames ainda não são marcados por esta agenda. Quando o paciente procura uma consulta
@@ -69,18 +74,21 @@ Toda alteração fica no histórico do agendamento, com quem fez e quando.
 ## Checklist para ligar numa clínica
 
 1. PostgreSQL da trilha ligado (`OBSERVABILITY_POSTGRES_ENABLED=true`). O schema `agenda` é criado na subida.
-2. No Coolify: `AGENDA_ENABLED=true` e `AGENDA_URL` com o endereço público do Mandalore (sem barra no fim), para o
+2. No Chatwoot de cada conta: crie a etiqueta `lancar-sistema` em Configurações → Etiquetas (sem ela, a tela do
+   Chatwoot não mostra a etiqueta), a equipe de agendamento (ou use a Recepção) e a visão salva descrita acima.
+3. No Coolify: `CHATWOOT_EQUIPE_AGENDAMENTO` com o id da equipe (vazio usa `CHATWOOT_EQUIPE_RECEPCAO`),
+   `AGENDA_ENABLED=true` e `AGENDA_URL` com o endereço público do Mandalore (sem barra no fim), para o
    link da nota privada. Sem ele, vale `RELATORIOS_URL`.
-3. Para a clínica usar a agenda do Mandalore no bot, no `clientes.properties`:
+4. Para a clínica usar a agenda do Mandalore no bot, no `clientes.properties`:
    `mandalore.clientes.<account_id>.agenda=mandalore`. Numa instalação de uma clínica só, basta
    `AGENDA_ORIGEM=mandalore`.
-4. Login da recepção da clínica, no `clientes.properties`: `mandalore.clientes.<account_id>.recepcao.usuario` e
+5. Login da recepção da clínica, no `clientes.properties`: `mandalore.clientes.<account_id>.recepcao.usuario` e
    `.recepcao.senha`. A senha vai no cofre de senhas, nunca no repositório.
-5. Na tela `/agenda`, aba Cadastros: profissionais, especialidades, convênios e a grade semanal de cada profissional,
+6. Na tela `/agenda`, aba Cadastros: profissionais, especialidades, convênios e a grade semanal de cada profissional,
    marcando quais horários o bot pode oferecer. Use os bloqueios para férias e feriados.
-6. Teste no simulador: marque, cancele e remarque uma consulta e veja as pendências e a nota no Chatwoot.
-7. Treine a recepção na rotina acima.
-8. No OpenClaw, agende o relatório `agenda` (ver abaixo).
+7. Teste no simulador: marque, cancele e remarque uma consulta e veja as pendências e a nota no Chatwoot.
+8. Treine a recepção na rotina acima.
+9. No OpenClaw, agende o relatório `agenda` (ver abaixo).
 
 ## Variáveis
 
@@ -94,6 +102,7 @@ Toda alteração fica no histórico do agendamento, com quem fez e quando.
 | `AGENDA_ANTECEDENCIA_MINUTOS` | `60` | Antecedência mínima dos horários oferecidos pelo bot |
 | `AGENDA_PENDENCIA_CONFIRMACAO` | `false` | Cria pendência quando o paciente confirma |
 | `AGENDA_URL` | `RELATORIOS_URL` | Endereço público usado no link da nota privada |
+| `CHATWOOT_EQUIPE_AGENDAMENTO` | `CHATWOOT_EQUIPE_RECEPCAO` | Id da equipe do Chatwoot que recebe as conversas com pendência |
 
 Por clínica, no `clientes.properties`: `mandalore.clientes.<id>.agenda=mandalore|tasy` e
 `mandalore.clientes.<id>.recepcao.usuario` / `.senha`.

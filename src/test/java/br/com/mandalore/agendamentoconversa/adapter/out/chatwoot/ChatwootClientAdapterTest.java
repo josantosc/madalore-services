@@ -24,6 +24,6 @@ class ChatwootClientAdapterTest {
     }
 
     private static ChatwootClientAdapter adapter(String base) {
-        return new ChatwootClientAdapter(base, "tk", 5000, "", "", "", new ClientesProperties(Map.of()));
+        return new ChatwootClientAdapter(base, "tk", 5000, "", "", "", "", new ClientesProperties(Map.of()));
     }
 }

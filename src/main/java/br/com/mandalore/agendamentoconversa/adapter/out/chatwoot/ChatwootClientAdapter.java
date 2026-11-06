@@ -39,6 +39,7 @@ public class ChatwootClientAdapter implements ChatwootPort {
             @Value("${chatwoot.equipes.recepcao:}") String recepcao,
             @Value("${chatwoot.equipes.laboratorio:}") String laboratorio,
             @Value("${chatwoot.equipes.faturamento:}") String faturamento,
+            @Value("${chatwoot.equipes.agendamento:}") String agendamento,
             ClientesProperties clientes
     ) {
         this.tokenGlobal = token;
@@ -47,6 +48,7 @@ public class ChatwootClientAdapter implements ChatwootPort {
         equipes.put(Setor.RECEPCAO, recepcao.trim());
         equipes.put(Setor.LABORATORIO, laboratorio.trim());
         equipes.put(Setor.FATURAMENTO, faturamento.trim());
+        equipes.put(Setor.AGENDAMENTO, agendamento.isBlank() ? recepcao.trim() : agendamento.trim());
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(3));
         factory.setReadTimeout(Duration.ofMillis(timeoutMs));
