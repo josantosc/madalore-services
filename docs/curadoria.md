@@ -41,7 +41,10 @@ Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZ
 **Dialogflow API Admin** no IAM (o **Dialogflow API Client** só conversa). A frase vai para o agente
 draft; com `DIALOGFLOW_ENVIRONMENT` definido, publique uma versão nova para valer no ambiente.
 
-O resumo diário destes indicadores pode chegar num grupo do Telegram: [relatórios no Telegram](relatorios-telegram.md).
+O resumo diário destes indicadores chega ao grupo do Telegram pelo OpenClaw: [relatórios pelo OpenClaw](relatorios-openclaw.md).
+Os botões **Resumo do dia**, **Conversão do dia** e **Relatório semanal** mostram o texto que o OpenClaw recebe.
+Com os relatórios ligados, o card **Conversão** mostra quantas conversas do período terminaram com consulta ou
+exame marcado pelo bot ([como ler](relatorios-openclaw.md#como-ler-a-conversão)).
 
 ## Rotina semanal
 

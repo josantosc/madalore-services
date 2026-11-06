@@ -38,7 +38,28 @@ class PostgresRelatorioAdapterIT {
     @BeforeEach
     @AfterEach
     void limpar() {
-        jdbc.update("DELETE FROM observability.flow_event WHERE conversation_id = :c", Map.of("c", CONVERSA));
+        jdbc.update("DELETE FROM observability.flow_event WHERE conversation_id LIKE :c", Map.of("c", CONVERSA + "%"));
+    }
+
+    @Test
+    void conversaoPorConversa() {
+        String marcou = CONVERSA + "-marcou";
+        String atendente = CONVERSA + "-atendente";
+        String nada = CONVERSA + "-nada";
+        for (String conversa : new String[] {marcou, atendente, nada}) {
+            evento(conversa, "DIALOGFLOW", "detect_intent", "SUCCESS", "texto.saudacao", null, null, "{\"texto\":\"oi\"}");
+        }
+        evento(marcou, "MANDALORE", "fulfillment.agendar", "SUCCESS", "acao.agenda.agendar", "RESULTADO_SUCESSO_ESCRITA",
+                "sucesso", "{\"escrita\":\"agendar\",\"exame\":false}");
+        evento(marcou, "CHATWOOT", "transbordo", "SUCCESS", null, null, null, "{\"equipe\":\"RECEPCAO\"}");
+        evento(atendente, "CHATWOOT", "transbordo", "SUCCESS", null, null, null, "{\"equipe\":\"RECEPCAO\"}");
+        evento(nada, "MANDALORE", "fulfillment.cancelar", "SUCCESS", "acao.agenda.cancelar", "RESULTADO_SUCESSO_ESCRITA",
+                "sucesso", "{\"escrita\":\"cancelar\",\"exame\":false}");
+
+        Relatorio.Conversao c = relatorio.numeros(INICIO, FIM, 0.6).conversao();
+
+        assertThat(c).isEqualTo(new Relatorio.Conversao(3, 1, 1));
+        assertThat(c.semDesfecho()).isEqualTo(1);
     }
 
     @Test
@@ -75,9 +96,15 @@ class PostgresRelatorioAdapterIT {
         assertThat(n.orcamentos()).isEqualTo(1);
         assertThat(n.falhas()).containsExactlyEntriesOf(Map.of("TASY", 1L));
         assertThat(n.pendentes()).isEqualTo(2);
+        assertThat(n.conversao()).isEqualTo(new Relatorio.Conversao(1, 1, 0));
     }
 
     private void evento(String component, String stage, String status, String intent, String eventName,
+            String resultado, String details) {
+        evento(CONVERSA, component, stage, status, intent, eventName, resultado, details);
+    }
+
+    private void evento(String conversa, String component, String stage, String status, String intent, String eventName,
             String resultado, String details) {
         jdbc.update("""
                 INSERT INTO observability.flow_event
@@ -86,7 +113,7 @@ class PostgresRelatorioAdapterIT {
                 VALUES (:c, :c, :component, :stage, :status, :intent, :evento, :resultado, CAST(:details AS jsonb),
                         CAST(:quando AS timestamptz))
                 """, new MapSqlParameterSource()
-                .addValue("c", CONVERSA)
+                .addValue("c", conversa)
                 .addValue("component", component)
                 .addValue("stage", stage)
                 .addValue("status", status)

@@ -1,5 +1,6 @@
 package br.com.mandalore.agendamentoconversa.application.domain.model;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 public final class Relatorio {
@@ -8,7 +9,21 @@ public final class Relatorio {
     }
 
     public enum Tipo {
-        CURADORIA, GESTOR
+        CURADORIA, GESTOR, CONVERSAO
+    }
+
+    /**
+     * Desfecho das conversas com mensagem no período, contadas pelo número da conversa no canal.
+     * {@code convertidas}: o bot marcou consulta ou exame. {@code atendente}: passou para atendente sem marcar.
+     * O que a equipe marca depois do transbordo não está na trilha.
+     */
+    public record Conversao(long conversas, long convertidas, long atendente) {
+
+        public static final Conversao VAZIA = new Conversao(0, 0, 0);
+
+        public long semDesfecho() {
+            return Math.max(0, conversas - convertidas - atendente);
+        }
     }
 
     /**
@@ -27,7 +42,8 @@ public final class Relatorio {
             Map<String, Long> escritas,
             Map<String, Long> transbordos,
             long orcamentos,
-            Map<String, Long> falhas
+            Map<String, Long> falhas,
+            Conversao conversao
     ) {
 
         public Numeros {
@@ -35,6 +51,7 @@ public final class Relatorio {
             escritas = Map.copyOf(escritas);
             transbordos = Map.copyOf(transbordos);
             falhas = Map.copyOf(falhas);
+            conversao = conversao == null ? Conversao.VAZIA : conversao;
         }
 
         public long escritas(String tipo) {
@@ -44,5 +61,9 @@ public final class Relatorio {
         public long totalTransbordos() {
             return transbordos.values().stream().mapToLong(Long::longValue).sum();
         }
+    }
+
+    /** Números de {@code de} a {@code ate}, os dois dias inclusive, no fuso de São Paulo. */
+    public record Periodo(LocalDate de, LocalDate ate, Numeros numeros) {
     }
 }

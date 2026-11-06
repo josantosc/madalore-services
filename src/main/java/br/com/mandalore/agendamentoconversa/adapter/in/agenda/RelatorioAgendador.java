@@ -10,10 +10,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Relatorio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.RelatorioUseCase;
 
-/** Envia os relatórios no horário de RELATORIO_CURADORIA_CRON e RELATORIO_GESTOR_CRON ("-" desliga). */
+/**
+ * Envia os relatórios no horário de RELATORIO_CURADORIA_CRON e RELATORIO_GESTOR_CRON ("-" desliga).
+ * Só com RELATORIOS_TELEGRAM_ENABLED: com o OpenClaw, o agendamento fica nele.
+ */
 @Configuration
 @EnableScheduling
-@ConditionalOnProperty(name = {"relatorios.enabled", "observability.postgres.enabled"}, havingValue = "true")
+@ConditionalOnProperty(
+        name = {"relatorios.enabled", "relatorios.telegram.enabled", "observability.postgres.enabled"},
+        havingValue = "true")
 public class RelatorioAgendador {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelatorioAgendador.class);

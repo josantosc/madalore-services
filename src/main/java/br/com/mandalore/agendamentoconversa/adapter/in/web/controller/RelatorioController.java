@@ -1,5 +1,6 @@
 package br.com.mandalore.agendamentoconversa.adapter.in.web.controller;
 
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -13,13 +14,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAuthFilter;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Relatorio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.RelatorioUseCase;
 
-/** Prévia e envio imediato dos relatórios, dentro da curadoria (mesmo login). */
+/** Prévia dos relatórios, conversão do período e envio imediato, dentro da curadoria (mesmo login). */
 @RestController
 @ConditionalOnProperty(name = {"relatorios.enabled", "observability.postgres.enabled"}, havingValue = "true")
 public class RelatorioController {
@@ -39,6 +41,20 @@ public class RelatorioController {
             return ResponseEntity.badRequest().body(Map.of("erro", "Tipo de relatório inválido"));
         }
         return ResponseEntity.ok(Map.of("texto", relatorios.texto(escolhido)));
+    }
+
+    @GetMapping(value = "/curadoria/api/conversao", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Map<String, Object> conversao(@RequestParam(defaultValue = "7") int dias) {
+        Relatorio.Periodo periodo = relatorios.ultimosDias(Math.min(dias, 90));
+        Relatorio.Conversao c = periodo.numeros().conversao();
+        Map<String, Object> corpo = new LinkedHashMap<>();
+        corpo.put("de", periodo.de().toString());
+        corpo.put("ate", periodo.ate().toString());
+        corpo.put("conversas", c.conversas());
+        corpo.put("convertidas", c.convertidas());
+        corpo.put("atendente", c.atendente());
+        corpo.put("semDesfecho", c.semDesfecho());
+        return corpo;
     }
 
     @PostMapping(value = "/curadoria/api/relatorios/{tipo}", produces = MediaType.APPLICATION_JSON_VALUE)

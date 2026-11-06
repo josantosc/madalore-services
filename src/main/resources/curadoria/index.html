@@ -55,6 +55,9 @@
     #aviso { position: fixed; right: 20px; bottom: 20px; max-width: 420px; padding: 12px 14px; border-radius: 8px; color: #fff; background: #1f2933; box-shadow: 0 6px 18px rgba(0,0,0,.2); opacity: 0; transition: opacity .2s; pointer-events: none; }
     #aviso.ver { opacity: 1; }
     #aviso.erro { background: #b42318; }
+    dialog#relatorio { border: 0; border-radius: 10px; padding: 18px; max-width: 560px; width: 92vw; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    dialog#relatorio pre { white-space: pre-wrap; font-family: "Segoe UI", Roboto, Arial, sans-serif; font-size: 14px; margin: 0 0 14px; }
+    dialog#relatorio form { text-align: right; }
     @media (max-width: 900px) { .linha2 { grid-template-columns: 1fr; } .form-ensinar { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -68,8 +71,9 @@
       <option value="90">90 dias</option>
     </select>
     <button id="atualizar" type="button">Atualizar</button>
-    <button id="enviar-curadoria" type="button" title="Envia agora o resumo de ontem ao grupo do Telegram">Resumo no Telegram</button>
-    <button id="enviar-gestor" type="button" title="Envia agora o relatório da semana passada ao grupo do Telegram">Semanal no Telegram</button>
+    <button id="previa-curadoria" type="button" title="Mostra o resumo de ontem, como o OpenClaw recebe">Resumo do dia</button>
+    <button id="previa-conversao" type="button" title="Mostra a conversão de ontem, como o OpenClaw recebe">Conversão do dia</button>
+    <button id="previa-gestor" type="button" title="Mostra o relatório da semana passada, como o OpenClaw recebe">Relatório semanal</button>
   </header>
   <main>
     <div class="cards" id="cards"></div>
@@ -101,6 +105,10 @@
     </section>
   </main>
   <datalist id="lista-intents"></datalist>
+  <dialog id="relatorio">
+    <pre id="relatorio-texto"></pre>
+    <form method="dialog"><button class="acao principal">Fechar</button></form>
+  </dialog>
   <div id="aviso"></div>
   <script>
     const $ = (id) => document.getElementById(id);
@@ -321,18 +329,33 @@
         mostrarFila(fila);
       } catch (e) {
         aviso("Não foi possível carregar: " + e.message, true);
+        return;
+      }
+      try {
+        mostrarConversao(await api("conversao?dias=" + dias));
+      } catch (e) {
+        // Sem RELATORIOS_ENABLED a conversão não existe; os outros cards seguem.
       }
     }
 
-    async function enviarRelatorio(tipo, botao) {
+    function mostrarConversao(c) {
+      const c1 = card("Conversão", pct(c.convertidas, c.conversas),
+        c.convertidas + " de " + c.conversas + " conversas marcaram");
+      c1.title = "Conversas em que o bot marcou consulta ou exame. " + c.atendente + " foram para atendente sem marcar; "
+        + c.semDesfecho + " terminaram sem agendamento nem atendente. Agendamentos feitos pela equipe não entram.";
+      $("cards").append(c1);
+    }
+
+    async function previaRelatorio(tipo, botao) {
       botao.disabled = true;
       try {
-        await api("relatorios/" + tipo, { method: "POST" });
-        aviso("Relatório enviado ao Telegram.");
+        const corpo = await api("relatorios/" + tipo);
+        $("relatorio-texto").textContent = corpo.texto;
+        $("relatorio").showModal();
       } catch (e) {
         aviso(e.message === "HTTP 404"
           ? "Relatórios desligados. Defina RELATORIOS_ENABLED=true no Mandalore."
-          : "Não foi possível enviar: " + e.message, true);
+          : "Não foi possível montar o relatório: " + e.message, true);
       } finally {
         botao.disabled = false;
       }
@@ -340,8 +363,9 @@
 
     $("dias").addEventListener("change", carregar);
     $("atualizar").addEventListener("click", carregar);
-    $("enviar-curadoria").addEventListener("click", (ev) => enviarRelatorio("curadoria", ev.currentTarget));
-    $("enviar-gestor").addEventListener("click", (ev) => enviarRelatorio("gestor", ev.currentTarget));
+    $("previa-curadoria").addEventListener("click", (ev) => previaRelatorio("curadoria", ev.currentTarget));
+    $("previa-conversao").addEventListener("click", (ev) => previaRelatorio("conversao", ev.currentTarget));
+    $("previa-gestor").addEventListener("click", (ev) => previaRelatorio("gestor", ev.currentTarget));
     carregar();
   </script>
 </body>

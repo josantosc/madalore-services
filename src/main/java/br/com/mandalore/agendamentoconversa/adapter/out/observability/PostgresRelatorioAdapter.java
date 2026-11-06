@@ -79,6 +79,32 @@ public class PostgresRelatorioAdapter implements RelatorioPort {
             WHERE status = 'ERROR'
             """ + PERIODO + " GROUP BY 1";
 
+    private static final String CONVERSAO = """
+            WITH conversa AS (
+                SELECT DISTINCT conversation_id
+                FROM observability.flow_event
+                WHERE component = 'DIALOGFLOW' AND stage = 'detect_intent' AND status = 'SUCCESS'
+                  AND COALESCE(conversation_id, '') <> ''
+                  AND created_at >= :inicio AND created_at < :fim
+            ), desfecho AS (
+                SELECT c.conversation_id,
+                       EXISTS (SELECT 1 FROM observability.flow_event e
+                               WHERE e.conversation_id = c.conversation_id
+                                 AND e.component = 'MANDALORE' AND e.stage LIKE 'fulfillment.%'
+                                 AND e.event_name = 'RESULTADO_SUCESSO_ESCRITA' AND e.details->>'escrita' = 'agendar'
+                                 AND e.created_at >= :inicio AND e.created_at < :fim) AS marcou,
+                       EXISTS (SELECT 1 FROM observability.flow_event e
+                               WHERE e.conversation_id = c.conversation_id
+                                 AND e.component = 'CHATWOOT' AND e.stage = 'transbordo'
+                                 AND e.created_at >= :inicio AND e.created_at < :fim) AS atendente
+                FROM conversa c
+            )
+            SELECT count(*) AS conversas,
+                   count(*) FILTER (WHERE marcou) AS convertidas,
+                   count(*) FILTER (WHERE atendente AND NOT marcou) AS atendente
+            FROM desfecho
+            """;
+
     private final NamedParameterJdbcTemplate jdbc;
 
     public PostgresRelatorioAdapter(@Qualifier("observabilityJdbcTemplate") NamedParameterJdbcTemplate jdbc) {
@@ -105,6 +131,8 @@ public class PostgresRelatorioAdapter implements RelatorioPort {
         Map<String, Long> escritas = contagem(ESCRITAS, params);
         Map<String, Long> transbordos = contagem(TRANSBORDOS, params);
         Map<String, Long> falhas = contagem(FALHAS, params);
+        Relatorio.Conversao conversao = jdbc.queryForObject(CONVERSAO, params, (rs, i) -> new Relatorio.Conversao(
+                rs.getLong("conversas"), rs.getLong("convertidas"), rs.getLong("atendente")));
         return jdbc.queryForObject(CONVERSAS, params, (rs, i) -> new Relatorio.Numeros(
                 rs.getLong("mensagens"),
                 rs.getLong("conversas"),
@@ -117,7 +145,8 @@ public class PostgresRelatorioAdapter implements RelatorioPort {
                 escritas,
                 transbordos,
                 orcamentos == null ? 0 : orcamentos,
-                falhas));
+                falhas,
+                conversao));
     }
 
     private Map<String, Long> contagem(String sql, MapSqlParameterSource params) {

@@ -38,7 +38,7 @@ O que o Mandalore já faz e o que está na fila. A ordem das melhorias e o passo
 | Tabela de preços | Tela do financeiro com importação e exportação em CSV | [`orcamento-pedido.md`](orcamento-pedido.md) |
 | Simulador | Conversa com o agente real, com foto, PDF e câmera | [`testes-regressao-conversacional.md`](testes-regressao-conversacional.md) |
 | Trilha operacional | Eventos de cada mensagem no PostgreSQL | [`observabilidade-postgres.md`](observabilidade-postgres.md) |
-| Relatórios no Telegram | Resumo diário da curadoria e relatório semanal do gestor, só com números | [`relatorios-telegram.md`](relatorios-telegram.md) |
+| Relatórios pelo OpenClaw | Resumo diário da curadoria, conversão diária e relatório semanal do gestor, só com números. Card de conversão na curadoria. O OpenClaw lê por API, envia ao Telegram e responde perguntas avulsas no grupo | [`relatorios-openclaw.md`](relatorios-openclaw.md) |
 | Testes | Regressão local por cenário, Robot no Dialogflow e no widget | [`testes-regressao-conversacional.md`](testes-regressao-conversacional.md) |
 | Deploy | Coolify na Hostinger | [`deploy-coolify-hostinger.md`](deploy-coolify-hostinger.md) |
 
@@ -70,5 +70,4 @@ Itens fora da tabela, sem prioridade definida.
 | Instagram e Messenger dentro do Chatwoot | Atender sem mandar o paciente para o WhatsApp | baixo/médio (app aprovado na Meta) |
 | Idempotência compartilhada da Twilio | A proteção contra reenvio fica em memória; com mais de uma réplica, usar tabela ou Redis | baixo |
 | Indicadores de negócio na central | Os números do relatório semanal em tela, com faltas quando houver o lembrete | médio |
-| Perguntas avulsas pelo OpenClaw | Responder no grupo do Telegram perguntas fora dos relatórios, com usuário de leitura em views agregadas | médio |
 | Cadastro de paciente novo no Tasy | Hoje o agendamento sem cadastro é nominal | alto (validação com a Philips) |

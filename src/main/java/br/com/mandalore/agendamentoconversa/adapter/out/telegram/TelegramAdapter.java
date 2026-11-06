@@ -14,9 +14,9 @@ import org.springframework.web.client.RestClientResponseException;
 
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.NotificacaoPort;
 
-/** Bot do Telegram (sendMessage) para o grupo da equipe. */
+/** Bot do Telegram (sendMessage) para o grupo da equipe, quando o Mandalore envia sem o OpenClaw. */
 @Component
-@ConditionalOnProperty(name = "relatorios.enabled", havingValue = "true")
+@ConditionalOnProperty(name = {"relatorios.enabled", "relatorios.telegram.enabled"}, havingValue = "true")
 public class TelegramAdapter implements NotificacaoPort {
 
     /** Limite do Telegram por mensagem. */
