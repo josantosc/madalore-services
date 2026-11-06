@@ -14,6 +14,9 @@ public interface ChatwootPort {
 
     void abrirAtendente(String accountId, String conversationId);
 
+    /** Resolve só a conversa que está pendente com o bot; aberta com atendente fica como está. */
+    boolean resolverSePendente(String accountId, String conversationId);
+
     /** Retorna false quando o setor não tem equipe configurada. */
     boolean atribuirEquipe(String accountId, String conversationId, Setor setor);
 

@@ -81,6 +81,28 @@ public class ChatwootClientAdapter implements ChatwootPort {
     }
 
     @Override
+    public boolean resolverSePendente(String accountId, String conversationId) {
+        Conversa conversa = client.get()
+                .uri("/api/v1/accounts/{accountId}/conversations/{conversationId}", accountId, conversationId)
+                .header("api_access_token", token(accountId))
+                .retrieve()
+                .body(Conversa.class);
+        if (conversa == null || !"pending".equalsIgnoreCase(conversa.status())) {
+            return false;
+        }
+        client.post()
+                .uri("/api/v1/accounts/{accountId}/conversations/{conversationId}/toggle_status", accountId, conversationId)
+                .header("api_access_token", token(accountId))
+                .body(Map.of("status", "resolved"))
+                .retrieve()
+                .toBodilessEntity();
+        return true;
+    }
+
+    record Conversa(String status) {
+    }
+
+    @Override
     public boolean atribuirEquipe(String accountId, String conversationId, Setor setor) {
         String equipe = equipes.getOrDefault(setor, "");
         if (equipe.isBlank()) {

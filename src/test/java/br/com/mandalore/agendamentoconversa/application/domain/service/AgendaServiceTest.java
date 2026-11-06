@@ -66,12 +66,12 @@ class AgendaServiceTest {
     }
 
     @Test
-    void concluirCancelamentoNaoExigeNumeroETiraAEtiquetaDaConversa() {
+    void concluirCancelamentoNaoExigeNumeroEAvisaAConversa() {
         when(port.pendencia("1", 5L)).thenReturn(Optional.of(pendencia(Agenda.TipoPendencia.CANCELAR)));
         when(port.concluirPendencia("1", 5L, "ana", "", "")).thenReturn(true);
 
         assertThat(service.concluirPendencia("1", 5L, "", "", "ana")).isTrue();
-        verify(aviso).atualizada("1", "55");
+        verify(aviso).concluida("1", 5L);
     }
 
     @Test

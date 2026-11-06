@@ -17,8 +17,10 @@ para o bot oferecer horários e para a recepção não esquecer nada: toda alter
 | Recepção direto no sistema da clínica | Sistema da clínica | Use "Ocupar horário" na tela `/agenda` para o bot não oferecer o mesmo horário |
 | Recepção resolve a pendência | Aba Pendências | Copia o texto, lança no sistema da clínica e clica em "Feito no sistema", informando o código de lá |
 
-A etiqueta `lancar-sistema` sai da conversa quando todas as pendências dela forem resolvidas. A equipe fica, como
-registro de quem cuidou.
+Quando a recepção clica em "Feito no sistema", a conversa recebe uma nota privada com o que foi feito, quem fez,
+quando e o código do sistema da clínica. Sem outra pendência aberta, a etiqueta `lancar-sistema` sai e a conversa é
+**resolvida**, desde que ainda esteja pendente com o bot (conversa aberta com atendente não é mexida). A equipe fica,
+como registro de quem cuidou. Se o paciente escrever de novo, o Chatwoot reabre a conversa.
 
 A conversa **continua pendente**, com o bot respondendo: se o paciente voltar para cancelar ou remarcar, o bot
 atende. Por isso ela não aparece em "Minhas" nem em "Não atribuídas", que mostram as abertas. Crie no Chatwoot uma
@@ -38,7 +40,8 @@ marcada por telefone que não está na agenda do Mandalore, o bot oferece chamar
 4. **Fim do dia:** aba Conferência. Compare as consultas de amanhã com o sistema da clínica e marque "Igual" ou
    "Diferente". Cada "Diferente", com a descrição do que está diferente, vira pendência para corrigir.
 
-Se marcou "Feito no sistema" por engano, use "Reabrir" na pendência.
+Se marcou "Feito no sistema" por engano, use "Reabrir" na pendência. A etiqueta volta para a conversa, mas ela
+continua resolvida: acompanhe pela aba Pendências.
 
 ## Regras das pendências
 

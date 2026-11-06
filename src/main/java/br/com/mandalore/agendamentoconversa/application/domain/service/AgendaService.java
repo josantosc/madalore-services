@@ -210,7 +210,7 @@ public class AgendaService implements AgendaUseCase {
         }
         boolean concluida = agenda.concluirPendencia(conta, pendenciaId, usuario, codigoExterno, observacao);
         if (concluida) {
-            aviso.atualizada(conta, pendencia.conversaId());
+            aviso.concluida(conta, pendenciaId);
         }
         return concluida;
     }
