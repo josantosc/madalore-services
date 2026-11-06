@@ -2,6 +2,7 @@ package br.com.mandalore.agendamentoconversa.adapter.in.web.controller;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Map;
@@ -41,6 +42,9 @@ public class FunilController {
     public record RetornoRequest(LocalDate data) {
     }
 
+    public record ValorRequest(BigDecimal valor) {
+    }
+
     static final class Proibido extends RuntimeException {
         Proibido() {
             super("Seu usuário não tem acesso a esta clínica");
@@ -74,6 +78,14 @@ public class FunilController {
                                         @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
         conferir(id, login);
         funil.adiarRetorno(id, request.data(), login.usuario());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/funil/api/oportunidades/{id}/valor", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> valor(@PathVariable long id, @RequestBody ValorRequest request,
+                                      @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        conferir(id, login);
+        funil.definirValor(id, request.valor(), login.usuario());
         return ResponseEntity.noContent().build();
     }
 

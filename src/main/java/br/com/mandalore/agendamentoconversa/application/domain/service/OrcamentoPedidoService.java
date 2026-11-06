@@ -2,6 +2,8 @@ package br.com.mandalore.agendamentoconversa.application.domain.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
@@ -31,12 +33,14 @@ public class OrcamentoPedidoService implements OrcarPedidoUseCase {
             + "te passa o orçamento por aqui em instantes.";
 
     private static final Logger LOG = LoggerFactory.getLogger(OrcamentoPedidoService.class);
+    private static final int LIMITE_COMANDOS = 10_000;
 
     private final ChatwootPort chatwoot;
     private final LeitorPedidoPort leitor;
     private final TabelaPrecoPort tabela;
     private final Executor executor;
     private final Supplier<FunilUseCase> funil;
+    private final Set<String> comandosVistos = ConcurrentHashMap.newKeySet();
 
     @Autowired
     public OrcamentoPedidoService(ChatwootPort chatwoot, LeitorPedidoPort leitor, TabelaPrecoPort tabela,
@@ -107,6 +111,45 @@ public class OrcamentoPedidoService implements OrcarPedidoUseCase {
         }
         LOG.info("conversation_id={} orcamento_pedido {} equipe={} latencia_ms={}",
                 conversationId, resultado, setor, (System.nanoTime() - inicio) / 1_000_000);
+    }
+
+    @Override
+    public void orcar(Orcamento.Comando comando) {
+        if (comando.mensagem() != null) {
+            if (comandosVistos.size() >= LIMITE_COMANDOS) {
+                comandosVistos.clear();
+            }
+            if (!comandosVistos.add(comando.conta() + ":" + comando.mensagem())) {
+                return;
+            }
+        }
+        executor.execute(() -> calcular(comando));
+    }
+
+    void calcular(Orcamento.Comando comando) {
+        String conversa = comando.conversa();
+        List<Orcamento.Linha> linhas = List.of();
+        String nota;
+        try {
+            List<Orcamento.ItemPreco> itens = tabela.itens();
+            linhas = NotaOrcamento.casarTexto(NotaOrcamento.termos(comando.exames()), itens);
+            nota = NotaOrcamento.notaComando(linhas, itens);
+        } catch (RuntimeException ex) {
+            nota = NotaOrcamento.COMANDO_FALHA;
+            LOG.warn("conversation_id={} orcamento_comando tabela falhou: {}", conversa, ex.getClass().getSimpleName());
+        }
+        String texto = nota;
+        tentar(conversa, "nota", () -> chatwoot.notaPrivada(comando.conta(), conversa, texto));
+        List<Orcamento.Linha> comPreco = linhas.stream().filter(l -> l.item() != null).toList();
+        FunilUseCase oportunidades = funil.get();
+        if (oportunidades != null && !comPreco.isEmpty()) {
+            BigDecimal total = comPreco.stream().map(l -> l.item().valor()).reduce(BigDecimal.ZERO, BigDecimal::add);
+            int quantidade = linhas.size();
+            tentar(conversa, "funil", () -> oportunidades.orcamentoCalculado(comando.conta(), conversa, total,
+                    quantidade, comando.atendente()));
+        }
+        LOG.info("conversation_id={} orcamento_comando exames={} sem_preco={}",
+                conversa, linhas.size(), linhas.size() - comPreco.size());
     }
 
     private static void tentar(String conversationId, String etapa, Runnable acao) {

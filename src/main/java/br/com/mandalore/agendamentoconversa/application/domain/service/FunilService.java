@@ -1,6 +1,7 @@
 package br.com.mandalore.agendamentoconversa.application.domain.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -33,6 +34,7 @@ public class FunilService implements FunilUseCase {
     static final String SISTEMA = "mandalore";
     static final int DIAS_ORCAMENTO_ENVIADO = 2;
     static final int DIAS_EM_NEGOCIACAO = 3;
+    static final BigDecimal VALOR_MAXIMO = new BigDecimal("999999.99");
 
     private static final Logger LOG = LoggerFactory.getLogger(FunilService.class);
     private static final ZoneId ZONA = ZoneId.of("America/Sao_Paulo");
@@ -66,6 +68,19 @@ public class FunilService implements FunilUseCase {
     public void abrirOrcamento(String conta, String conversa, BigDecimal valor, Integer qtdItens) {
         long id = funil.abrir(conta, conversa, Funil.Origem.ORCAMENTO_FOTO, valor, qtdItens, hoje(), SISTEMA);
         LOG.info("conversation_id={} funil oportunidade={} origem=ORCAMENTO_FOTO", conversa, id);
+        etiquetar(conta, conversa);
+    }
+
+    @Override
+    public void orcamentoCalculado(String conta, String conversa, BigDecimal valor, int qtdItens, String atendente) {
+        long id = funil.abrir(conta, conversa, Funil.Origem.ORCAMENTO_MANUAL, null, null, hoje(), SISTEMA);
+        String usuario = texto(atendente) == null ? "chatwoot" : texto(atendente);
+        funil.valor(id, valor.min(VALOR_MAXIMO).setScale(2, RoundingMode.HALF_UP), qtdItens, usuario);
+        LOG.info("conversation_id={} funil oportunidade={} origem=COMANDO exames={}", conversa, id, qtdItens);
+        etiquetar(conta, conversa);
+    }
+
+    private void etiquetar(String conta, String conversa) {
         try {
             chatwoot.etiqueta(conta, conversa, Funil.ETIQUETA_ORCAMENTO, true);
         } catch (RuntimeException ex) {
@@ -171,6 +186,17 @@ public class FunilService implements FunilUseCase {
             throw new IllegalArgumentException("Oportunidade fechada não tem retorno");
         }
         funil.proximaAcao(id, data, usuario);
+    }
+
+    @Override
+    public void definirValor(long id, BigDecimal valor, String usuario) {
+        if (valor != null && (valor.signum() < 0 || valor.compareTo(VALOR_MAXIMO) > 0)) {
+            throw new IllegalArgumentException("Informe um valor entre R$ 0,00 e R$ 999.999,99");
+        }
+        BigDecimal centavos = valor == null ? null : valor.setScale(2, RoundingMode.HALF_UP);
+        if (!funil.valor(id, centavos, null, usuario)) {
+            throw new IllegalArgumentException("Oportunidade não encontrada");
+        }
     }
 
     @Override

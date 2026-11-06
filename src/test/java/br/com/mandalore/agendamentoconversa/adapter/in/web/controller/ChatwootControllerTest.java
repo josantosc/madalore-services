@@ -22,7 +22,9 @@ import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties.C
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.FunilUseCase;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.OrcarPedidoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMensagemUseCase;
 
 class ChatwootControllerTest {
@@ -109,6 +111,36 @@ class ChatwootControllerTest {
                 """));
 
         verify(funil).registrar(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_ATENDENTE, "1", "7", "Ana", null));
+    }
+
+    @Test
+    void notaPrivadaComOrcamentoViraComandoParaCalcular() throws Exception {
+        OrcarPedidoUseCase orcamento = mock(OrcarPedidoUseCase.class);
+        controller = new ChatwootController(useCase, "segredo-global", new ClientesProperties(Map.of()),
+                () -> null, () -> orcamento);
+
+        controller.receber("segredo-global", null, null, json.readTree("""
+                {"event": "message_created", "message_type": "outgoing", "private": true, "id": 31,
+                 "content": "/Orçamento hemograma,\\nTSH", "account": {"id": 1},
+                 "sender": {"id": 3, "name": "Ana", "type": "user"}, "conversation": {"id": 7, "status": "open"}}
+                """));
+
+        verify(orcamento).orcar(new Orcamento.Comando("1", "7", "31", "hemograma,\nTSH", "Ana"));
+    }
+
+    @Test
+    void soNotaPrivadaDeAtendenteQueComecaComOComandoConta() throws Exception {
+        String base = """
+                {"event": "message_created", "message_type": "%s", "private": %s, "id": 31, "content": "%s",
+                 "sender": {"type": "%s"}, "conversation": {"id": 7}}
+                """;
+        assertThat(ChatwootController.comandoOrcamento(json.readTree(base.formatted("outgoing", false, "/orcamento tsh", "user")), "1")).isEmpty();
+        assertThat(ChatwootController.comandoOrcamento(json.readTree(base.formatted("outgoing", true, "/orcamento tsh", "agent_bot")), "1")).isEmpty();
+        assertThat(ChatwootController.comandoOrcamento(json.readTree(base.formatted("incoming", true, "/orcamento tsh", "contact")), "1")).isEmpty();
+        assertThat(ChatwootController.comandoOrcamento(json.readTree(base.formatted("outgoing", true, "veja /orcamento tsh", "user")), "1")).isEmpty();
+        assertThat(ChatwootController.comandoOrcamento(json.readTree(base.formatted("outgoing", true, "/orcamentos tsh", "user")), "1")).isEmpty();
+        assertThat(ChatwootController.comandoOrcamento(json.readTree(base.formatted("outgoing", true, "/orcamento", "user")), "1"))
+                .hasValueSatisfying(c -> assertThat(c.exames()).isEmpty());
     }
 
     @Test

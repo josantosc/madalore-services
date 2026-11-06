@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +54,34 @@ class FunilServiceTest {
 
         verify(port).abrir("1", "7", Funil.Origem.ORCAMENTO_FOTO, new BigDecimal("37.00"), 2, HOJE, FunilService.SISTEMA);
         verify(chatwoot).etiqueta("1", "7", "orcamento", true);
+    }
+
+    @Test
+    void valorInformadoPeloAtendenteFicaEmCentavosEValidaFaixa() {
+        when(port.valor(anyLong(), any(), any(), any())).thenReturn(true);
+
+        service.definirValor(10L, new BigDecimal("150.5"), "Ana");
+        verify(port).valor(10L, new BigDecimal("150.50"), null, "Ana");
+
+        service.definirValor(10L, null, "Ana");
+        verify(port).valor(10L, null, null, "Ana");
+
+        assertThatThrownBy(() -> service.definirValor(10L, new BigDecimal("-1"), "Ana")).hasMessageContaining("entre");
+        assertThatThrownBy(() -> service.definirValor(10L, new BigDecimal("1000000"), "Ana")).hasMessageContaining("entre");
+        when(port.valor(eq(99L), any(), any(), any())).thenReturn(false);
+        assertThatThrownBy(() -> service.definirValor(99L, BigDecimal.TEN, "Ana")).hasMessage("Oportunidade não encontrada");
+    }
+
+    @Test
+    void comandoOrcamentoAbreManualGravaTotalEQuantidadeEPoeAEtiqueta() {
+        when(port.abrir("1", "7", Funil.Origem.ORCAMENTO_MANUAL, null, null, HOJE, FunilService.SISTEMA)).thenReturn(10L);
+
+        service.orcamentoCalculado("1", "7", new BigDecimal("37"), 3, "Ana");
+        service.orcamentoCalculado("1", "7", new BigDecimal("37"), 3, " ");
+
+        verify(port).valor(10L, new BigDecimal("37.00"), 3, "Ana");
+        verify(port).valor(10L, new BigDecimal("37.00"), 3, "chatwoot");
+        verify(chatwoot, times(2)).etiqueta("1", "7", "orcamento", true);
     }
 
     @Test

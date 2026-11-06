@@ -66,6 +66,45 @@ class NotaOrcamentoTest {
     }
 
     @Test
+    void comandoCasaPorCodigoNomeParcialESinonimoSemRepetir() {
+        List<String> termos = NotaOrcamento.termos(" hemograma; GLI,\n glicemia de jejum , tsh,, Vitamina D ");
+
+        List<Linha> linhas = NotaOrcamento.casarTexto(termos, TABELA);
+
+        assertThat(termos).containsExactly("hemograma", "GLI", "glicemia de jejum", "tsh", "Vitamina D");
+        assertThat(linhas).extracting(l -> l.item() == null ? null : l.item().codigo())
+                .containsExactly("HMG", "GLI", "TSH", null);
+    }
+
+    @Test
+    void termoQueCasaComMaisDeUmItemFicaSemPrecoComSugestoes() {
+        List<ItemPreco> tabela = List.of(
+                new ItemPreco("T4L", "T4 livre", List.of(), new BigDecimal("30"), ""),
+                new ItemPreco("T4T", "T4 total", List.of(), new BigDecimal("28"), ""));
+
+        List<Linha> linhas = NotaOrcamento.casarTexto(List.of("t4"), tabela);
+        assertThat(linhas).singleElement().satisfies(l -> assertThat(l.item()).isNull());
+
+        linhas = NotaOrcamento.casarTexto(List.of("t4 l"), tabela);
+        assertThat(linhas).singleElement().satisfies(l -> assertThat(l.item().codigo()).isEqualTo("T4L"));
+
+        assertThat(NotaOrcamento.notaComando(NotaOrcamento.casarTexto(List.of("T4"), tabela), tabela))
+                .contains("- T4 (na tabela: T4 livre; T4 total)")
+                .doesNotContain("funil");
+    }
+
+    @Test
+    void notaDoComandoTrazTotalEAvisaDoFunil() {
+        String nota = NotaOrcamento.notaComando(NotaOrcamento.casarTexto(List.of("HMG", "tsh"), TABELA), TABELA);
+
+        assertThat(nota)
+                .startsWith("Orçamento calculado pela tabela de preços")
+                .contains("Total: R$ 1.225,00")
+                .contains("Valor registrado no funil");
+        assertThat(NotaOrcamento.notaComando(List.of(), TABELA)).isEqualTo(NotaOrcamento.COMANDO_VAZIO);
+    }
+
+    @Test
     void soExamesSemPrecoNaoMostraTextoParaPaciente() {
         PedidoLido pedido = new PedidoLido(true, List.of(new ExameLido("Vitamina D", "")));
 

@@ -189,6 +189,31 @@ public class PostgresFunilAdapter implements FunilPort {
     }
 
     @Override
+    public boolean valor(long id, BigDecimal valor, Integer qtdItens, String usuario) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("valor", valor)
+                .addValue("qtd", qtdItens)
+                .addValue("usuario", limitar(usuario == null || usuario.isBlank() ? "mandalore" : usuario, 200))
+                .addValue("detalhe", "VALOR " + (valor == null ? "-" : valor.toPlainString())
+                        + (qtdItens == null ? "" : " EXAMES " + qtdItens));
+        return Boolean.TRUE.equals(transacao.execute(status -> {
+            if (jdbc.update("""
+                    UPDATE funil.oportunidade SET valor = :valor, qtd_itens = COALESCE(:qtd, qtd_itens),
+                        atualizada_em = CURRENT_TIMESTAMP
+                    WHERE id = :id
+                    """, params) == 0) {
+                return false;
+            }
+            jdbc.update("""
+                    INSERT INTO funil.evento (oportunidade_id, etapa_anterior, etapa, usuario, detalhe)
+                    SELECT id, etapa, etapa, :usuario, :detalhe FROM funil.oportunidade WHERE id = :id
+                    """, params);
+            return true;
+        }));
+    }
+
+    @Override
     public void contato(long id, String paciente, String responsavel) {
         jdbc.update("""
                 UPDATE funil.oportunidade SET

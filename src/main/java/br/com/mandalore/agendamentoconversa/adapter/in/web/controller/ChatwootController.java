@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,27 +29,33 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Anexo;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.FunilUseCase;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.OrcarPedidoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMensagemUseCase;
 
 @RestController
 public class ChatwootController {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChatwootController.class);
+    private static final Pattern COMANDO_ORCAMENTO =
+            Pattern.compile("\\s*/or[cç]amento(?![\\p{L}\\d_-])(.*)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     private final ReceberMensagemUseCase receberMensagem;
     private final String segredoGlobal;
     private final ClientesProperties clientes;
     private final Supplier<FunilUseCase> funil;
+    private final Supplier<OrcarPedidoUseCase> orcamentos;
 
     @Autowired
     public ChatwootController(
             ReceberMensagemUseCase receberMensagem,
             @Value("${chatwoot.webhook-secret:}") String segredo,
             ClientesProperties clientes,
-            ObjectProvider<FunilUseCase> funil
+            ObjectProvider<FunilUseCase> funil,
+            ObjectProvider<OrcarPedidoUseCase> orcamentos
     ) {
-        this(receberMensagem, segredo, clientes, (Supplier<FunilUseCase>) funil::getIfAvailable);
+        this(receberMensagem, segredo, clientes, funil::getIfAvailable, orcamentos::getIfAvailable);
     }
 
     public ChatwootController(ReceberMensagemUseCase receberMensagem, String segredo, ClientesProperties clientes) {
@@ -56,10 +64,16 @@ public class ChatwootController {
 
     ChatwootController(ReceberMensagemUseCase receberMensagem, String segredo, ClientesProperties clientes,
                        Supplier<FunilUseCase> funil) {
+        this(receberMensagem, segredo, clientes, funil, () -> null);
+    }
+
+    ChatwootController(ReceberMensagemUseCase receberMensagem, String segredo, ClientesProperties clientes,
+                       Supplier<FunilUseCase> funil, Supplier<OrcarPedidoUseCase> orcamentos) {
         this.receberMensagem = receberMensagem;
         this.segredoGlobal = segredo;
         this.clientes = clientes;
         this.funil = funil;
+        this.orcamentos = orcamentos;
     }
 
     @PostMapping("/chatwoot")
@@ -77,6 +91,17 @@ public class ChatwootController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         receberMensagem.receber(mensagem);
+        OrcarPedidoUseCase orcamento = orcamentos.get();
+        if (orcamento != null) {
+            comandoOrcamento(corpo, mensagem.accountId()).ifPresent(comando -> {
+                try {
+                    orcamento.orcar(comando);
+                } catch (RuntimeException ex) {
+                    LOG.warn("conversation_id={} comando orcamento falhou: {}",
+                            comando.conversa(), ex.getClass().getSimpleName());
+                }
+            });
+        }
         FunilUseCase oportunidades = funil.get();
         if (oportunidades != null) {
             eventoFunil(corpo, mensagem.accountId()).ifPresent(evento -> {
@@ -133,6 +158,26 @@ public class ChatwootController {
                 ? Optional.of(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_ATENDENTE, accountId, conversa,
                         nome(sender), null, paciente, atribuido))
                 : Optional.empty();
+    }
+
+    /** Nota privada de atendente (não do bot) que começa com /orcamento (ou /orçamento). */
+    static Optional<Orcamento.Comando> comandoOrcamento(JsonNode corpo, String accountId) {
+        String tipo = corpo.path("message_type").asText("");
+        String conversa = corpo.path("conversation").path("id").asText(null);
+        if (accountId == null || conversa == null
+                || !"message_created".equals(corpo.path("event").asText(""))
+                || !corpo.path("private").asBoolean(false)
+                || !("outgoing".equalsIgnoreCase(tipo) || "1".equals(tipo))
+                || "agent_bot".equalsIgnoreCase(corpo.path("sender").path("type").asText(""))) {
+            return Optional.empty();
+        }
+        Matcher comando = COMANDO_ORCAMENTO.matcher(corpo.path("content").asText(""));
+        if (!comando.matches()) {
+            return Optional.empty();
+        }
+        String mensagem = corpo.path("id").isMissingNode() || corpo.path("id").isNull() ? null : corpo.path("id").asText();
+        return Optional.of(new Orcamento.Comando(accountId, conversa, mensagem, comando.group(1).trim(),
+                nome(corpo.path("sender"))));
     }
 
     private static String nome(JsonNode pessoa) {

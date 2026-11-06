@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -105,6 +107,34 @@ class OrcamentoPedidoServiceTest {
 
         verify(chatwoot).atribuirEquipe("1", "7", Setor.FATURAMENTO);
         verify(chatwoot).abrirAtendente("1", "7");
+    }
+
+    @Test
+    void comandoDoAtendenteRespondeEmNotaELevaTotalAoFunilUmaVezPorMensagem() {
+        FunilUseCase funil = mock(FunilUseCase.class);
+        service = new OrcamentoPedidoService(chatwoot, leitor, tabela, Runnable::run, () -> funil);
+        Orcamento.Comando comando = new Orcamento.Comando("1", "7", "m9", "hemograma, vitamina d", "Ana");
+
+        service.orcar(comando);
+        service.orcar(comando);
+
+        verify(chatwoot, times(1)).notaPrivada(eq("1"), eq("7"), contains("Total: R$ 25,00"));
+        verify(funil, times(1)).orcamentoCalculado("1", "7", new BigDecimal("25"), 2, "Ana");
+        verifyNoInteractions(leitor);
+        verify(chatwoot, never()).publicar(any(), any(), any());
+    }
+
+    @Test
+    void comandoSemExameComPrecoSoRespondeANota() {
+        FunilUseCase funil = mock(FunilUseCase.class);
+        service = new OrcamentoPedidoService(chatwoot, leitor, tabela, Runnable::run, () -> funil);
+
+        service.orcar(new Orcamento.Comando("1", "7", "m10", "", "Ana"));
+        service.orcar(new Orcamento.Comando("1", "7", "m11", "vitamina d", "Ana"));
+
+        verify(chatwoot).notaPrivada("1", "7", NotaOrcamento.COMANDO_VAZIO);
+        verify(chatwoot).notaPrivada(eq("1"), eq("7"), contains("- vitamina d"));
+        verifyNoInteractions(funil);
     }
 
     private static MensagemEntrada mensagem() {

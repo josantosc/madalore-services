@@ -45,4 +45,8 @@ public final class Orcamento {
     /** Exame do pedido com o item da tabela; {@code item} nulo quando não há preço. */
     public record Linha(String lido, ItemPreco item) {
     }
+
+    /** Nota privada "/orcamento exame, exame" escrita pelo atendente no Chatwoot. */
+    public record Comando(String conta, String conversa, String mensagem, String exames, String atendente) {
+    }
 }

@@ -31,6 +31,12 @@ public interface FunilPort {
     /** O paciente respondeu: zera o prazo de perda por falta de resposta. */
     void respondeu(long id);
 
+    /**
+     * Troca o valor (e a quantidade de exames, quando informada) e registra no histórico.
+     * Retorna false se a oportunidade não existe.
+     */
+    boolean valor(long id, BigDecimal valor, Integer qtdItens, String usuario);
+
     /** Nome do paciente e responsável vindos do Chatwoot; nulo mantém o atual. */
     void contato(long id, String paciente, String responsavel);
 

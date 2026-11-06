@@ -12,6 +12,9 @@ public interface FunilUseCase {
     /** Orçamento por foto que foi para o Faturamento. {@code valor} e {@code qtdItens} nulos quando a leitura falhou. */
     void abrirOrcamento(String conta, String conversa, BigDecimal valor, Integer qtdItens);
 
+    /** Comando /orcamento do atendente: abre (ou usa a aberta) e grava total e quantidade de exames. */
+    void orcamentoCalculado(String conta, String conversa, BigDecimal valor, int qtdItens, String atendente);
+
     void registrar(Funil.Evento evento);
 
     record Painel(LocalDate hoje, List<Funil.Oportunidade> oportunidades) {
@@ -25,6 +28,9 @@ public interface FunilUseCase {
     void mudarEtapa(long id, Funil.Etapa etapa, Funil.MotivoPerda motivo, String usuario);
 
     void adiarRetorno(long id, LocalDate data, String usuario);
+
+    /** Valor informado pelo atendente (orçamento passado por texto ou telefone, ou correção da leitura da foto). */
+    void definirValor(long id, BigDecimal valor, String usuario);
 
     /** Rotina horária: fecha as agendadas pelo assistente e as sem resposta. */
     void fecharAutomaticas();

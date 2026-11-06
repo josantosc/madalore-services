@@ -84,7 +84,9 @@
     .cartao { background: var(--solido); border: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px; cursor: grab; display: grid; gap: 2px; }
     .cartao:hover { border-color: var(--borda-forte); }
     .cartao .linha { display: flex; justify-content: space-between; gap: 8px; }
-    .cartao .valor { font-weight: 500; }
+    .editar-valor { background: none; border: 0; padding: 0; font: inherit; font-weight: 500; color: inherit; cursor: pointer; white-space: nowrap; }
+    .editar-valor:hover { color: var(--marca); text-decoration: underline; }
+    .editar-valor.vazio { color: var(--marca); font-weight: 400; font-size: 12px; }
 
     dialog { border: 0; padding: 24px; border-radius: 12px; width: min(440px, calc(100vw - 32px)); color: var(--texto);
       box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
@@ -165,6 +167,21 @@
       <div class="rodape">
         <button class="btn cinza" type="button" data-fechar>Cancelar</button>
         <button class="btn perigo" type="submit" id="pOk">Marcar perdido</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgValor">
+    <form method="dialog" id="formValor">
+      <h2>Valor do orçamento</h2>
+      <p class="sub">O valor passado ao paciente. Entra no total em aberto e na receita dos agendados.</p>
+      <div class="form">
+        <label>Valor (R$)<input class="campo" id="fValor" inputmode="decimal" placeholder="150,00" autocomplete="off"></label>
+        <span class="msg-erro" id="vErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn solido" type="submit" id="vOk">Salvar</button>
       </div>
     </form>
   </dialog>
@@ -272,9 +289,24 @@
       return el("span", { className: o.proximaAcao < hoje ? "atrasado" : "" }, o.proximaAcao < hoje ? texto + " (atrasado)" : texto);
     }
 
+    function botaoValor(o) {
+      const vazio = valor(o) === null;
+      const b = el("button", { className: "editar-valor" + (vazio ? " vazio" : ""), type: "button", title: "Informar ou corrigir o valor",
+        onclick: (ev) => { ev.stopPropagation(); abrirValor(o); } }, vazio ? "Informar valor" : reais.format(valor(o)));
+      b.draggable = false;
+      return b;
+    }
+
     function textoValor(o) {
-      if (valor(o) === null) return el("span", { className: "sub" }, "sem valor");
-      return [reais.format(valor(o)), o.qtdItens ? el("span", { className: "sub" }, o.qtdItens + (o.qtdItens === 1 ? " exame" : " exames")) : null];
+      return [botaoValor(o), o.qtdItens ? el("span", { className: "sub" }, o.qtdItens + (o.qtdItens === 1 ? " exame" : " exames")) : null];
+    }
+
+    function lerValor(texto) {
+      let t = texto.replace(/R\$|\s/g, "");
+      if (!t) return null;
+      if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+      if (!/^\d+(\.\d{1,2})?$/.test(t)) throw new Error("Digite só o valor, por exemplo 150,00");
+      return t;
     }
 
     function acoes(o) {
@@ -344,7 +376,7 @@
 
     function cartao(o) {
       const c = el("div", { className: "cartao", draggable: true },
-        el("div", { className: "linha" }, conversa(o)[0], el("span", { className: "valor" }, valor(o) === null ? "" : reais.format(valor(o)))),
+        el("div", { className: "linha" }, conversa(o)[0], botaoValor(o)),
         el("div", { className: "linha sub" }, el("span", {}, o.responsavel || "sem responsável"), retorno(o)));
       c.addEventListener("dragstart", (ev) => ev.dataTransfer.setData("text/plain", String(o.id)));
       return c;
@@ -368,6 +400,14 @@
       $("dlgPerdido").showModal();
     }
 
+    function abrirValor(o) {
+      selecionada = o;
+      $("fValor").value = valor(o) === null ? "" : valor(o).toFixed(2).replace(".", ",");
+      $("vErro").textContent = "";
+      $("dlgValor").showModal();
+      $("fValor").select();
+    }
+
     function abrirRetorno(o) {
       selecionada = o;
       $("fData").min = hoje;
@@ -386,6 +426,21 @@
         $("pErro").textContent = e.message;
       } finally {
         $("pOk").disabled = false;
+      }
+    });
+
+    $("formValor").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      $("vOk").disabled = true;
+      try {
+        await post("/funil/api/oportunidades/" + selecionada.id + "/valor", { valor: lerValor($("fValor").value) });
+        $("dlgValor").close();
+        aviso("Valor salvo");
+        await carregar();
+      } catch (e) {
+        $("vErro").textContent = e.message;
+      } finally {
+        $("vOk").disabled = false;
       }
     });
 

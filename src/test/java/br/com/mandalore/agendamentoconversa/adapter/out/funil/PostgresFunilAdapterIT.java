@@ -74,6 +74,36 @@ class PostgresFunilAdapterIT {
     }
 
     @Test
+    void valorInformadoNaTelaFicaNoHistorico() throws Exception {
+        long id = funil.abrir(CONTA, "c8", Funil.Origem.ORCAMENTO_MANUAL, null, null, HOJE, "mandalore");
+
+        mvc.perform(post("/funil/api/oportunidades/" + id + "/valor").header("Authorization", LOGIN)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"valor\": \"150.5\"}"))
+                .andExpect(status().isNoContent());
+
+        assertThat(funil.buscar(id)).hasValueSatisfying(o -> assertThat(o.valor()).isEqualByComparingTo("150.50"));
+        assertThat(jdbc.queryForObject("SELECT detalhe FROM funil.evento WHERE oportunidade_id = :id ORDER BY id DESC LIMIT 1",
+                new MapSqlParameterSource("id", id), String.class)).isEqualTo("VALOR 150.50");
+        assertThat(funil.valor(-1, BigDecimal.ONE, null, "f")).isFalse();
+    }
+
+    @Test
+    void valorDoComandoGravaQuantidadeEValorDaTelaMantem() {
+        long id = funil.abrir(CONTA, "c7", Funil.Origem.ORCAMENTO_MANUAL, null, null, HOJE, "mandalore");
+
+        funil.valor(id, new BigDecimal("37.00"), 3, "Ana");
+        funil.valor(id, new BigDecimal("30.00"), null, "Ana");
+
+        assertThat(funil.buscar(id)).hasValueSatisfying(o -> {
+            assertThat(o.valor()).isEqualByComparingTo("30");
+            assertThat(o.qtdItens()).isEqualTo(3);
+        });
+        assertThat(jdbc.queryForList("SELECT detalhe FROM funil.evento WHERE oportunidade_id = :id ORDER BY id",
+                new MapSqlParameterSource("id", id), String.class))
+                .containsExactly("ORCAMENTO_MANUAL", "VALOR 37.00 EXAMES 3", "VALOR 30.00");
+    }
+
+    @Test
     void segundoOrcamentoDaMesmaConversaAtualizaAOportunidadeAberta() {
         long id = funil.abrir(CONTA, "c1", Funil.Origem.ORCAMENTO_FOTO, new BigDecimal("37"), 2, HOJE, "mandalore");
         long mesmo = funil.abrir(CONTA, "c1", Funil.Origem.ORCAMENTO_MANUAL, null, null, HOJE, "mandalore");

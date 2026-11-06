@@ -25,7 +25,8 @@ corporativo), com vendedor externo e proposta formal. Ele fica ao lado do Mandal
 | Origem | Como abre |
 |---|---|
 | Orçamento por foto | A conversa vai para o Faturamento: pedido lido (com total e quantidade de exames), exames não identificados ou leitura que falhou (sem valor). O Mandalore põe a etiqueta `orcamento` na conversa |
-| Orçamento manual | O atendente **adiciona** a etiqueta `orcamento` na conversa (valor passado por texto, áudio ou telefone) |
+| Comando `/orcamento` | O atendente escreve uma **nota privada** `/orcamento hemograma, glicose, TSH`. O Mandalore calcula pela tabela de preços, responde em nota privada e abre (ou atualiza) a oportunidade com total e quantidade de exames. Põe a etiqueta `orcamento` |
+| Orçamento manual | O atendente **adiciona** a etiqueta `orcamento` na conversa (valor passado por texto, áudio ou telefone); o valor entra pela tela |
 
 A etiqueta `orcamento` no Chatwoot quer dizer "esta conversa está no funil", qualquer que seja a origem. A abertura
 pela foto não depende dela: se o Chatwoot recusar a etiqueta, a oportunidade continua aberta. A volta da etiqueta
@@ -35,6 +36,23 @@ oportunidade; feche na tela.
 Imagem que não é pedido médico vai para a Recepção e não abre oportunidade. Uma oportunidade aberta por conversa:
 novo orçamento na mesma conversa atualiza o valor da que está aberta. A etiqueta que já estava na conversa não
 reabre uma oportunidade fechada; só conta quando acaba de ser adicionada.
+
+### Valor
+
+O valor vem da tabela de preços (`/orcamento`), a mesma do orçamento por foto, de três jeitos:
+
+- **Foto do pedido:** soma dos exames lidos que têm preço.
+- **Comando `/orcamento`:** o atendente lista os exames numa nota privada, separados por vírgula, ponto e vírgula
+  ou linha. Cada termo casa por código, nome ou sinônimo, sem acento e sem diferença de maiúscula; sem igualdade,
+  vale o único item da tabela que contém o termo ("hemograma" acha "Hemograma completo"). Termo que casa com mais
+  de um item fica sem preço, com até três sugestões da tabela na nota. A nota de resposta traz o texto pronto para
+  o paciente e o total. Mandar o comando de novo com a lista certa troca o valor.
+- **Tela:** clicar no valor (ou em "Informar valor") no quadro ou na lista, para orçamento passado por áudio ou
+  telefone, desconto ou correção. Não muda a quantidade de exames.
+
+Exame sem preço não entra no total. O comando só vale em nota privada de atendente que começa com `/orcamento`
+(ou `/orçamento`); a resposta do Mandalore também é nota privada, então o paciente não vê nada. Precisa de
+`ORCAMENTO_ENABLED=true`. Cada troca de valor fica no histórico (`funil.evento`, detalhe `VALOR 37.00 EXAMES 3`).
 
 ### Etapas
 
@@ -100,7 +118,8 @@ FUNIL_ENABLED=true
 ```
 
 Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZE_SCHEMA=true` (cria o schema
-`funil`). O orçamento por foto (`ORCAMENTO_ENABLED`) é opcional: sem ele, só a etiqueta abre oportunidade.
+`funil`). O orçamento por foto e o comando `/orcamento` (`ORCAMENTO_ENABLED`) são opcionais: sem eles, só a
+etiqueta abre oportunidade e o valor entra pela tela.
 
 O `ADMIN_USER` entra na tela. `FUNIL_USER` e `FUNIL_PASSWORD` são opcionais: um login que só abre o funil, para
 quem não deve ver as outras telas da central.
@@ -130,7 +149,7 @@ Tabela `funil.oportunidade`, uma linha por oportunidade:
 | `conta_id`, `conversa_id` | conversa de origem no Chatwoot |
 | `origem` | `ORCAMENTO_FOTO` ou `ORCAMENTO_MANUAL` |
 | `etapa`, `motivo_perda` | situação atual |
-| `valor`, `qtd_itens` | total e quantidade de exames do orçamento por foto; nulos no manual |
+| `valor`, `qtd_itens` | total e quantidade de exames (foto ou `/orcamento`); o valor também pode ser informado na tela |
 | `paciente` | nome do contato no Chatwoot, atualizado a cada mensagem ou mudança na conversa |
 | `responsavel` | atendente atribuído à conversa no Chatwoot; sem atribuição, o último atendente que respondeu |
 | `proxima_acao`, `retorno_avisado_em` | dia do retorno e dia em que a rotina avisou |
@@ -141,7 +160,7 @@ Tabela `funil.oportunidade`, uma linha por oportunidade:
 mudança de etapa (anterior, nova, quem mudou e quando).
 
 **LGPD.** Mesma regra do orçamento por foto: o funil não grava o nome dos exames, a foto, o texto da conversa, o
-CPF nem o telefone. O detalhe fica no Chatwoot; o funil guarda valor, quantidade, as chaves e o nome do contato
+CPF nem o telefone. Os exames do `/orcamento` ficam só nas notas privadas do Chatwoot. O detalhe fica no Chatwoot; o funil guarda valor, quantidade, as chaves e o nome do contato
 (o mesmo que aparece no Chatwoot), para o atendente reconhecer o paciente na tela.
 
 O nome e o responsável vêm do `meta` da conversa no webhook (`meta.sender.name` e `meta.assignee.name`). A
