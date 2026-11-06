@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -64,24 +66,50 @@ public class FunilService implements FunilUseCase {
     public void abrirOrcamento(String conta, String conversa, BigDecimal valor, Integer qtdItens) {
         long id = funil.abrir(conta, conversa, Funil.Origem.ORCAMENTO_FOTO, valor, qtdItens, hoje(), SISTEMA);
         LOG.info("conversation_id={} funil oportunidade={} origem=ORCAMENTO_FOTO", conversa, id);
+        try {
+            chatwoot.etiqueta(conta, conversa, Funil.ETIQUETA_ORCAMENTO, true);
+        } catch (RuntimeException ex) {
+            LOG.warn("conversation_id={} funil etiqueta {} falhou: {}", conversa, Funil.ETIQUETA_ORCAMENTO,
+                    ex.getClass().getSimpleName());
+        }
     }
 
     @Override
     public void registrar(Funil.Evento evento) {
+        Optional<Funil.Oportunidade> aberta = funil.aberta(evento.conta(), evento.conversa());
         switch (evento.tipo()) {
-            case ETIQUETAS -> {
-                if (evento.etiquetas().contains(Funil.ETIQUETA_ORCAMENTO)
-                        && funil.aberta(evento.conta(), evento.conversa()).isEmpty()) {
+            case CONVERSA -> {
+                if (aberta.isEmpty() && evento.etiquetas().contains(Funil.ETIQUETA_ORCAMENTO)) {
                     long id = funil.abrir(evento.conta(), evento.conversa(), Funil.Origem.ORCAMENTO_MANUAL,
                             null, null, hoje(), SISTEMA);
                     LOG.info("conversation_id={} funil oportunidade={} origem=ORCAMENTO_MANUAL", evento.conversa(), id);
+                    contato(id, null, null, evento);
                 }
             }
-            case MENSAGEM_ATENDENTE -> funil.aberta(evento.conta(), evento.conversa())
-                    .ifPresent(o -> atendenteRespondeu(o, evento.atendente()));
-            case MENSAGEM_PACIENTE -> funil.aberta(evento.conta(), evento.conversa())
-                    .ifPresent(this::pacienteRespondeu);
+            case MENSAGEM_ATENDENTE -> aberta.ifPresent(o -> atendenteRespondeu(o, evento.atendente()));
+            case MENSAGEM_PACIENTE -> aberta.ifPresent(this::pacienteRespondeu);
         }
+        aberta.ifPresent(o -> contato(o.id(), o.paciente(), o.responsavel(), evento));
+    }
+
+    /** Responsável: o atendente atribuído; sem atribuição, quem respondeu por último. */
+    private void contato(long id, String pacienteAtual, String responsavelAtual, Funil.Evento evento) {
+        String paciente = evento.paciente();
+        String responsavel = evento.atribuido() != null ? evento.atribuido()
+                : evento.tipo() == Funil.Evento.Tipo.MENSAGEM_ATENDENTE ? texto(evento.atendente()) : null;
+        if (Objects.equals(paciente, pacienteAtual)) {
+            paciente = null;
+        }
+        if (Objects.equals(responsavel, responsavelAtual)) {
+            responsavel = null;
+        }
+        if (paciente != null || responsavel != null) {
+            funil.contato(id, paciente, responsavel);
+        }
+    }
+
+    private static String texto(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
     private void atendenteRespondeu(Funil.Oportunidade oportunidade, String atendente) {

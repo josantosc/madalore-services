@@ -24,8 +24,13 @@ corporativo), com vendedor externo e proposta formal. Ele fica ao lado do Mandal
 
 | Origem | Como abre |
 |---|---|
-| Orçamento por foto | A conversa vai para o Faturamento: pedido lido (com total e quantidade de exames), exames não identificados ou leitura que falhou (sem valor) |
-| Orçamento manual | O atendente **adiciona** a etiqueta `orcamento` na conversa |
+| Orçamento por foto | A conversa vai para o Faturamento: pedido lido (com total e quantidade de exames), exames não identificados ou leitura que falhou (sem valor). O Mandalore põe a etiqueta `orcamento` na conversa |
+| Orçamento manual | O atendente **adiciona** a etiqueta `orcamento` na conversa (valor passado por texto, áudio ou telefone) |
+
+A etiqueta `orcamento` no Chatwoot quer dizer "esta conversa está no funil", qualquer que seja a origem. A abertura
+pela foto não depende dela: se o Chatwoot recusar a etiqueta, a oportunidade continua aberta. A volta da etiqueta
+pelo webhook não abre outra oportunidade, porque a conversa já tem uma aberta. Tirar a etiqueta não fecha a
+oportunidade; feche na tela.
 
 Imagem que não é pedido médico vai para a Recepção e não abre oportunidade. Uma oportunidade aberta por conversa:
 novo orçamento na mesma conversa atualiza o valor da que está aberta. A etiqueta que já estava na conversa não
@@ -126,7 +131,8 @@ Tabela `funil.oportunidade`, uma linha por oportunidade:
 | `origem` | `ORCAMENTO_FOTO` ou `ORCAMENTO_MANUAL` |
 | `etapa`, `motivo_perda` | situação atual |
 | `valor`, `qtd_itens` | total e quantidade de exames do orçamento por foto; nulos no manual |
-| `responsavel` | nome do atendente que enviou o orçamento |
+| `paciente` | nome do contato no Chatwoot, atualizado a cada mensagem ou mudança na conversa |
+| `responsavel` | atendente atribuído à conversa no Chatwoot; sem atribuição, o último atendente que respondeu |
 | `proxima_acao`, `retorno_avisado_em` | dia do retorno e dia em que a rotina avisou |
 | `ultima_resposta_em` | última mensagem do paciente, para o prazo de perda |
 | `aberta_em`, `fechada_em` | ciclo |
@@ -134,8 +140,13 @@ Tabela `funil.oportunidade`, uma linha por oportunidade:
 Índice único parcial em (`conta_id`, `conversa_id`) para oportunidade aberta. Tabela `funil.evento` com cada
 mudança de etapa (anterior, nova, quem mudou e quando).
 
-**LGPD.** Mesma regra do orçamento por foto: o funil não grava o nome dos exames, a foto, o texto da conversa nem
-o CPF. O detalhe fica no Chatwoot; o funil guarda valor, quantidade e as chaves.
+**LGPD.** Mesma regra do orçamento por foto: o funil não grava o nome dos exames, a foto, o texto da conversa, o
+CPF nem o telefone. O detalhe fica no Chatwoot; o funil guarda valor, quantidade, as chaves e o nome do contato
+(o mesmo que aparece no Chatwoot), para o atendente reconhecer o paciente na tela.
+
+O nome e o responsável vêm do `meta` da conversa no webhook (`meta.sender.name` e `meta.assignee.name`). A
+oportunidade aberta antes desta mudança ganha os nomes no próximo evento da conversa (mensagem, atribuição ou
+etiqueta).
 
 ## Fora do escopo
 
@@ -156,8 +167,9 @@ permissões por registro e importação de leads. Se a clínica precisar disso, 
    quando a retomada existir.
 5. **Relatório.** Conversão, receita convertida e motivos de perda no relatório quinzenal e no OpenClaw, sem dado
    de paciente.
-6. **Clínicas.** O login da recepção de cada clínica (`mandalore.clientes.<id>.recepcao`) também enxergar o funil
-   da própria conta. Hoje só `FUNIL_USER` e `ADMIN_USER` entram, e veem todas as contas.
+6. **Clínicas.** Feito pelos [usuários da central](usuarios-perfis.md): os perfis Recepção, Faturamento e Gestor
+   veem o funil só das clínicas deles. O login antigo da recepção (`mandalore.clientes.<id>.recepcao`) continua só
+   com a agenda.
 
 ## Indicadores
 

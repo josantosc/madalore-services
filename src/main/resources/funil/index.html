@@ -257,11 +257,12 @@
     }
 
     function conversa(o) {
-      const texto = "Conversa #" + o.conversa;
+      const texto = o.paciente || "Conversa #" + o.conversa;
       const link = chatwootUrl
         ? el("a", { className: "conversa", href: chatwootUrl + "/app/accounts/" + encodeURIComponent(o.conta) + "/conversations/" + encodeURIComponent(o.conversa), target: "_blank", rel: "noopener" }, texto)
         : el("span", {}, texto);
-      return [link, el("span", { className: "sub" }, o.origem === "ORCAMENTO_FOTO" ? "Orçamento por foto" : "Orçamento manual")];
+      const origem = o.origem === "ORCAMENTO_FOTO" ? "Orçamento por foto" : "Orçamento manual";
+      return [link, el("span", { className: "sub" }, o.paciente ? "#" + o.conversa + " · " + origem : origem)];
     }
 
     function retorno(o) {

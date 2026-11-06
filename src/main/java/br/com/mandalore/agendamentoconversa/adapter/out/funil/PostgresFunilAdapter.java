@@ -35,7 +35,7 @@ public class PostgresFunilAdapter implements FunilPort {
 
     private static final String COLUNAS = """
             SELECT id, conta_id, conversa_id, origem, etapa, motivo_perda, valor, qtd_itens, responsavel,
-                   proxima_acao, ultima_resposta_em, aberta_em, fechada_em
+                   proxima_acao, ultima_resposta_em, aberta_em, fechada_em, paciente
             FROM funil.oportunidade
             """;
 
@@ -189,6 +189,20 @@ public class PostgresFunilAdapter implements FunilPort {
     }
 
     @Override
+    public void contato(long id, String paciente, String responsavel) {
+        jdbc.update("""
+                UPDATE funil.oportunidade SET
+                    paciente = COALESCE(:paciente, paciente),
+                    responsavel = COALESCE(:responsavel, responsavel),
+                    atualizada_em = CURRENT_TIMESTAMP
+                WHERE id = :id
+                """, new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("paciente", paciente == null || paciente.isBlank() ? null : limitar(paciente.trim(), 200))
+                .addValue("responsavel", responsavel == null || responsavel.isBlank() ? null : limitar(responsavel.trim(), 200)));
+    }
+
+    @Override
     public List<Funil.Oportunidade> listar(Set<String> contas, Instant fechadasDesde) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("desde", OffsetDateTime.ofInstant(fechadasDesde, ZoneOffset.UTC))
@@ -253,7 +267,8 @@ public class PostgresFunilAdapter implements FunilPort {
                 proxima == null ? null : proxima.toLocalDate(),
                 instante(rs.getTimestamp("ultima_resposta_em")),
                 instante(rs.getTimestamp("aberta_em")),
-                instante(rs.getTimestamp("fechada_em")));
+                instante(rs.getTimestamp("fechada_em")),
+                rs.getString("paciente"));
     }
 
     private static Instant instante(Timestamp timestamp) {

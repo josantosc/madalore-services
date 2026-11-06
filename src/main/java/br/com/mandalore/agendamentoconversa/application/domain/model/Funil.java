@@ -31,7 +31,8 @@ public final class Funil {
 
     /**
      * Sem dado de saúde: nem nome de exame, nem texto da conversa, nem CPF. O detalhe fica no Chatwoot.
-     * {@code valor} e {@code qtdItens} nulos no orçamento manual.
+     * {@code valor} e {@code qtdItens} nulos no orçamento manual. {@code paciente}: nome do contato no Chatwoot;
+     * {@code responsavel}: atendente atribuído à conversa ou, sem atribuição, o último que respondeu.
      */
     public record Oportunidade(
             long id,
@@ -46,19 +47,29 @@ public final class Funil {
             LocalDate proximaAcao,
             Instant ultimaRespostaEm,
             Instant abertaEm,
-            Instant fechadaEm
+            Instant fechadaEm,
+            String paciente
     ) {
     }
 
-    /** Evento do webhook do Chatwoot que mexe no funil. {@code etiquetas}: as que acabaram de ser adicionadas. */
-    public record Evento(Tipo tipo, String conta, String conversa, String atendente, List<String> etiquetas) {
+    /**
+     * Evento do webhook do Chatwoot que mexe no funil. {@code etiquetas}: as que acabaram de ser adicionadas.
+     * {@code paciente} e {@code atribuido}: nome do contato e do atendente atribuído, quando o webhook traz.
+     * {@code CONVERSA}: conversa atualizada (etiquetas, atribuição).
+     */
+    public record Evento(Tipo tipo, String conta, String conversa, String atendente, List<String> etiquetas,
+                         String paciente, String atribuido) {
 
         public enum Tipo {
-            MENSAGEM_PACIENTE, MENSAGEM_ATENDENTE, ETIQUETAS
+            MENSAGEM_PACIENTE, MENSAGEM_ATENDENTE, CONVERSA
         }
 
         public Evento {
             etiquetas = etiquetas == null ? List.of() : List.copyOf(etiquetas);
+        }
+
+        public Evento(Tipo tipo, String conta, String conversa, String atendente, List<String> etiquetas) {
+            this(tipo, conta, conversa, atendente, etiquetas, null, null);
         }
     }
 }

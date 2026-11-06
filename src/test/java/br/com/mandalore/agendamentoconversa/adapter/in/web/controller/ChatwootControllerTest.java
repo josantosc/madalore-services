@@ -135,7 +135,7 @@ class ChatwootControllerTest {
         assertThat(ChatwootController.eventoFunil(json.readTree("""
                 {"event": "conversation_updated", "id": 7, "account_id": 1, "labels": ["vip", "orcamento"],
                  "changed_attributes": [{"label_list": {"previous_value": ["vip"], "current_value": ["vip", "orcamento"]}}]}
-                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, "1", "7", null, List.of("orcamento")));
+                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, "1", "7", null, List.of("orcamento")));
         assertThat(ChatwootController.eventoFunil(json.readTree("""
                 {"event": "conversation_updated", "id": 7, "labels": ["orcamento"],
                  "changed_attributes": [{"status": {"previous_value": "open", "current_value": "resolved"}}]}
@@ -143,7 +143,23 @@ class ChatwootControllerTest {
         assertThat(ChatwootController.eventoFunil(json.readTree("""
                 {"event": "conversation_updated", "id": 7,
                  "changed_attributes": [{"cached_label_list": {"previous_value": "vip", "current_value": "vip,orcamento"}}]}
-                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, "1", "7", null, List.of("orcamento")));
+                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, "1", "7", null, List.of("orcamento")));
+    }
+
+    @Test
+    void nomeDoContatoEAtendenteAtribuidoVemDoMetaDaConversa() throws Exception {
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "conversation_updated", "id": 7, "changed_attributes": [{"assignee_id": {}}],
+                 "meta": {"sender": {"name": "Maria"}, "assignee": {"name": "Bruna"}}}
+                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, "1", "7", null, List.of(), "Maria", "Bruna"));
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "message_created", "message_type": "incoming", "sender": {"name": "Maria", "type": "contact"},
+                 "conversation": {"id": 7, "status": "open"}}
+                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_PACIENTE, "1", "7", null, null, "Maria", null));
+        assertThat(ChatwootController.eventoFunil(json.readTree("""
+                {"event": "message_created", "message_type": "outgoing", "sender": {"name": "Ana", "type": "user"},
+                 "conversation": {"id": 7, "status": "open", "meta": {"sender": {"name": "Maria"}, "assignee": {"name": "Bruna"}}}}
+                """), "1")).contains(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_ATENDENTE, "1", "7", "Ana", null, "Maria", "Bruna"));
     }
 
     @Test

@@ -31,6 +31,9 @@ public interface FunilPort {
     /** O paciente respondeu: zera o prazo de perda por falta de resposta. */
     void respondeu(long id);
 
+    /** Nome do paciente e responsável vindos do Chatwoot; nulo mantém o atual. */
+    void contato(long id, String paciente, String responsavel);
+
     /** Abertas e as fechadas desde {@code fechadasDesde}. {@code contas} vazio: todas. */
     List<Funil.Oportunidade> listar(Set<String> contas, Instant fechadasDesde);
 

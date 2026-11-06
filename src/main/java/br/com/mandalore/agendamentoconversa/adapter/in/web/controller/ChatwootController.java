@@ -92,8 +92,9 @@ public class ChatwootController {
     }
 
     /**
-     * Mensagem do paciente, resposta do atendente (conversa aberta, não privada, não do bot) e mudança de etiquetas.
-     * A resposta do bot sai pela API com a conversa pendente; por isso só conta a mensagem com a conversa aberta.
+     * Mensagem do paciente, resposta do atendente (conversa aberta, não privada, não do bot) e conversa atualizada
+     * (etiqueta adicionada ou atribuição). A resposta do bot sai pela API com a conversa pendente; por isso só conta a
+     * mensagem com a conversa aberta. Nome do contato e do atendente atribuído vêm de {@code meta} da conversa.
      */
     static Optional<Funil.Evento> eventoFunil(JsonNode corpo, String accountId) {
         String event = corpo.path("event").asText("");
@@ -103,25 +104,40 @@ public class ChatwootController {
         if ("conversation_updated".equals(event)) {
             String conversa = corpo.path("id").asText(null);
             List<String> adicionadas = etiquetasAdicionadas(corpo.path("changed_attributes"));
-            return conversa == null || adicionadas.isEmpty() ? Optional.empty()
-                    : Optional.of(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, accountId, conversa, null, adicionadas));
+            String paciente = nome(corpo.path("meta").path("sender"));
+            String atribuido = nome(corpo.path("meta").path("assignee"));
+            return conversa == null || adicionadas.isEmpty() && paciente == null && atribuido == null ? Optional.empty()
+                    : Optional.of(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, accountId, conversa, null, adicionadas,
+                            paciente, atribuido));
         }
-        String conversa = corpo.path("conversation").path("id").asText(null);
+        JsonNode conversation = corpo.path("conversation");
+        String conversa = conversation.path("id").asText(null);
         if (!"message_created".equals(event) || conversa == null || corpo.path("private").asBoolean(false)) {
             return Optional.empty();
         }
         String tipo = corpo.path("message_type").asText("");
-        if ("incoming".equalsIgnoreCase(tipo) || "0".equals(tipo)) {
-            return Optional.of(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_PACIENTE, accountId, conversa, null, null));
-        }
         JsonNode sender = corpo.path("sender");
+        String paciente = nome(conversation.path("meta").path("sender"));
+        String atribuido = nome(conversation.path("meta").path("assignee"));
+        if ("incoming".equalsIgnoreCase(tipo) || "0".equals(tipo)) {
+            if (paciente == null && "contact".equalsIgnoreCase(sender.path("type").asText(""))) {
+                paciente = nome(sender);
+            }
+            return Optional.of(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_PACIENTE, accountId, conversa, null, null,
+                    paciente, atribuido));
+        }
         boolean atendente = ("outgoing".equalsIgnoreCase(tipo) || "1".equals(tipo))
-                && "open".equalsIgnoreCase(corpo.path("conversation").path("status").asText(""))
+                && "open".equalsIgnoreCase(conversation.path("status").asText(""))
                 && !"agent_bot".equalsIgnoreCase(sender.path("type").asText(""));
         return atendente
                 ? Optional.of(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_ATENDENTE, accountId, conversa,
-                        sender.path("name").asText(null), null))
+                        nome(sender), null, paciente, atribuido))
                 : Optional.empty();
+    }
+
+    private static String nome(JsonNode pessoa) {
+        String nome = pessoa.path("name").asText("").trim();
+        return nome.isEmpty() ? null : nome;
     }
 
     private String segredo(String accountId) {

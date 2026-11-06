@@ -3,6 +3,7 @@ package br.com.mandalore.agendamentoconversa.application.domain.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -47,21 +48,31 @@ class FunilServiceTest {
     }
 
     @Test
-    void orcamentoPorFotoAbreComRetornoHoje() {
+    void orcamentoPorFotoAbreComRetornoHojeEPoeAEtiqueta() {
         service.abrirOrcamento("1", "7", new BigDecimal("37.00"), 2);
 
         verify(port).abrir("1", "7", Funil.Origem.ORCAMENTO_FOTO, new BigDecimal("37.00"), 2, HOJE, FunilService.SISTEMA);
+        verify(chatwoot).etiqueta("1", "7", "orcamento", true);
+    }
+
+    @Test
+    void falhaNaEtiquetaNaoDesfazAOportunidade() {
+        doThrow(new IllegalStateException("chatwoot fora")).when(chatwoot).etiqueta(any(), any(), any(), anyBoolean());
+
+        service.abrirOrcamento("1", "7", null, null);
+
+        verify(port).abrir("1", "7", Funil.Origem.ORCAMENTO_FOTO, null, null, HOJE, FunilService.SISTEMA);
     }
 
     @Test
     void etiquetaOrcamentoAbreManualSoSemOportunidadeAberta() {
         when(port.aberta("1", "7")).thenReturn(Optional.empty());
-        service.registrar(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, "1", "7", null, List.of("orcamento")));
+        service.registrar(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, "1", "7", null, List.of("orcamento")));
         verify(port).abrir("1", "7", Funil.Origem.ORCAMENTO_MANUAL, null, null, HOJE, FunilService.SISTEMA);
 
         when(port.aberta("1", "8")).thenReturn(Optional.of(oportunidade(Etapa.NOVO)));
-        service.registrar(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, "1", "8", null, List.of("orcamento")));
-        service.registrar(new Funil.Evento(Funil.Evento.Tipo.ETIQUETAS, "1", "9", null, List.of("vip")));
+        service.registrar(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, "1", "8", null, List.of("orcamento")));
+        service.registrar(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, "1", "9", null, List.of("vip")));
         verify(port, never()).abrir(eq("1"), eq("8"), any(), any(), any(), any(), any());
         verify(port, never()).abrir(eq("1"), eq("9"), any(), any(), any(), any(), any());
     }
@@ -95,6 +106,32 @@ class FunilServiceTest {
         verify(port).respondeu(10L);
         verify(port).mudar(10L, Etapa.ORCAMENTO_ENVIADO, Etapa.EM_NEGOCIACAO, null, LocalDate.of(2026, 11, 9), null,
                 FunilService.SISTEMA);
+    }
+
+    @Test
+    void etiquetaJaGuardaPacienteEAtendenteAtribuido() {
+        when(port.aberta("1", "7")).thenReturn(Optional.empty());
+        when(port.abrir(any(), any(), any(), any(), any(), any(), any())).thenReturn(11L);
+
+        service.registrar(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, "1", "7", null, List.of("orcamento"), "Maria", "Bruna"));
+
+        verify(port).contato(11L, "Maria", "Bruna");
+    }
+
+    @Test
+    void responsavelEhOAtribuidoOuQuemRespondeuEPacienteSoMudaSeDiferente() {
+        Funil.Oportunidade comNomes = new Funil.Oportunidade(10L, "1", "7", Funil.Origem.ORCAMENTO_FOTO, Etapa.EM_NEGOCIACAO,
+                null, null, null, "Bruna", HOJE, AGORA, AGORA, null, "Maria");
+        when(port.aberta("1", "7")).thenReturn(Optional.of(comNomes));
+
+        service.registrar(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_PACIENTE, "1", "7", null, null, "Maria", "Bruna"));
+        verify(port, never()).contato(anyLong(), any(), any());
+
+        service.registrar(new Funil.Evento(Funil.Evento.Tipo.MENSAGEM_ATENDENTE, "1", "7", "Ana", null, "Maria", null));
+        verify(port).contato(10L, null, "Ana");
+
+        service.registrar(new Funil.Evento(Funil.Evento.Tipo.CONVERSA, "1", "7", null, List.of(), "Maria Silva", "Carla"));
+        verify(port).contato(10L, "Maria Silva", "Carla");
     }
 
     @Test
@@ -161,7 +198,7 @@ class FunilServiceTest {
     @Test
     void retornoDoDiaDeixaNotaPassaParaFaturamentoEAbreAConversa() {
         Funil.Oportunidade o = new Funil.Oportunidade(10L, "1", "7", Funil.Origem.ORCAMENTO_FOTO, Etapa.ORCAMENTO_ENVIADO,
-                null, new BigDecimal("37.00"), 2, "Ana", HOJE, Instant.parse("2026-11-03T15:00:00Z"), AGORA, null);
+                null, new BigDecimal("37.00"), 2, "Ana", HOJE, Instant.parse("2026-11-03T15:00:00Z"), AGORA, null, "Maria");
         when(port.retornosPendentes(HOJE)).thenReturn(List.of(o));
 
         assertThat(service.avisarRetornos()).isEqualTo(1);
@@ -190,6 +227,6 @@ class FunilServiceTest {
 
     private static Funil.Oportunidade oportunidade(Etapa etapa) {
         return new Funil.Oportunidade(10L, "1", "7", Funil.Origem.ORCAMENTO_FOTO, etapa, null, null, null, null,
-                etapa.aberta() ? HOJE : null, AGORA, AGORA, etapa.aberta() ? null : AGORA);
+                etapa.aberta() ? HOJE : null, AGORA, AGORA, etapa.aberta() ? null : AGORA, null);
     }
 }

@@ -61,6 +61,19 @@ class PostgresFunilAdapterIT {
     }
 
     @Test
+    void contatoGuardaPacienteEResponsavelSemApagarComNulo() {
+        long id = funil.abrir(CONTA, "c9", Funil.Origem.ORCAMENTO_MANUAL, null, null, HOJE, "mandalore");
+
+        funil.contato(id, "Maria", "Bruna");
+        funil.contato(id, null, "Carla");
+
+        assertThat(funil.buscar(id)).hasValueSatisfying(o -> {
+            assertThat(o.paciente()).isEqualTo("Maria");
+            assertThat(o.responsavel()).isEqualTo("Carla");
+        });
+    }
+
+    @Test
     void segundoOrcamentoDaMesmaConversaAtualizaAOportunidadeAberta() {
         long id = funil.abrir(CONTA, "c1", Funil.Origem.ORCAMENTO_FOTO, new BigDecimal("37"), 2, HOJE, "mandalore");
         long mesmo = funil.abrir(CONTA, "c1", Funil.Origem.ORCAMENTO_MANUAL, null, null, HOJE, "mandalore");
