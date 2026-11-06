@@ -18,7 +18,7 @@ PostgreSQL: só o token da API de relatórios.
 
 | Mandalore | OpenClaw |
 |---|---|
-| Lê a trilha no PostgreSQL e monta o texto dos relatórios | Agenda o resumo diário e o semanal |
+| Lê a trilha no PostgreSQL e monta o texto dos relatórios | Agenda os resumos diários e o semanal |
 | Expõe `GET /openclaw/relatorios/{curadoria,conversao,gestor}` e `GET /openclaw/numeros` | Envia o texto ao grupo do Telegram, sem alterar números |
 | Confere o token `OPENCLAW_TOKEN` | Responde perguntas avulsas no grupo com `/openclaw/numeros` |
 
@@ -118,67 +118,20 @@ Os campos de `numeros` estão descritos na skill
 
 ## Configurar
 
-### 1. Mandalore (Coolify)
+O passo a passo para um cliente novo, com a ficha do cliente, os problemas conhecidos e a homologação, está em
+[Implantação do OpenClaw por cliente](openclaw-implantacao-cliente.md). Em resumo:
 
-Gere um segredo longo, por exemplo com `openssl rand -hex 32`, e configure:
+| Onde | O quê |
+|---|---|
+| Mandalore | `RELATORIOS_ENABLED=true`, `OPENCLAW_TOKEN` (secret), `RELATORIOS_URL`, `ADMIN_NOME`; requer `OBSERVABILITY_POSTGRES_ENABLED=true` |
+| OpenClaw | `GEMINI_API_KEY`, `OPENCLAW_PRIMARY_MODEL=google/gemini-flash-latest`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_GROUP_ALLOW_FROM`, `MANDALORE_URL`, `MANDALORE_OPENCLAW_TOKEN` (o mesmo `OPENCLAW_TOKEN`) |
+| Skill | `scripts/openclaw_instalar_skill.sh root@<servidor> <chave>` grava a skill no volume do gateway |
+| Grupo | Bot do OpenClaw como administrador; o ID do grupo muda para `-100...` nesse momento |
+| Agendamentos | `openclaw cron add ... --announce --channel telegram --to "<id do grupo>"`, um por relatório |
 
-```
-RELATORIOS_ENABLED=true
-OPENCLAW_TOKEN=<segredo>
-RELATORIOS_URL=https://bs-api.jscinfor.com
-```
-
-`OPENCLAW_TOKEN` vai como variável secreta. `RELATORIOS_URL` coloca o link da curadoria no resumo; vazio, o
-resumo sai sem link. `ADMIN_NOME` (padrão `BioSaúde`) entra no título. Requer `OBSERVABILITY_POSTGRES_ENABLED=true`.
-
-### 2. Bot e grupo no Telegram
-
-O OpenClaw usa o próprio bot do Telegram, configurado nele.
-
-1. Adicione o bot do OpenClaw ao grupo da equipe.
-2. Restrinja no OpenClaw quem pode falar com ele: o grupo e as pessoas da equipe.
-3. Para o OpenClaw ler as mensagens do grupo e não só as menções, desligue o modo de privacidade no
-   @BotFather (`/setprivacy`, depois **Disable**) e adicione o bot de novo ao grupo.
-
-Para descobrir o ID do grupo, abra o grupo no [Telegram Web](https://web.telegram.org/a/): o número no fim do
-endereço, com o sinal de menos (como `-5410137492`), é o ID.
-
-### 3. OpenClaw (Coolify)
-
-1. Variáveis do container do OpenClaw:
-
-   ```
-   MANDALORE_URL=https://bs-api.jscinfor.com
-   MANDALORE_OPENCLAW_TOKEN=<o mesmo segredo de OPENCLAW_TOKEN>
-   ```
-
-   Se os dois containers estiverem na mesma rede do Coolify, `MANDALORE_URL` pode ser o endereço interno do
-   Mandalore (`http://<nome-do-servico>:8080`), sem passar pela internet.
-
-2. Skill: copie `deploy/openclaw/skills/mandalore-relatorios/SKILL.md` para a pasta de skills do OpenClaw,
-   em `skills/mandalore-relatorios/SKILL.md` dentro do workspace do agente ou em
-   `~/.openclaw/skills/mandalore-relatorios/SKILL.md`. No Coolify, pode ser um File Mount nesse caminho.
-   Depois, peça ao OpenClaw "liste suas skills" e confira se `mandalore-relatorios` aparece.
-
-3. Agendamentos. Pelo terminal do container:
-
-   ```bash
-   openclaw cron add --name "Resumo da curadoria" --cron "0 8 * * *" --tz America/Sao_Paulo \
-     --session isolated --announce --channel telegram --to "-5410137492" \
-     --message "Use a skill mandalore-relatorios: busque o relatório curadoria e envie o campo texto exatamente como veio."
-
-   openclaw cron add --name "Conversão do dia" --cron "5 8 * * *" --tz America/Sao_Paulo \
-     --session isolated --announce --channel telegram --to "-5410137492" \
-     --message "Use a skill mandalore-relatorios: busque o relatório conversao e envie o campo texto exatamente como veio."
-
-   openclaw cron add --name "Relatório do gestor" --cron "0 8 * * 1" --tz America/Sao_Paulo \
-     --session isolated --announce --channel telegram --to "-5410137492" \
-     --message "Use a skill mandalore-relatorios: busque o relatório gestor e envie o campo texto exatamente como veio."
-   ```
-
-   As opções do `cron add` mudam entre versões do OpenClaw: confira com `openclaw cron add --help`. Também dá para
-   pedir no chat do OpenClaw ("todo dia às 8h, horário de Brasília, mande o relatório curadoria do Mandalore neste
-   grupo") e conferir depois com `openclaw cron list`.
+`RELATORIOS_URL` coloca o link da curadoria no resumo; vazio, o resumo sai sem link. Se os dois containers
+estiverem na mesma rede do Coolify, `MANDALORE_URL` pode ser o endereço interno do Mandalore
+(`http://<nome-do-servico>:8080`), sem passar pela internet.
 
 ## Testar
 

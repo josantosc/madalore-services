@@ -152,3 +152,4 @@ Se a clínica não aceitar expor a porta, a alternativa é uma VPN WireGuard ent
 | Atualizar o Coolify | Pelo painel, com snapshot do VPS antes |
 | Ver logs | Recurso → **Logs** |
 | Nova clínica | Conta no Chatwoot, entrada em `clientes.properties`, liberação do Oracle da nova clínica para o mesmo IP |
+| Relatórios no Telegram | Um serviço OpenClaw por cliente: [Implantação do OpenClaw por cliente](openclaw-implantacao-cliente.md) |
