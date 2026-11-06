@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Agenda da clínica</title>
+  <link rel="stylesheet" href="/admin/assets/nav.css">
+  <script src="/admin/assets/nav.js"></script>
+  <style>
+    :root {
+      --fundo: #fdfdfd; --solido: #ffffff; --alpha-1: rgba(0, 0, 51, .03); --alpha-2: rgba(0, 0, 59, .055);
+      --borda: #e8e8ec; --borda-forte: #d9d9e0;
+      --texto: #1c2024; --texto-2: #60646c; --texto-3: #8b8d98;
+      --marca: #0b5c7a; --marca-hover: #0a536e; --marca-suave: #e7eff2; --marca-texto: #094b64;
+      --rubi: #e54666; --rubi-hover: #dc3b5d; --rubi-suave: #feeaed; --rubi-texto: #ca244d;
+      --ambar-suave: #fff7c2; --ambar-texto: #ab6400;
+      --verde-suave: #e6f6eb; --verde-texto: #218358;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; background: var(--fundo); color: var(--texto);
+      font: 14px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; }
+    svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    main { flex: 1; min-width: 0; overflow-y: auto; }
+    .conteudo { max-width: 1120px; margin: 0 auto; padding: 32px 32px 48px; }
+    .cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
+    h3 { font-size: 15px; font-weight: 500; margin: 28px 0 8px; }
+    .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 640px; }
+    .botoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px;
+      border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .12s; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.solido { background: var(--marca); color: #fff; }
+    .btn.solido:hover:not(:disabled) { background: var(--marca-hover); }
+    .btn.cinza { background: var(--alpha-2); color: var(--texto); }
+    .btn.cinza:hover:not(:disabled) { background: rgba(0, 0, 59, .09); }
+    .btn.perigo { background: var(--rubi); color: #fff; }
+    .btn.perigo:hover:not(:disabled) { background: var(--rubi-hover); }
+    .btn.mini { height: 26px; padding: 0 8px; font-size: 13px; border-radius: 6px; }
+
+    .alerta { margin-top: 20px; padding: 12px 16px; border-radius: 10px; background: var(--ambar-suave); color: var(--ambar-texto);
+      display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .alerta.ok { background: var(--verde-suave); color: var(--verde-texto); }
+    .alerta.atraso { background: var(--rubi-suave); color: var(--rubi-texto); }
+
+    .barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 24px; border-bottom: 1px solid var(--borda); flex-wrap: wrap; }
+    .abas { display: flex; gap: 20px; }
+    .aba { background: none; border: 0; padding: 8px 0 10px; font: inherit; font-size: 14px; color: var(--texto-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
+    .aba:hover { color: var(--texto); }
+    .aba.ativa { color: var(--marca); border-color: var(--marca); font-weight: 500; }
+    .contador { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+    .contador.atraso { background: var(--rubi-suave); color: var(--rubi-texto); }
+    .painel { display: none; }
+    .painel.ativo { display: block; }
+    .ferramentas { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 16px 0 8px; }
+
+    input.campo, select.campo, textarea.campo { height: 36px; width: 100%; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1);
+      outline: 1px solid var(--borda); font: inherit; font-size: 14px; color: var(--texto); }
+    textarea.campo { height: 72px; padding: 8px 12px; resize: vertical; }
+    .ferramentas .campo { width: auto; }
+    input.campo:focus, select.campo:focus, textarea.campo:focus { outline: 1px solid var(--marca); background: var(--solido); }
+    input.campo:disabled, select.campo:disabled { color: var(--texto-2); cursor: not-allowed; }
+
+    .semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 8px 0 16px; }
+    .dia { border: 0; border-radius: 10px; background: var(--alpha-1); outline: 1px solid var(--borda); padding: 8px; text-align: left; font: inherit; cursor: pointer; color: var(--texto); }
+    .dia:hover { background: var(--alpha-2); }
+    .dia.ativo { outline: 2px solid var(--marca); background: var(--marca-suave); }
+    .dia b { display: block; font-weight: 500; text-transform: capitalize; }
+    .dia small { display: block; color: var(--texto-2); font-size: 12px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th { text-align: left; font-weight: 500; color: var(--texto-2); padding: 12px 16px 12px 0; font-size: 13px; }
+    td { padding: 10px 16px 10px 0; border-top: 1px solid var(--borda); vertical-align: top; }
+    tr.livre td { color: var(--texto-2); }
+    tr.bloqueado td { color: var(--texto-3); background: repeating-linear-gradient(45deg, transparent, transparent 6px, var(--alpha-1) 6px, var(--alpha-1) 12px); }
+    .hora { font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .nome { font-weight: 500; color: var(--texto); }
+    .sub { color: var(--texto-3); font-size: 12px; display: block; }
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .tag { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 20px; white-space: nowrap; }
+    .tag.ambar { background: var(--ambar-suave); color: var(--ambar-texto); }
+    .tag.verde { background: var(--verde-suave); color: var(--verde-texto); }
+    .tag.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
+    .tag.marca { background: var(--marca-suave); color: var(--marca-texto); }
+    .acoes { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+    .vazio { text-align: center; color: var(--texto-2); padding: 48px 0; }
+    .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
+
+    .cartao { border-radius: 12px; outline: 1px solid var(--borda); padding: 16px; margin-top: 12px; background: var(--solido); }
+    .cartao.atrasada { outline: 1px solid var(--rubi); }
+    .cartao.destaque { outline: 2px solid var(--marca); }
+    .cartao.feita { opacity: .7; }
+    .cartao header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .cartao pre { white-space: pre-wrap; font: inherit; margin: 10px 0 0; padding: 10px 12px; background: var(--alpha-1); border-radius: 8px; }
+    .colunas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .lista-cad { list-style: none; padding: 0; margin: 0; }
+    .lista-cad li { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--borda); }
+    .lista-cad li.inativo span { color: var(--texto-3); text-decoration: line-through; }
+
+    dialog { border: 0; padding: 24px; border-radius: 12px; width: min(560px, calc(100vw - 32px)); color: var(--texto);
+      box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
+    dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
+    dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
+    dialog p.sub { color: var(--texto-2); margin: 4px 0 0; font-size: 14px; }
+    .form { display: grid; gap: 14px; margin-top: 18px; }
+    .form label, .form .rotulo { display: grid; gap: 6px; font-weight: 500; }
+    .form label.check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
+    .form label.check input { margin-top: 4px; }
+    .form .dica { font-weight: 400; color: var(--texto-3); font-size: 12px; }
+    .form .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 13px; }
+    .form .info { font-weight: 400; color: var(--marca-texto); background: var(--marca-suave); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+    .linha2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .linha3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .rodape { display: flex; gap: 12px; margin-top: 22px; }
+    .rodape .btn { flex: 1; height: 36px; }
+    .eventos { list-style: none; padding: 0; margin: 8px 0 0; font-size: 13px; }
+    .eventos li { padding: 6px 0; border-top: 1px solid var(--borda); }
+
+    #aviso { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px); background: var(--texto); color: #fff;
+      padding: 10px 16px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; pointer-events: none;
+      transition: opacity .15s, transform .15s; max-width: calc(100vw - 32px); display: flex; gap: 8px; align-items: center; z-index: 10; }
+    #aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+    #aviso.erro::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rubi); flex: none; }
+
+    @media (max-width: 860px) {
+      .conteudo { padding: 20px 16px 40px; }
+      .semana { grid-template-columns: repeat(4, 1fr); }
+      .colunas, .linha3 { grid-template-columns: 1fr; }
+      .col-opc { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="conteudo">
+      <div class="cabecalho">
+        <div>
+          <h1>Agenda da clínica</h1>
+          <p class="descricao">Consultas marcadas pelo bot e pela recepção. Enquanto não houver integração, a agenda oficial continua
+            no sistema da clínica: cada marcação, cancelamento ou remarcação feita aqui vira uma pendência para repetir lá.</p>
+        </div>
+        <div class="botoes">
+          <select class="campo" id="conta" title="Clínica (conta do Chatwoot)" hidden></select>
+        </div>
+      </div>
+
+      <div class="alerta" id="alerta" hidden></div>
+
+      <div class="barra">
+        <div class="abas">
+          <button class="aba ativa" type="button" data-painel="agenda">Agenda</button>
+          <button class="aba" type="button" data-painel="pendencias">Pendências <span class="contador" id="nPend">0</span></button>
+          <button class="aba" type="button" data-painel="conferencia">Conferência <span class="contador" id="nConf">0</span></button>
+          <button class="aba" type="button" data-painel="cadastros">Cadastros</button>
+        </div>
+      </div>
+
+      <section class="painel ativo" id="painel-agenda">
+        <div class="ferramentas">
+          <button class="btn cinza" type="button" id="diaAnterior" title="Semana anterior">&larr;</button>
+          <input class="campo" type="date" id="data">
+          <button class="btn cinza" type="button" id="diaSeguinte" title="Próxima semana">&rarr;</button>
+          <button class="btn cinza" type="button" id="hoje">Hoje</button>
+          <select class="campo" id="filtroProf"><option value="">Todos os profissionais</option></select>
+          <span style="flex:1"></span>
+          <button class="btn cinza" type="button" id="novoBloqueio">Bloquear período</button>
+          <button class="btn solido" type="button" id="novaConsulta">Marcar consulta</button>
+        </div>
+        <div class="semana" id="semana"></div>
+        <table>
+          <thead><tr><th>Hora</th><th>Profissional</th><th>Paciente</th><th class="col-opc">Situação</th><th></th></tr></thead>
+          <tbody id="linhasDia"></tbody>
+        </table>
+      </section>
+
+      <section class="painel" id="painel-pendencias">
+        <div class="ferramentas">
+          <select class="campo" id="filtroPend">
+            <option value="ABERTA">Abertas</option>
+            <option value="">Abertas e resolvidas (7 dias)</option>
+          </select>
+          <span class="sub">Faça no sistema da clínica e clique em "Feito no sistema". Os dados para lançar estão no próprio cartão.</span>
+        </div>
+        <div id="listaPend"></div>
+      </section>
+
+      <section class="painel" id="painel-conferencia">
+        <div class="ferramentas">
+          <input class="campo" type="date" id="dataConf">
+          <span class="sub">Compare cada consulta com a agenda do sistema da clínica. Diferença vira pendência.</span>
+          <span style="flex:1"></span>
+          <button class="btn cinza" type="button" id="conferirTodas">Todas iguais no sistema</button>
+        </div>
+        <table>
+          <thead><tr><th>Hora</th><th>Paciente</th><th class="col-opc">Profissional</th><th>Conferência</th><th></th></tr></thead>
+          <tbody id="linhasConf"></tbody>
+        </table>
+      </section>
+
+      <section class="painel" id="painel-cadastros">
+        <div class="colunas">
+          <div><h3>Profissionais</h3><ul class="lista-cad" id="cad-PROFISSIONAL"></ul>
+            <button class="btn cinza mini" type="button" data-novo="PROFISSIONAL" style="margin-top:8px">Adicionar</button></div>
+          <div><h3>Especialidades</h3><ul class="lista-cad" id="cad-ESPECIALIDADE"></ul>
+            <button class="btn cinza mini" type="button" data-novo="ESPECIALIDADE" style="margin-top:8px">Adicionar</button></div>
+          <div><h3>Convênios</h3><ul class="lista-cad" id="cad-CONVENIO"></ul>
+            <button class="btn cinza mini" type="button" data-novo="CONVENIO" style="margin-top:8px">Adicionar</button></div>
+        </div>
+        <h3>Horários de atendimento</h3>
+        <p class="descricao">Os horários vagos da semana saem daqui. "Bot" marcado: o bot pode oferecer esses horários aos pacientes.</p>
+        <div class="ferramentas"><button class="btn solido" type="button" id="novaGrade">Adicionar horário</button></div>
+        <table>
+          <thead><tr><th>Dia</th><th>Horário</th><th>Profissional</th><th class="col-opc">Especialidade</th><th>Bot</th><th></th></tr></thead>
+          <tbody id="linhasGrade"></tbody>
+        </table>
+        <h3>Bloqueios (próximos 60 dias)</h3>
+        <table>
+          <thead><tr><th>Período</th><th>Profissional</th><th>Motivo</th><th></th></tr></thead>
+          <tbody id="linhasBloq"></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="dlgMarcar">
+    <form method="dialog" id="formMarcar" novalidate>
+      <h2>Marcar consulta</h2>
+      <p class="sub">Se ainda não lançou no sistema da clínica, deixe o número em branco: vira pendência para lançar.</p>
+      <div class="form">
+        <div class="linha2">
+          <label>Profissional<select class="campo" id="mProf"></select></label>
+          <label>Especialidade<select class="campo" id="mEsp"></select></label>
+        </div>
+        <div class="linha3">
+          <label>Data<input class="campo" type="date" id="mData"></label>
+          <label>Hora<input class="campo" type="time" id="mHora"></label>
+          <label>Duração (min)<input class="campo" type="number" id="mDur" min="5" max="480" value="30"></label>
+        </div>
+        <div class="linha2">
+          <label>CPF<input class="campo" id="mCpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></label>
+          <label>Nascimento<input class="campo" type="date" id="mNasc"></label>
+        </div>
+        <span class="info" id="mPaciente" hidden></span>
+        <label>Nome do paciente<input class="campo" id="mNome" maxlength="240"></label>
+        <div class="linha2">
+          <label>Telefone<input class="campo" id="mTel" maxlength="40"></label>
+          <label>Convênio<select class="campo" id="mConv"></select></label>
+        </div>
+        <label>Número no sistema da clínica <span class="dica">Preencha só se já lançou lá.</span><input class="campo" id="mCodigo" maxlength="100"></label>
+        <span class="msg-erro" id="mErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="mSalvar">Marcar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgAlterar">
+    <form method="dialog" id="formAlterar" novalidate>
+      <h2 id="aTitulo"></h2>
+      <p class="sub" id="aTexto"></p>
+      <div class="form">
+        <div id="aRemarcar" class="form" style="margin-top:0">
+          <div class="linha2">
+            <label>Profissional<select class="campo" id="rProf"></select></label>
+            <label>Especialidade<select class="campo" id="rEsp"></select></label>
+          </div>
+          <div class="linha3">
+            <label>Nova data<input class="campo" type="date" id="rData"></label>
+            <label>Hora<input class="campo" type="time" id="rHora"></label>
+            <label>Duração (min)<input class="campo" type="number" id="rDur" min="5" max="480" value="30"></label>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="aJaFeito">
+          <span>Já fiz o mesmo no sistema da clínica<span class="sub">Desmarcado: fica uma pendência para fazer lá.</span></span></label>
+        <span class="msg-erro" id="aErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="aOk"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgDetalhe">
+    <h2 id="dTitulo"></h2>
+    <div id="dCorpo"></div>
+    <div class="rodape"><button class="btn cinza" type="button" data-fechar>Fechar</button></div>
+  </dialog>
+
+  <dialog id="dlgConcluir">
+    <form method="dialog" id="formConcluir" novalidate>
+      <h2>Feito no sistema da clínica</h2>
+      <p class="sub" id="cTexto"></p>
+      <div class="form">
+        <label>Número do agendamento no sistema da clínica<input class="campo" id="cCodigo" maxlength="100"></label>
+        <label>Observação <span class="dica">Opcional</span><input class="campo" id="cObs" maxlength="500"></label>
+        <span class="msg-erro" id="cErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="cOk">Concluir</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgTexto">
+    <form method="dialog" id="formTexto" novalidate>
+      <h2 id="tTitulo"></h2>
+      <p class="sub" id="tSub"></p>
+      <div class="form" id="tCampos"></div>
+      <span class="msg-erro" id="tErro"></span>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="tOk">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="aviso" role="status"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const DIAS = ["", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+    const fmtDia = new Intl.DateTimeFormat("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+    const fmtData = new Intl.DateTimeFormat("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+    const fmtDataHora = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    const TIPOS = { LANCAR: "Lançar no sistema", CANCELAR: "Cancelar no sistema", REMARCAR: "Remarcar no sistema",
+      CONFIRMAR: "Confirmar no sistema", CONFERIR: "Conferir divergência" };
+    const EVENTOS = { MARCADO: "Marcada", CONFIRMADO: "Confirmada", CANCELADO: "Cancelada", REMARCADO_PARA: "Remarcada para",
+      REMARCADO_DE: "Remarcada de", LANCADO: "Lançada no sistema", PENDENCIA_CONCLUIDA: "Pendência concluída",
+      PENDENCIA_REABERTA: "Pendência reaberta", CONFERIDO: "Conferida: igual no sistema", DIVERGENTE: "Conferida: diferente no sistema" };
+
+    const estado = { conta: null, contas: [], cadastros: {}, dia: null, chatwootUrl: "", hoje: null };
+    const params = new URLSearchParams(location.search);
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => f !== null && f !== undefined && f !== false && node.append(f));
+      return node;
+    }
+
+    function aviso(texto, erro) {
+      const a = $("aviso");
+      a.textContent = texto;
+      a.className = "ver" + (erro ? " erro" : "");
+      clearTimeout(aviso.t);
+      aviso.t = setTimeout(() => a.className = erro ? "erro" : "", erro ? 6000 : 3500);
+    }
+
+    function url(caminho, extra) {
+      const q = new URLSearchParams(extra || {});
+      if (estado.conta) q.set("conta", estado.conta);
+      return caminho + "?" + q.toString();
+    }
+
+    async function api(caminho, opcoes, extra) {
+      const resp = await fetch(url(caminho, extra), opcoes);
+      if (resp.status === 204) return null;
+      const corpo = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(corpo.erro || ("Erro " + resp.status));
+      return corpo;
+    }
+
+    const json = (metodo, corpo) => ({ method: metodo, headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    const hora = (iso) => iso ? iso.substring(11, 16) : "";
+    const dataIso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    const deIso = (iso) => { const [a, m, d] = iso.substring(0, 10).split("-").map(Number); return new Date(a, m - 1, d); };
+    const somaDias = (iso, n) => { const d = deIso(iso); d.setDate(d.getDate() + n); return dataIso(d); };
+    const quando = (iso) => iso ? fmtDataHora.format(new Date(iso)) : "";
+    const cpfFmt = (c) => c && c.length === 11 ? c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : (c || "");
+    const nomeDe = (tipo, id) => (estado.cadastros[tipo] || []).find((i) => i.id === id)?.nome || "";
+    const ativos = (tipo) => (estado.cadastros[tipo] || []).filter((i) => i.ativo);
+
+    function opcoes(select, itens, vazio, valor) {
+      select.replaceChildren(...(vazio ? [el("option", { value: "" }, vazio)] : []),
+        ...itens.map((i) => el("option", { value: i.id }, i.nome)));
+      if (valor !== undefined && valor !== null) select.value = String(valor);
+    }
+
+    function tagsAgendamento(a) {
+      const tags = [
+        el("span", { className: "tag " + (a.status === "CONFIRMADO" ? "verde" : "marca") }, a.status === "CONFIRMADO" ? "Confirmada" : "Marcada"),
+        el("span", { className: "tag" }, a.origem === "BOT" ? "Bot" : "Recepção")];
+      a.pendenciasAbertas.forEach((t) => tags.push(el("span", { className: "tag ambar" }, TIPOS[t] || t)));
+      if (a.codigoExterno) tags.push(el("span", { className: "tag" }, "Nº " + a.codigoExterno));
+      return el("div", { className: "tags" }, tags);
+    }
+
+    async function carregarContexto() {
+      const ctx = await api("/agenda/api/contexto");
+      estado.conta = ctx.conta;
+      estado.contas = ctx.contas;
+      estado.cadastros = ctx.cadastros;
+      estado.hoje = ctx.hoje;
+      const sel = $("conta");
+      sel.hidden = ctx.contas.length < 2;
+      sel.replaceChildren(...ctx.contas.map((c) => el("option", { value: c }, "Clínica (conta " + c + ")")));
+      sel.value = ctx.conta;
+      opcoes($("filtroProf"), ativos("PROFISSIONAL"), "Todos os profissionais", $("filtroProf").value);
+      resumo(ctx.resumo);
+    }
+
+    function resumo(r) {
+      $("nPend").textContent = r.abertas;
+      $("nPend").className = "contador" + (r.atrasadas > 0 ? " atraso" : "");
+      $("nConf").textContent = r.amanhaSemConferencia;
+      const a = $("alerta");
+      a.hidden = false;
+      if (r.abertas > 0) {
+        a.className = "alerta" + (r.atrasadas > 0 ? " atraso" : "");
+        a.replaceChildren(el("span", {}, r.abertas + (r.abertas === 1 ? " pendência" : " pendências") + " para fazer no sistema da clínica"
+          + (r.atrasadas > 0 ? ", " + r.atrasadas + " atrasada" + (r.atrasadas === 1 ? "" : "s") : "") + "."),
+          el("button", { className: "btn cinza mini", type: "button", onclick: () => abrirAba("pendencias") }, "Ver pendências"));
+      } else if (r.amanhaSemConferencia > 0) {
+        a.className = "alerta";
+        a.replaceChildren(el("span", {}, r.amanhaSemConferencia + " consulta(s) de amanhã ainda sem conferência com o sistema da clínica."),
+          el("button", { className: "btn cinza mini", type: "button", onclick: () => abrirAba("conferencia") }, "Conferir"));
+      } else {
+        a.className = "alerta ok";
+        a.replaceChildren(el("span", {}, "As duas agendas estão em dia."));
+      }
+    }
+
+    async function atualizarResumo() {
+      const ctx = await api("/agenda/api/contexto");
+      estado.cadastros = ctx.cadastros;
+      resumo(ctx.resumo);
+    }
+
+    // ---------- Agenda do dia ----------
+    async function carregarDia() {
+      const data = $("data").value || estado.hoje;
+      $("data").value = data;
+      try {
+        estado.dia = await api("/agenda/api/dia", null, { data });
+        desenharDia();
+      } catch (e) {
+        aviso("Não foi possível carregar a agenda. " + e.message, true);
+      }
+    }
+
+    function desenharDia() {
+      const d = estado.dia;
+      $("semana").replaceChildren(...d.semana.map((s) => el("button", {
+        className: "dia" + (s.dia === d.dia ? " ativo" : ""), type: "button",
+        onclick: () => { $("data").value = s.dia; carregarDia(); }
+      }, el("b", {}, fmtDia.format(deIso(s.dia))),
+        el("small", {}, s.ocupados + " marcada" + (s.ocupados === 1 ? "" : "s")),
+        el("small", {}, s.livres + " livre" + (s.livres === 1 ? "" : "s") + " · " + s.livresBot + " no bot"))));
+      const prof = $("filtroProf").value;
+      const linhas = d.linhas.filter((l) => !prof || String(l.profissionalId) === prof);
+      const corpo = $("linhasDia");
+      corpo.replaceChildren(...linhas.map(linhaDia));
+      if (!linhas.length) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 5, className: "vazio" },
+          el("strong", {}, "Nenhum horário neste dia"),
+          ativos("PROFISSIONAL").length ? "Cadastre horários de atendimento em Cadastros ou marque um encaixe." : "Comece pelos Cadastros: profissionais, especialidades e horários.")));
+      }
+    }
+
+    function linhaDia(l) {
+      const horario = el("td", { className: "hora" }, hora(l.inicio), el("span", { className: "sub" }, "até " + hora(l.fim)));
+      const profissional = el("td", {}, el("span", { className: "nome" }, l.profissional || ""), el("span", { className: "sub" }, l.especialidade || ""));
+      if (l.situacao === "OCUPADO") {
+        const a = l.agendamento;
+        return el("tr", {}, horario, profissional,
+          el("td", {}, el("span", { className: "nome" }, a.paciente.nome), el("span", { className: "sub" }, a.convenio || "Convênio não informado")),
+          el("td", { className: "col-opc" }, tagsAgendamento(a), l.gradeId ? null : el("span", { className: "sub" }, "Encaixe")),
+          el("td", {}, el("div", { className: "acoes" },
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => detalhe(a.id) }, "Detalhes"),
+            a.status === "MARCADO" ? el("button", { className: "btn cinza mini", type: "button", onclick: () => alterar("confirmar", a) }, "Confirmar") : null,
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => alterar("remarcar", a) }, "Remarcar"),
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => alterar("cancelar", a) }, "Cancelar"))));
+      }
+      if (l.situacao === "BLOQUEADO") {
+        return el("tr", { className: "bloqueado" }, horario, profissional,
+          el("td", {}, l.bloqueio.motivo || "Bloqueado"), el("td", { className: "col-opc" }, el("span", { className: "tag" }, "Bloqueado")),
+          el("td", {}, el("div", { className: "acoes" },
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => liberar(l.bloqueio) }, "Liberar"))));
+      }
+      return el("tr", { className: "livre" }, horario, profissional,
+        el("td", {}, "Livre"), el("td", { className: "col-opc" }, l.ofereceBot ? el("span", { className: "tag marca" }, "Bot oferece") : el("span", { className: "tag" }, "Só recepção")),
+        el("td", {}, el("div", { className: "acoes" },
+          el("button", { className: "btn cinza mini", type: "button", title: "O horário já foi ocupado direto no sistema da clínica",
+            onclick: () => ocupar(l) }, "Ocupado no sistema"),
+          el("button", { className: "btn solido mini", type: "button", onclick: () => abrirMarcar(l) }, "Marcar"))));
+    }
+
+    function abrirMarcar(linha) {
+      $("formMarcar").reset();
+      $("mErro").textContent = "";
+      $("mPaciente").hidden = true;
+      opcoes($("mProf"), ativos("PROFISSIONAL"), null, linha?.profissionalId);
+      opcoes($("mEsp"), ativos("ESPECIALIDADE"), null, linha?.especialidadeId);
+      opcoes($("mConv"), ativos("CONVENIO"), "Não informado");
+      $("mData").value = linha ? linha.inicio.substring(0, 10) : ($("data").value || estado.hoje);
+      $("mHora").value = linha ? hora(linha.inicio) : "";
+      $("mDur").value = linha ? Math.round((new Date(linha.fim) - new Date(linha.inicio)) / 60000) : 30;
+      $("mSalvar").disabled = false;
+      $("dlgMarcar").showModal();
+      $("mCpf").focus();
+    }
+
+    async function buscarPaciente() {
+      const cpf = $("mCpf").value.replace(/\D/g, "");
+      const nasc = $("mNasc").value;
+      if (cpf.length !== 11 || !nasc) return;
+      try {
+        const h = await api("/agenda/api/pacientes/historico", null, { cpf, nascimento: nasc });
+        if (!h.paciente) {
+          $("mPaciente").hidden = false;
+          $("mPaciente").textContent = "Paciente novo nesta agenda.";
+          return;
+        }
+        if (!$("mNome").value) $("mNome").value = h.paciente.nome;
+        if (!$("mTel").value) $("mTel").value = h.paciente.telefone || "";
+        const futuras = h.agendamentos.filter((a) => (a.status === "MARCADO" || a.status === "CONFIRMADO") && a.inicio >= estado.hoje);
+        $("mPaciente").hidden = false;
+        $("mPaciente").textContent = h.paciente.nome + ": " + h.agendamentos.length + " consulta(s) no histórico"
+          + (futuras.length ? ", próxima em " + quando(futuras[futuras.length - 1].inicio) : "") + ".";
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    $("mCpf").addEventListener("blur", buscarPaciente);
+    $("mNasc").addEventListener("change", buscarPaciente);
+
+    $("formMarcar").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      $("mErro").textContent = "";
+      if (!$("mProf").value || !$("mEsp").value) return $("mErro").textContent = "Cadastre e escolha profissional e especialidade.";
+      if (!$("mData").value || !$("mHora").value) return $("mErro").textContent = "Informe data e hora.";
+      if ($("mCpf").value.replace(/\D/g, "").length !== 11) return $("mErro").textContent = "CPF precisa ter 11 dígitos.";
+      if (!$("mNasc").value) return $("mErro").textContent = "Informe a data de nascimento.";
+      if (!$("mNome").value.trim()) return $("mErro").textContent = "Informe o nome do paciente.";
+      $("mSalvar").disabled = true;
+      try {
+        const r = await api("/agenda/api/agendamentos", json("POST", {
+          profissionalId: Number($("mProf").value), especialidadeId: Number($("mEsp").value),
+          convenioId: $("mConv").value ? Number($("mConv").value) : null,
+          inicio: $("mData").value + "T" + $("mHora").value, duracaoMin: Number($("mDur").value), local: "",
+          cpf: $("mCpf").value, nascimento: $("mNasc").value, nome: $("mNome").value, telefone: $("mTel").value,
+          codigoExterno: $("mCodigo").value
+        }));
+        $("dlgMarcar").close();
+        aviso(r.pendencias.length ? "Consulta marcada. Falta lançar no sistema da clínica (pendência criada)." : "Consulta marcada.");
+        $("data").value = $("mData").value;
+        await Promise.all([carregarDia(), atualizarResumo()]);
+      } catch (e) {
+        $("mErro").textContent = e.message;
+      } finally {
+        $("mSalvar").disabled = false;
+      }
+    });
+
+    let alterando = null;
+    function alterar(tipo, a) {
+      alterando = { tipo, a };
+      const quandoTxt = quando(a.inicio);
+      const titulos = { confirmar: "Confirmar consulta", cancelar: "Cancelar consulta", remarcar: "Remarcar consulta" };
+      $("aTitulo").textContent = titulos[tipo];
+      $("aTexto").textContent = a.paciente.nome + ", " + quandoTxt + " com " + a.profissional + "."
+        + (a.pendenciasAbertas.includes("LANCAR") && tipo !== "confirmar" ? " Ainda não foi lançada no sistema da clínica: a pendência de lançar será ajustada." : "");
+      $("aRemarcar").hidden = tipo !== "remarcar";
+      $("aJaFeito").checked = false;
+      $("aErro").textContent = "";
+      $("aOk").textContent = titulos[tipo].split(" ")[0];
+      $("aOk").className = "btn " + (tipo === "cancelar" ? "perigo" : "solido");
+      $("aOk").disabled = false;
+      if (tipo === "remarcar") {
+        opcoes($("rProf"), ativos("PROFISSIONAL"), null, a.profissionalId);
+        opcoes($("rEsp"), ativos("ESPECIALIDADE"), null, a.especialidadeId);
+        $("rData").value = a.inicio.substring(0, 10);
+        $("rHora").value = hora(a.inicio);
+        $("rDur").value = Math.round((new Date(a.fim) - new Date(a.inicio)) / 60000);
+      }
+      $("dlgAlterar").showModal();
+    }
+
+    $("formAlterar").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const { tipo, a } = alterando;
+      const jaFeitoNoSistema = $("aJaFeito").checked;
+      let corpo = { jaFeitoNoSistema };
+      if (tipo === "remarcar") {
+        if (!$("rData").value || !$("rHora").value) return $("aErro").textContent = "Informe a nova data e hora.";
+        corpo = { profissionalId: Number($("rProf").value), especialidadeId: Number($("rEsp").value), convenioId: a.convenioId,
+          inicio: $("rData").value + "T" + $("rHora").value, duracaoMin: Number($("rDur").value), local: a.local || "",
+          codigoExterno: "", jaFeitoNoSistema };
+      }
+      $("aOk").disabled = true;
+      try {
+        const r = await api("/agenda/api/agendamentos/" + a.id + "/" + tipo, json("POST", corpo));
+        $("dlgAlterar").close();
+        const feito = { confirmar: "Consulta confirmada", cancelar: "Consulta cancelada", remarcar: "Consulta remarcada" }[tipo];
+        aviso(feito + (r.pendencias.length ? ". Pendência criada para o sistema da clínica." : "."));
+        if (tipo === "remarcar") $("data").value = $("rData").value;
+        await Promise.all([carregarDia(), atualizarResumo()]);
+      } catch (e) {
+        $("aErro").textContent = e.message;
+        $("aOk").disabled = false;
+      }
+    });
+
+    async function detalhe(id) {
+      try {
+        const d = await api("/agenda/api/agendamentos/" + id);
+        const a = d.agendamento;
+        $("dTitulo").textContent = a.paciente.nome;
+        const conversa = a.conversaId && estado.chatwootUrl
+          ? el("a", { href: estado.chatwootUrl + "/app/accounts/" + estado.conta + "/conversations/" + a.conversaId, target: "_blank", rel: "noopener" }, "Abrir conversa no Chatwoot")
+          : null;
+        $("dCorpo").replaceChildren(
+          el("p", { className: "sub" }, quando(a.inicio) + " com " + a.profissional + " (" + a.especialidade + ")"),
+          el("p", { className: "sub" }, "CPF " + cpfFmt(a.paciente.cpf) + " · nascimento " + (a.paciente.nascimento ? fmtData.format(deIso(a.paciente.nascimento)) : "")
+            + (a.paciente.telefone ? " · " + a.paciente.telefone : "")),
+          tagsAgendamento(a), conversa,
+          el("h3", {}, "Histórico"),
+          el("ul", { className: "eventos" }, d.historico.map((e) => el("li", {},
+            el("b", {}, EVENTOS[e.tipo] || e.tipo), " ", e.detalhe || "", el("span", { className: "sub" }, quando(e.em) + " · " + e.usuario)))),
+          d.pendencias.length ? el("h3", {}, "Pendências") : null,
+          d.pendencias.map((p) => el("p", { className: "sub" }, (TIPOS[p.tipo] || p.tipo) + ": " + p.situacao.toLowerCase()
+            + (p.concluidaPor ? " por " + p.concluidaPor : ""))));
+        $("dlgDetalhe").showModal();
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    async function ocupar(l) {
+      try {
+        await api("/agenda/api/ocupar", json("POST", { profissionalId: l.profissionalId, inicio: l.inicio, fim: l.fim }));
+        aviso("Horário marcado como ocupado. O bot não oferece mais.");
+        await carregarDia();
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    async function liberar(b) {
+      try {
+        await api("/agenda/api/bloqueios/" + b.id, { method: "DELETE" });
+        aviso("Horário liberado.");
+        await Promise.all([carregarDia(), carregarBloqueios()]);
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    // ---------- Pendências ----------
+    async function carregarPendencias() {
+      try {
+        const situacao = $("filtroPend").value;
+        const r = await api("/agenda/api/pendencias", null, situacao ? { situacao } : {});
+        resumo(r.resumo);
+        const destaque = params.get("pendencia");
+        const lista = $("listaPend");
+        lista.replaceChildren(...r.itens.map(({ pendencia: p, atrasada }) => cartaoPendencia(p, atrasada, String(p.id) === destaque)));
+        if (!r.itens.length) {
+          lista.append(el("div", { className: "vazio" }, el("strong", {}, "Nenhuma pendência"), "Tudo que foi feito aqui já está no sistema da clínica."));
+        }
+        const alvo = destaque && document.querySelector(".cartao.destaque");
+        if (alvo) alvo.scrollIntoView({ block: "center" });
+      } catch (e) {
+        aviso("Não foi possível carregar as pendências. " + e.message, true);
+      }
+    }
+
+    function cartaoPendencia(p, atrasada, destaque) {
+      const aberta = p.situacao === "ABERTA";
+      const conversa = p.conversaId && estado.chatwootUrl
+        ? el("a", { className: "btn cinza mini", href: estado.chatwootUrl + "/app/accounts/" + estado.conta + "/conversations/" + p.conversaId, target: "_blank", rel: "noopener" }, "Conversa")
+        : null;
+      return el("div", { className: "cartao" + (atrasada ? " atrasada" : "") + (destaque ? " destaque" : "") + (aberta ? "" : " feita") },
+        el("header", {},
+          el("div", {},
+            el("span", { className: "nome" }, TIPOS[p.tipo] || p.tipo), " ",
+            el("span", { className: "tag " + (aberta ? (atrasada ? "rubi" : "ambar") : "verde") },
+              aberta ? (atrasada ? "Atrasada desde " + quando(p.prazo) : "Fazer até " + quando(p.prazo))
+                : (p.situacao === "CONCLUIDA" ? "Feito" : "Descartada") + (p.concluidaPor ? " por " + p.concluidaPor : "")),
+            el("span", { className: "sub" }, p.paciente + " · consulta " + quando(p.inicio))),
+          el("div", { className: "acoes" },
+            conversa,
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => copiar(p.resumo) }, "Copiar dados"),
+            aberta ? el("button", { className: "btn solido mini", type: "button", onclick: () => concluir(p) }, "Feito no sistema")
+              : (p.situacao === "CONCLUIDA" ? el("button", { className: "btn cinza mini", type: "button", onclick: () => reabrir(p) }, "Reabrir") : null))),
+        el("pre", {}, p.resumo),
+        p.codigoExterno ? el("span", { className: "sub" }, "Número no sistema da clínica: " + p.codigoExterno) : null,
+        p.observacao ? el("span", { className: "sub" }, p.observacao) : null);
+    }
+
+    async function copiar(texto) {
+      try {
+        await navigator.clipboard.writeText(texto);
+        aviso("Dados copiados.");
+      } catch (e) {
+        aviso("Não foi possível copiar. Selecione o texto do cartão.", true);
+      }
+    }
+
+    let concluindo = null;
+    function concluir(p) {
+      concluindo = p;
+      const exige = p.tipo === "LANCAR" || p.tipo === "REMARCAR";
+      $("cTexto").textContent = (TIPOS[p.tipo] || p.tipo) + ": " + p.paciente + ", " + quando(p.inicio) + "."
+        + (exige ? " Informe o número que o sistema da clínica gerou." : "");
+      $("cCodigo").value = "";
+      $("cCodigo").placeholder = exige ? "Obrigatório" : "Opcional";
+      $("cObs").value = "";
+      $("cErro").textContent = "";
+      $("cOk").disabled = false;
+      $("dlgConcluir").showModal();
+      $("cCodigo").focus();
+    }
+
+    $("formConcluir").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const p = concluindo;
+      if ((p.tipo === "LANCAR" || p.tipo === "REMARCAR") && !$("cCodigo").value.trim()) {
+        return $("cErro").textContent = "Informe o número do agendamento no sistema da clínica.";
+      }
+      $("cOk").disabled = true;
+      try {
+        await api("/agenda/api/pendencias/" + p.id + "/concluir", json("POST", { codigoExterno: $("cCodigo").value, observacao: $("cObs").value }));
+        $("dlgConcluir").close();
+        aviso("Pendência concluída.");
+        await carregarPendencias();
+      } catch (e) {
+        $("cErro").textContent = e.message;
+        $("cOk").disabled = false;
+      }
+    });
+
+    async function reabrir(p) {
+      try {
+        await api("/agenda/api/pendencias/" + p.id + "/reabrir", { method: "POST" });
+        aviso("Pendência reaberta.");
+        await carregarPendencias();
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    // ---------- Conferência ----------
+    async function carregarConferencia() {
+      if (!$("dataConf").value) $("dataConf").value = somaDias(estado.hoje, 1);
+      try {
+        const r = await api("/agenda/api/conferencia", null, { data: $("dataConf").value });
+        const corpo = $("linhasConf");
+        corpo.replaceChildren(...r.agendamentos.map((a) => el("tr", {},
+          el("td", { className: "hora" }, hora(a.inicio)),
+          el("td", {}, el("span", { className: "nome" }, a.paciente.nome), el("span", { className: "sub" }, "CPF " + cpfFmt(a.paciente.cpf)
+            + (a.codigoExterno ? " · Nº " + a.codigoExterno : ""))),
+          el("td", { className: "col-opc" }, a.profissional, el("span", { className: "sub" }, a.especialidade)),
+          el("td", {}, a.conferencia === "CONFERIDO" ? el("span", { className: "tag verde" }, "Igual no sistema")
+            : a.conferencia === "DIVERGENTE" ? el("span", { className: "tag rubi" }, "Diferente")
+            : el("span", { className: "tag ambar" }, "Falta conferir"),
+            a.pendenciasAbertas.length ? tagsAgendamento(a) : null),
+          el("td", {}, el("div", { className: "acoes" },
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => conferir(a, "CONFERIDO", "") }, "Igual"),
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => divergencia(a) }, "Diferente"))))));
+        if (!r.agendamentos.length) {
+          corpo.append(el("tr", {}, el("td", { colSpan: 5, className: "vazio" }, el("strong", {}, "Nenhuma consulta neste dia"), "Nada para conferir.")));
+        }
+        estado.conferencia = r.agendamentos;
+      } catch (e) {
+        aviso("Não foi possível carregar a conferência. " + e.message, true);
+      }
+    }
+
+    async function conferir(a, situacao, observacao) {
+      try {
+        await api("/agenda/api/conferencia/" + a.id, json("POST", { situacao, observacao }));
+        await Promise.all([carregarConferencia(), atualizarResumo()]);
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    function divergencia(a) {
+      formulario("Diferente no sistema da clínica", a.paciente.nome + ", " + quando(a.inicio) + ". Vira uma pendência para resolver.",
+        [{ id: "obs", rotulo: "O que está diferente?", tipo: "textarea", dica: "Ex.: no sistema está às 10h; não existe lá; outro médico" }],
+        async (v) => {
+          if (!v.obs.trim()) throw new Error("Descreva a diferença.");
+          await api("/agenda/api/conferencia/" + a.id, json("POST", { situacao: "DIVERGENTE", observacao: v.obs }));
+          aviso("Divergência registrada como pendência.");
+          await Promise.all([carregarConferencia(), atualizarResumo()]);
+        });
+    }
+
+    $("conferirTodas").onclick = async () => {
+      const faltam = (estado.conferencia || []).filter((a) => !a.conferencia);
+      if (!faltam.length) return aviso("Nenhuma consulta falta conferir.");
+      if (!confirm("Marcar " + faltam.length + " consulta(s) como iguais no sistema da clínica? Confira antes na agenda de lá.")) return;
+      for (const a of faltam) {
+        await api("/agenda/api/conferencia/" + a.id, json("POST", { situacao: "CONFERIDO", observacao: "" })).catch((e) => aviso(e.message, true));
+      }
+      await Promise.all([carregarConferencia(), atualizarResumo()]);
+    };
+
+    // ---------- Cadastros ----------
+    function formulario(titulo, sub, campos, salvar) {
+      $("tTitulo").textContent = titulo;
+      $("tSub").textContent = sub || "";
+      $("tErro").textContent = "";
+      $("tCampos").replaceChildren(...campos.map((c) => {
+        let campo;
+        if (c.tipo === "select") {
+          campo = el("select", { className: "campo", id: "t_" + c.id });
+          c.opcoes.forEach(([v, t]) => campo.append(el("option", { value: v }, t)));
+        } else if (c.tipo === "textarea") {
+          campo = el("textarea", { className: "campo", id: "t_" + c.id });
+        } else if (c.tipo === "checkbox") {
+          campo = el("input", { type: "checkbox", id: "t_" + c.id, checked: !!c.valor });
+          return el("label", { className: "check" }, campo, el("span", {}, c.rotulo));
+        } else {
+          campo = el("input", { className: "campo", id: "t_" + c.id, type: c.tipo || "text" });
+        }
+        if (c.valor !== undefined && c.valor !== null) campo.value = c.valor;
+        return el("label", {}, c.rotulo, c.dica ? el("span", { className: "dica" }, c.dica) : null, campo);
+      }));
+      $("tOk").disabled = false;
+      $("formTexto").onsubmit = async (ev) => {
+        ev.preventDefault();
+        const valores = {};
+        campos.forEach((c) => { const n = $("t_" + c.id); valores[c.id] = c.tipo === "checkbox" ? n.checked : n.value; });
+        $("tOk").disabled = true;
+        try {
+          await salvar(valores);
+          $("dlgTexto").close();
+        } catch (e) {
+          $("tErro").textContent = e.message;
+          $("tOk").disabled = false;
+        }
+      };
+      $("dlgTexto").showModal();
+    }
+
+    function desenharCadastros() {
+      ["PROFISSIONAL", "ESPECIALIDADE", "CONVENIO"].forEach((tipo) => {
+        const itens = estado.cadastros[tipo] || [];
+        $("cad-" + tipo).replaceChildren(...itens.map((i) => el("li", { className: i.ativo ? "" : "inativo" },
+          el("span", {}, i.nome),
+          el("button", { className: "btn cinza mini", type: "button", onclick: () => editarItem(tipo, i) }, "Editar"))));
+        if (!itens.length) $("cad-" + tipo).append(el("li", {}, el("span", { className: "sub" }, "Nenhum cadastrado")));
+      });
+    }
+
+    function editarItem(tipo, item) {
+      const nomes = { PROFISSIONAL: "profissional", ESPECIALIDADE: "especialidade", CONVENIO: "convênio" };
+      formulario(item ? "Editar " + nomes[tipo] : "Adicionar " + nomes[tipo], "Use o mesmo nome do sistema da clínica para facilitar o lançamento.",
+        [{ id: "nome", rotulo: "Nome", valor: item?.nome }, { id: "ativo", rotulo: "Ativo (aparece para o bot e na agenda)", tipo: "checkbox", valor: item ? item.ativo : true }],
+        async (v) => {
+          await api("/agenda/api/cadastros/" + tipo.toLowerCase(), json("PUT", { id: item?.id ?? null, nome: v.nome, ativo: v.ativo }));
+          aviso("Cadastro salvo.");
+          await atualizarResumo();
+          desenharCadastros();
+          opcoes($("filtroProf"), ativos("PROFISSIONAL"), "Todos os profissionais", $("filtroProf").value);
+        });
+    }
+
+    document.querySelectorAll("[data-novo]").forEach((b) => b.onclick = () => editarItem(b.dataset.novo, null));
+
+    async function carregarGrades() {
+      try {
+        const grades = await api("/agenda/api/grades");
+        const corpo = $("linhasGrade");
+        corpo.replaceChildren(...grades.map((g) => el("tr", { className: g.ativo ? "" : "livre" },
+          el("td", {}, DIAS[g.diaSemana]),
+          el("td", { className: "hora" }, g.inicio.substring(0, 5) + " às " + g.fim.substring(0, 5), el("span", { className: "sub" }, "a cada " + g.duracaoMin + " min")),
+          el("td", {}, nomeDe("PROFISSIONAL", g.profissionalId), g.ativo ? null : el("span", { className: "sub" }, "Inativo")),
+          el("td", { className: "col-opc" }, nomeDe("ESPECIALIDADE", g.especialidadeId)),
+          el("td", {}, g.ofereceBot ? el("span", { className: "tag marca" }, "Sim") : el("span", { className: "tag" }, "Não")),
+          el("td", {}, el("div", { className: "acoes" },
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => editarGrade(g) }, "Editar"),
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => removerGrade(g) }, "Excluir"))))));
+        if (!grades.length) corpo.append(el("tr", {}, el("td", { colSpan: 6, className: "vazio" }, el("strong", {}, "Nenhum horário de atendimento"), "Adicione um por profissional e dia da semana.")));
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    function editarGrade(g) {
+      const profs = ativos("PROFISSIONAL").map((i) => [i.id, i.nome]);
+      const esps = ativos("ESPECIALIDADE").map((i) => [i.id, i.nome]);
+      if (!profs.length || !esps.length) return aviso("Cadastre antes um profissional e uma especialidade.", true);
+      formulario(g ? "Editar horário de atendimento" : "Adicionar horário de atendimento", "Cada horário vira vagas do tamanho da duração.",
+        [{ id: "prof", rotulo: "Profissional", tipo: "select", opcoes: profs, valor: g?.profissionalId },
+         { id: "esp", rotulo: "Especialidade", tipo: "select", opcoes: esps, valor: g?.especialidadeId },
+         { id: "dia", rotulo: "Dia da semana", tipo: "select", opcoes: DIAS.slice(1).map((d, i) => [i + 1, d]), valor: g?.diaSemana },
+         { id: "inicio", rotulo: "Início", tipo: "time", valor: g ? g.inicio.substring(0, 5) : "08:00" },
+         { id: "fim", rotulo: "Fim", tipo: "time", valor: g ? g.fim.substring(0, 5) : "12:00" },
+         { id: "duracao", rotulo: "Duração de cada consulta (min)", tipo: "number", valor: g ? g.duracaoMin : 30 },
+         { id: "local", rotulo: "Local (opcional)", valor: g?.local },
+         { id: "bot", rotulo: "O bot pode oferecer estes horários", tipo: "checkbox", valor: g ? g.ofereceBot : true },
+         { id: "ativo", rotulo: "Ativo", tipo: "checkbox", valor: g ? g.ativo : true }],
+        async (v) => {
+          await api("/agenda/api/grades", json("PUT", { id: g?.id ?? null, profissionalId: Number(v.prof), especialidadeId: Number(v.esp),
+            diaSemana: Number(v.dia), inicio: v.inicio, fim: v.fim, duracaoMin: Number(v.duracao), ofereceBot: v.bot, local: v.local, ativo: v.ativo }));
+          aviso("Horário salvo.");
+          await Promise.all([carregarGrades(), carregarDia()]);
+        });
+    }
+
+    async function removerGrade(g) {
+      if (!confirm("Excluir o horário de " + DIAS[g.diaSemana] + " " + g.inicio.substring(0, 5) + "? Consultas já marcadas continuam.")) return;
+      try {
+        await api("/agenda/api/grades/" + g.id, { method: "DELETE" });
+        aviso("Horário excluído.");
+        await Promise.all([carregarGrades(), carregarDia()]);
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    async function carregarBloqueios() {
+      try {
+        const lista = await api("/agenda/api/bloqueios");
+        const corpo = $("linhasBloq");
+        corpo.replaceChildren(...lista.map((b) => el("tr", {},
+          el("td", {}, quando(b.inicio) + " até " + quando(b.fim)),
+          el("td", {}, b.profissionalId ? nomeDe("PROFISSIONAL", b.profissionalId) : "Clínica inteira"),
+          el("td", {}, b.motivo || "", el("span", { className: "sub" }, b.criadoPor || "")),
+          el("td", {}, el("div", { className: "acoes" }, el("button", { className: "btn cinza mini", type: "button", onclick: () => liberar(b) }, "Remover"))))));
+        if (!lista.length) corpo.append(el("tr", {}, el("td", { colSpan: 4, className: "vazio" }, "Nenhum bloqueio.")));
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    $("novoBloqueio").onclick = () => {
+      const dia = $("data").value || estado.hoje;
+      formulario("Bloquear período", "Férias, feriado, reunião. O bot não oferece e a agenda mostra bloqueado.",
+        [{ id: "prof", rotulo: "Profissional", tipo: "select", opcoes: [["", "Clínica inteira"], ...ativos("PROFISSIONAL").map((i) => [i.id, i.nome])] },
+         { id: "inicio", rotulo: "Início", tipo: "datetime-local", valor: dia + "T08:00" },
+         { id: "fim", rotulo: "Fim", tipo: "datetime-local", valor: dia + "T18:00" },
+         { id: "motivo", rotulo: "Motivo", valor: "" }],
+        async (v) => {
+          await api("/agenda/api/bloqueios", json("POST", { profissionalId: v.prof ? Number(v.prof) : null, inicio: v.inicio, fim: v.fim, motivo: v.motivo }));
+          aviso("Período bloqueado.");
+          await Promise.all([carregarDia(), carregarBloqueios()]);
+        });
+    };
+
+    // ---------- Navegação ----------
+    function abrirAba(nome) {
+      document.querySelectorAll(".aba").forEach((a) => a.classList.toggle("ativa", a.dataset.painel === nome));
+      document.querySelectorAll(".painel").forEach((p) => p.classList.toggle("ativo", p.id === "painel-" + nome));
+      if (nome === "agenda") carregarDia();
+      if (nome === "pendencias") carregarPendencias();
+      if (nome === "conferencia") carregarConferencia();
+      if (nome === "cadastros") { desenharCadastros(); carregarGrades(); carregarBloqueios(); }
+    }
+
+    document.querySelectorAll(".aba").forEach((aba) => aba.onclick = () => abrirAba(aba.dataset.painel));
+    document.querySelectorAll("[data-fechar]").forEach((b) => b.onclick = () => b.closest("dialog").close());
+    document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (ev) => {
+      const r = d.getBoundingClientRect();
+      const fora = ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom;
+      if (ev.target === d && fora) d.close();
+    }));
+    $("data").addEventListener("change", carregarDia);
+    $("diaAnterior").onclick = () => { $("data").value = somaDias($("data").value || estado.hoje, -7); carregarDia(); };
+    $("diaSeguinte").onclick = () => { $("data").value = somaDias($("data").value || estado.hoje, 7); carregarDia(); };
+    $("hoje").onclick = () => { $("data").value = estado.hoje; carregarDia(); };
+    $("filtroProf").addEventListener("change", desenharDia);
+    $("filtroPend").addEventListener("change", carregarPendencias);
+    $("dataConf").addEventListener("change", carregarConferencia);
+    $("novaConsulta").onclick = () => abrirMarcar(null);
+    $("novaGrade").onclick = () => editarGrade(null);
+    $("conta").addEventListener("change", async () => {
+      estado.conta = $("conta").value;
+      await carregarContexto();
+      abrirAba(document.querySelector(".aba.ativa").dataset.painel);
+    });
+
+    (async () => {
+      try {
+        if (params.get("conta")) estado.conta = params.get("conta");
+        const [eu] = await Promise.all([fetch("/admin/api/eu").then((r) => r.ok ? r.json() : {}).catch(() => ({})), carregarContexto()]);
+        estado.chatwootUrl = eu.chatwootUrl || "";
+        abrirAba(params.get("pendencia") ? "pendencias" : "agenda");
+      } catch (e) {
+        aviso("Não foi possível abrir a agenda. " + e.message, true);
+      }
+    })();
+  </script>
+</body>
+</html>

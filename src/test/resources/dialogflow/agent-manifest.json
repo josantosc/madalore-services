@@ -6034,7 +6034,7 @@
         {
           "text": {
             "text": [
-              "$nome, você não tem consulta em aberto."
+              "$nome, não encontrei consulta em aberto no seu nome. Se você marcou por telefone ou na recepção, posso chamar alguém da equipe para conferir."
             ]
           }
         }

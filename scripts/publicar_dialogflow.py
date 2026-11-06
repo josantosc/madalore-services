@@ -1082,7 +1082,7 @@ def montar_intents(project: str) -> list:
             saida(project, "pedindo_horario", 0),
         ]),
         intent("texto.resultado.sem_agendamento", [
-            "$nome, você não tem consulta em aberto."
+            "$nome, não encontrei consulta em aberto no seu nome. Se você marcou por telefone ou na recepção, posso chamar alguém da equipe para conferir."
         ], events=["RESULTADO_SEM_AGENDAMENTO"], mlDisabled=True, parameters=[
             parametro("nome", "@sys.any"),
         ]),

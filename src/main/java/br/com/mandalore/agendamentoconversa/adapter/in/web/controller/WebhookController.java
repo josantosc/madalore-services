@@ -87,6 +87,7 @@ public class WebhookController {
                 .build());
         ResultadoOperacao resultado = ClienteAtual.executar(
                 Textos.accountId(session),
+                Textos.accountId(session) == null ? null : Textos.conversationId(session),
                 () -> fulfillment.executar(command)
         );
         telemetry.record(FlowEvent.builder("DIALOGFLOW", "fulfillment.response", "SUCCESS")

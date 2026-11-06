@@ -9,6 +9,9 @@ public interface ChatwootPort {
     /** Nota visível só para a equipe no painel. */
     void notaPrivada(String accountId, String conversationId, String texto);
 
+    /** Põe ou tira uma etiqueta da conversa sem mexer nas outras. */
+    void etiqueta(String accountId, String conversationId, String etiqueta, boolean presente);
+
     void abrirAtendente(String accountId, String conversationId);
 
     /** Retorna false quando o setor não tem equipe configurada. */

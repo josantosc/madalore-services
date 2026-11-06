@@ -16,6 +16,9 @@ Ordem sugerida das próximas entregas, o que já existe de cada uma e o que falt
 O item 7 foi adiantado porque o laboratório pediu. Os itens 4 e 6 usam o mesmo envio proativo do item 3: depois
 do lembrete, os dois ficam baratos.
 
+Os oito itens entram nas fases da [visão de produto para clínicas](#visão-de-produto-para-clínicas), no fim deste
+documento, que também traz os itens novos.
+
 ---
 
 ## 1. Perguntas frequentes no bot
@@ -183,3 +186,90 @@ do lembrete, os dois ficam baratos.
    nem os valores do exame na conversa.
 5. Resultado crítico ou de menor de idade vai sempre para o Laboratório.
 6. Registrar cada acesso (quem, quando, qual atendimento) sem gravar o conteúdo do laudo.
+
+---
+
+## Visão de produto para clínicas
+
+O Chatwoot é a camada de relacionamento: caixa de entrada, filas, equipes e histórico. O Mandalore e o Dialogflow
+guardam a regra de negócio e o Tasy é a fonte dos dados. O produto não compete com o Chatwoot: é uma camada vertical
+para saúde em cima dele.
+
+O Dialogflow continua nos fluxos que gravam no Tasy (agendamento, confirmação, cancelamento), que precisam ser
+previsíveis e auditáveis. O modelo de linguagem (Gemini, já usado no orçamento) entra para resumir, classificar,
+transcrever áudio e entender texto livre. Ele não envia valor nem resultado ao paciente e não grava no Tasy.
+
+### Onde o produto está
+
+| Frente | Situação |
+|---|---|
+| Atendimento autônomo | Forte: marca, confirma, cancela e remarca consulta no Tasy |
+| Atendimento híbrido | Parcial: o transbordo vai para a equipe certa, mas o atendente começa do zero |
+| Operações no Tasy | Forte em consulta. Falta exame, resultado e autorização |
+| Inteligência sobre as conversas | Parcial: o OpenClaw traz contagens, não os motivos de contato |
+| Relacionamento proativo | Não iniciado: depende do WhatsApp oficial e de templates |
+
+### Fase 0 — Base
+
+Itens 1, 2 e 5 deste roteiro: textos das perguntas frequentes, WhatsApp oficial no Chatwoot e automações e equipes.
+Sem o número oficial não há envio proativo.
+
+### Fase 1 — Relacionamento proativo
+
+Um motor de envio só (rotina agendada, template aprovado na Meta, tabela de envios no Postgres), usado por:
+
+1. Lembrete D-1 com confirmação (item 3).
+2. Preparo de exame para quem marcou pela recepção (item 4).
+3. Satisfação e convite de avaliação no Google (item 6).
+4. **Retomada de agendamento abandonado.** A trilha mostra quem começou a marcar e parou. Dentro da janela de 24
+   horas do WhatsApp a retomada vai como mensagem livre, sem template: uma por conversa, só se o paciente não
+   marcou nem falou com atendente depois.
+5. **Lista de espera e encaixe.** O paciente sem horário entra na fila da especialidade ou do exame. Quando um
+   horário é liberado (cancelamento pelo bot ou resposta ao lembrete), o primeiro da fila recebe a oferta, com
+   prazo para aceitar antes de passar ao próximo.
+
+Indicadores: faltas, confirmações, horários reaproveitados e retomadas que viraram agendamento.
+
+### Fase 2 — Atendimento híbrido com contexto
+
+1. **Resumo no transbordo.** Nota privada no Chatwoot com o paciente identificado, o motivo, o que o bot consultou,
+   o que já foi feito e a próxima ação sugerida. Mesmo padrão da nota do orçamento por foto.
+2. **Áudio do paciente.** Transcrever a mensagem de voz e seguir a conversa.
+3. **Botões e listas nativos do WhatsApp.**
+4. **Copiloto do atendente.** Sugestão de resposta e de próxima ação em nota privada, a partir das respostas
+   prontas e do `faq.yaml`.
+
+Indicadores: tempo de atendimento depois do transbordo e transbordos evitados.
+
+### Fase 3 — Inteligência operacional
+
+1. **Motivo de cada conversa resolvida**, inclusive as atendidas pela equipe: agendamento, autorização, resultado,
+   preparo, valores, reclamação. O webhook de conversa resolvida do Chatwoot dispara a classificação, e a trilha
+   grava só a categoria, sem o texto.
+2. **Relatórios por clínica** (gravar a conta do Chatwoot em cada evento da trilha), para comparar unidades.
+3. **Cruzamento com o Tasy:** convênio, especialidade e médico de cada motivo.
+4. **Relatório semanal de motivos pelo OpenClaw**, com a automação sugerida para o motivo que mais cresce. Continua
+   só com números.
+5. **Faltas e cancelamentos recorrentes** por paciente, a partir das respostas ao lembrete.
+
+### Fase 4 — Mais operações sem portal
+
+1. Ver, cancelar e remarcar exame.
+2. **Status de autorização e guia de convênio.** Antes, levantar onde o Tasy guarda o status da guia.
+3. Resultado de exame (item 8).
+4. Orçamento por convênio e leitura da carteirinha por foto.
+5. Cadastro de paciente novo no Tasy.
+
+### Fase 5 — Agente aberto e voz
+
+1. Agente com ferramentas só de leitura para perguntas fora dos fluxos. Qualquer gravação no Tasy passa pelo
+   fluxo do Dialogflow.
+2. Atendimento por voz com transbordo para a Recepção.
+
+### Módulos comerciais
+
+| Módulo | Fases | O que resolve para a clínica |
+|---|---|---|
+| Agenda | 0 e o que já existe | Menos ligação, atendimento 24 horas |
+| Relacionamento | 1 e 2 | Menos faltas, agenda cheia, atendente mais rápido |
+| Inteligência | 3 | O gestor vê por que o paciente procura a clínica e onde está o retrabalho |

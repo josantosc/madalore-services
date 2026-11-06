@@ -316,7 +316,7 @@ $resultados = @{
     "texto.resultado.lista_especialidade" = @{ e = "RESULTADO_LISTA_ESPECIALIDADE"; t = "Qual especialidade você quer com `$medico?`n`$lista" }
     "texto.resultado.sucesso_lista" = @{ e = "RESULTADO_SUCESSO_LISTA"; t = "`$lista" }
     "texto.resultado.sem_horario" = @{ e = "RESULTADO_SEM_HORARIO"; t = "Não há horário de `$especialidade nesse período. Posso olhar outro período, outro dia, ou chamar alguém." }
-    "texto.resultado.sem_agendamento" = @{ e = "RESULTADO_SEM_AGENDAMENTO"; t = "`$nome, você não tem consulta em aberto." }
+    "texto.resultado.sem_agendamento" = @{ e = "RESULTADO_SEM_AGENDAMENTO"; t = "`$nome, não encontrei consulta em aberto no seu nome. Se você marcou por telefone ou na recepção, posso chamar alguém da equipe para conferir." }
     "texto.resultado.confirmacao_ausente" = @{ e = "RESULTADO_CONFIRMACAO_AUSENTE"; t = "`$texto" }
     "texto.resultado.horario_fora_da_oferta" = @{ e = "RESULTADO_HORARIO_FORA_DA_OFERTA"; t = "Escolha um dos horários que acabei de passar." }
     "texto.resultado.horario_indisponivel" = @{ e = "RESULTADO_HORARIO_INDISPONIVEL"; t = "Esse horário não está mais livre." }

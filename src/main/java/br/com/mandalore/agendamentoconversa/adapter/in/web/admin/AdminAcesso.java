@@ -6,9 +6,11 @@ import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,13 +18,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+
+import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Logins da central de administração. ADMIN_USER entra em tudo; CURADORIA_USER e PRECOS_USER só no próprio módulo.
+ * Logins da central de administração. ADMIN_USER entra em tudo; CURADORIA_USER, PRECOS_USER e AGENDA_USER só no
+ * próprio módulo; a recepção de cada clínica só na agenda da própria conta.
  * Senhas erradas bloqueiam o IP por {@link #BLOQUEIO}.
  */
 @Component
@@ -32,10 +39,28 @@ public class AdminAcesso {
     static final Duration BLOQUEIO = Duration.ofMinutes(15);
     private static final int MAX_IPS = 10_000;
 
-    public record Login(String usuario, Set<Modulo> modulos) implements Serializable {
+    /** contas: contas do Chatwoot (clínicas) que o login enxerga na agenda; vazio = todas. */
+    public record Login(String usuario, Set<Modulo> modulos, Set<String> contas) implements Serializable {
+
+        public Login {
+            contas = contas == null ? Set.of() : Set.copyOf(contas);
+        }
+
+        public Login(String usuario, Set<Modulo> modulos) {
+            this(usuario, modulos, Set.of());
+        }
+
+        public boolean podeVer(String conta) {
+            return contas.isEmpty() || contas.contains(conta);
+        }
     }
 
-    record Credencial(String usuario, String senha, Set<Modulo> modulos) {
+    record Credencial(String usuario, String senha, Set<Modulo> modulos, Set<String> contas) {
+
+        Credencial(String usuario, String senha, Set<Modulo> modulos) {
+            this(usuario, senha, modulos, Set.of());
+        }
+
         boolean preenchida() {
             return !usuario.isBlank() && !senha.isBlank();
         }
@@ -51,12 +76,7 @@ public class AdminAcesso {
 
     @Autowired
     public AdminAcesso(Environment env) {
-        this(List.of(
-                        credencial(env, "admin", EnumSet.allOf(Modulo.class)),
-                        credencial(env, "curadoria", EnumSet.of(Modulo.CURADORIA)),
-                        credencial(env, "precos", EnumSet.of(Modulo.PRECOS))),
-                ativos(env),
-                Clock.systemUTC());
+        this(credenciais(env), ativos(env), Clock.systemUTC());
     }
 
     AdminAcesso(List<Credencial> credenciais, Map<Modulo, Boolean> ativos, Clock relogio) {
@@ -80,12 +100,17 @@ public class AdminAcesso {
         }
         String nome = usuario.trim();
         Set<Modulo> modulos = EnumSet.noneOf(Modulo.class);
+        Set<String> contas = new HashSet<>();
+        boolean todasContas = false;
         for (Credencial credencial : credenciais) {
             if (igual(credencial.usuario(), nome) & igual(credencial.senha(), senha)) {
                 modulos.addAll(credencial.modulos());
+                todasContas |= credencial.contas().isEmpty();
+                contas.addAll(credencial.contas());
             }
         }
-        return modulos.isEmpty() ? Optional.empty() : Optional.of(new Login(nome, Set.copyOf(modulos)));
+        return modulos.isEmpty() ? Optional.empty()
+                : Optional.of(new Login(nome, Set.copyOf(modulos), todasContas ? Set.of() : contas));
     }
 
     /** Login de um cabeçalho Basic (scripts, como o curl da importação). */
@@ -141,6 +166,25 @@ public class AdminAcesso {
         return falha.desde().plus(BLOQUEIO).isBefore(relogio.instant());
     }
 
+    /** Recepção de cada clínica (mandalore.clientes.&lt;id&gt;.recepcao.*): só a agenda da própria conta. */
+    private static List<Credencial> credenciais(Environment env) {
+        List<Credencial> todas = new ArrayList<>(List.of(
+                credencial(env, "admin", EnumSet.allOf(Modulo.class)),
+                credencial(env, "curadoria", EnumSet.of(Modulo.CURADORIA)),
+                credencial(env, "precos", EnumSet.of(Modulo.PRECOS)),
+                credencial(env, "agenda", EnumSet.of(Modulo.AGENDA))));
+        Binder.get(env)
+                .bind("mandalore.clientes", Bindable.mapOf(String.class, ClientesProperties.Cliente.class))
+                .orElse(Map.of())
+                .forEach((conta, cliente) -> {
+                    if (cliente.recepcao() != null && cliente.recepcao().configurada()) {
+                        todas.add(new Credencial(cliente.recepcao().usuario().trim(), cliente.recepcao().senha(),
+                                EnumSet.of(Modulo.AGENDA), Set.of(conta)));
+                    }
+                });
+        return todas;
+    }
+
     private static Credencial credencial(Environment env, String prefixo, Set<Modulo> modulos) {
         return new Credencial(
                 env.getProperty(prefixo + ".user", "").trim(),
@@ -154,6 +198,7 @@ public class AdminAcesso {
         ativos.put(Modulo.CURADORIA, postgres && env.getProperty("curadoria.enabled", Boolean.class, false));
         ativos.put(Modulo.PRECOS, postgres && env.getProperty("orcamento.enabled", Boolean.class, false));
         ativos.put(Modulo.SIMULADOR, env.getProperty("simulador.enabled", Boolean.class, false));
+        ativos.put(Modulo.AGENDA, postgres && env.getProperty("agenda.enabled", Boolean.class, false));
         return ativos;
     }
 

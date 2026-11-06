@@ -79,6 +79,27 @@ class AdminAcessoTest {
     }
 
     @Test
+    void recepcaoDeCadaClinicaSoEnxergaAAgendaDaPropriaConta() {
+        MockEnvironment env = new MockEnvironment()
+                .withProperty("admin.user", "admin").withProperty("admin.password", "a")
+                .withProperty("mandalore.clientes.3.recepcao.usuario", "rec3").withProperty("mandalore.clientes.3.recepcao.senha", "s3")
+                .withProperty("mandalore.clientes.4.recepcao.usuario", "rec4")
+                .withProperty("observability.postgres.enabled", "true")
+                .withProperty("agenda.enabled", "true");
+        AdminAcesso acesso = new AdminAcesso(env);
+
+        AdminAcesso.Login recepcao = acesso.autenticar("rec3", "s3").orElseThrow();
+        assertThat(recepcao.modulos()).containsExactly(Modulo.AGENDA);
+        assertThat(recepcao.podeVer("3")).isTrue();
+        assertThat(recepcao.podeVer("4")).isFalse();
+        assertThat(acesso.autenticar("rec4", "")).as("sem senha não vira login").isEmpty();
+        AdminAcesso.Login admin = acesso.autenticar("admin", "a").orElseThrow();
+        assertThat(admin.contas()).isEmpty();
+        assertThat(admin.podeVer("4")).isTrue();
+        assertThat(acesso.ativo(Modulo.AGENDA)).isTrue();
+    }
+
+    @Test
     void basicAuthAceitaSoCabecalhoValido() {
         AdminAcesso acesso = acesso(Clock.systemUTC(), FINANCEIRO);
 
@@ -123,6 +144,7 @@ class AdminAcessoTest {
     @Test
     void voltaSoParaTelasDaCentral() {
         assertThat(AdminController.destino("/precos")).isEqualTo("/precos");
+        assertThat(AdminController.destino("/agenda?pendencia=7")).isEqualTo("/agenda?pendencia=7");
         assertThat(AdminController.destino("/curadoria?conversa=12")).isEqualTo("/curadoria?conversa=12");
         assertThat(AdminController.destino("//evil.com")).isEqualTo("/admin");
         assertThat(AdminController.destino("https://evil.com/precos")).isEqualTo("/admin");

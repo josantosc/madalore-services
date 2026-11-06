@@ -20,7 +20,18 @@ public record ClientesProperties(Map<String, Cliente> clientes) {
         return accountId == null ? Optional.empty() : Optional.ofNullable(clientes.get(accountId));
     }
 
-    public record Cliente(String chatwootToken, String webhookSecret, Tasy tasy) {
+    /**
+     * agenda: "mandalore" (o bot usa a agenda do Mandalore) ou "tasy"; vazio segue agenda.origem.
+     * recepcao: login da recepção da clínica, que só enxerga a agenda desta conta.
+     */
+    public record Cliente(String chatwootToken, String webhookSecret, Tasy tasy, String agenda, Recepcao recepcao) {
+    }
+
+    public record Recepcao(String usuario, String senha) {
+
+        public boolean configurada() {
+            return usuario != null && !usuario.isBlank() && senha != null && !senha.isBlank();
+        }
     }
 
     public record Tasy(String url, String username, String password) {

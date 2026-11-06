@@ -9,7 +9,7 @@ public final class Relatorio {
     }
 
     public enum Tipo {
-        CURADORIA, GESTOR, CONVERSAO
+        CURADORIA, GESTOR, CONVERSAO, AGENDA
     }
 
     /**

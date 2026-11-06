@@ -30,7 +30,7 @@ class ChatwootControllerTest {
     @BeforeEach
     void setUp() {
         useCase = mock(ReceberMensagemUseCase.class);
-        ClientesProperties clientes = new ClientesProperties(Map.of("2", new Cliente("tk-2", "segredo-2", null)));
+        ClientesProperties clientes = new ClientesProperties(Map.of("2", new Cliente("tk-2", "segredo-2", null, null, null)));
         controller = new ChatwootController(useCase, "segredo-global", clientes);
     }
 

@@ -3,8 +3,11 @@ package br.com.mandalore.agendamentoconversa.adapter.out.chatwoot;
 import java.net.URI;
 import java.time.Duration;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -98,6 +101,29 @@ public class ChatwootClientAdapter implements ChatwootPort {
                 .body(Map.of("content", texto, "message_type", "outgoing", "private", true))
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    @Override
+    public void etiqueta(String accountId, String conversationId, String etiqueta, boolean presente) {
+        Etiquetas atuais = client.get()
+                .uri("/api/v1/accounts/{accountId}/conversations/{conversationId}/labels", accountId, conversationId)
+                .header("api_access_token", token(accountId))
+                .retrieve()
+                .body(Etiquetas.class);
+        Set<String> etiquetas = new LinkedHashSet<>(atuais == null || atuais.payload() == null ? List.of() : atuais.payload());
+        boolean mudou = presente ? etiquetas.add(etiqueta) : etiquetas.remove(etiqueta);
+        if (!mudou) {
+            return;
+        }
+        client.post()
+                .uri("/api/v1/accounts/{accountId}/conversations/{conversationId}/labels", accountId, conversationId)
+                .header("api_access_token", token(accountId))
+                .body(Map.of("labels", List.copyOf(etiquetas)))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    record Etiquetas(List<String> payload) {
     }
 
     @Override

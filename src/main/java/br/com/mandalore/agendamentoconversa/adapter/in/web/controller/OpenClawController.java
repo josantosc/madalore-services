@@ -57,7 +57,7 @@ public class OpenClawController {
         try {
             escolhido = Relatorio.Tipo.valueOf(tipo.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            return erro(HttpStatus.BAD_REQUEST, "Tipo de relatório inválido: use curadoria, conversao ou gestor");
+            return erro(HttpStatus.BAD_REQUEST, "Tipo de relatório inválido: use curadoria, conversao, gestor ou agenda");
         }
         return ResponseEntity.ok(Map.of("tipo", escolhido.name().toLowerCase(Locale.ROOT), "texto", relatorios.texto(escolhido)));
     }

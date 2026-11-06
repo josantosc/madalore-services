@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -17,8 +18,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Relatorio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.RelatorioUseCase;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.AgendaMandalorePort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.NotificacaoPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.RelatorioPort;
 
@@ -35,6 +38,7 @@ public class RelatorioService implements RelatorioUseCase {
     private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
     private static final DateTimeFormatter DIA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DIA_CURTO = DateTimeFormatter.ofPattern("dd/MM");
+    private static final DateTimeFormatter DIA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final Map<String, String> EQUIPES = Map.of(
             "RECEPCAO", "Recepção",
             "LABORATORIO", "Laboratório",
@@ -45,6 +49,7 @@ public class RelatorioService implements RelatorioUseCase {
 
     private final RelatorioPort relatorio;
     private final Optional<NotificacaoPort> notificacao;
+    private final Optional<AgendaMandalorePort> agenda;
     private final Clock clock;
     private final double limiteConfianca;
     private final String nome;
@@ -54,11 +59,12 @@ public class RelatorioService implements RelatorioUseCase {
     public RelatorioService(
             RelatorioPort relatorio,
             Optional<NotificacaoPort> notificacao,
+            Optional<AgendaMandalorePort> agenda,
             @Value("${curadoria.limite-confianca:0.6}") double limiteConfianca,
             @Value("${admin.nome:}") String nome,
             @Value("${relatorios.url:}") String url
     ) {
-        this(relatorio, notificacao, Clock.system(FUSO), limiteConfianca, nome, url);
+        this(relatorio, notificacao, agenda, Clock.system(FUSO), limiteConfianca, nome, url);
     }
 
     RelatorioService(
@@ -69,8 +75,21 @@ public class RelatorioService implements RelatorioUseCase {
             String nome,
             String url
     ) {
+        this(relatorio, notificacao, Optional.empty(), clock, limiteConfianca, nome, url);
+    }
+
+    RelatorioService(
+            RelatorioPort relatorio,
+            Optional<NotificacaoPort> notificacao,
+            Optional<AgendaMandalorePort> agenda,
+            Clock clock,
+            double limiteConfianca,
+            String nome,
+            String url
+    ) {
         this.relatorio = relatorio;
         this.notificacao = notificacao;
+        this.agenda = agenda;
         this.clock = clock;
         this.limiteConfianca = limiteConfianca;
         this.nome = nome == null ? "" : nome.trim();
@@ -83,6 +102,7 @@ public class RelatorioService implements RelatorioUseCase {
             case GESTOR -> gestor();
             case CONVERSAO -> conversao();
             case CURADORIA -> curadoria();
+            case AGENDA -> agenda();
         };
     }
 
@@ -137,8 +157,38 @@ public class RelatorioService implements RelatorioUseCase {
         if (!dia.falhas().isEmpty()) {
             texto.append("Falhas registradas: ").append(lista(dia.falhas(), Map.of())).append('\n');
         }
+        agenda.map(port -> port.resumo(null, LocalDateTime.now(clock)))
+                .filter(resumo -> resumo.abertas() > 0)
+                .ifPresent(resumo -> texto.append("Agenda: ").append(resumo.abertas())
+                        .append(" pendências para lançar no sistema da clínica, ").append(resumo.atrasadas()).append(" atrasadas\n"));
         if (!url.isEmpty()) {
             texto.append("\nRevisar a fila: ").append(url).append("/curadoria");
+        }
+        return texto.toString().strip();
+    }
+
+    /** Pendências da agenda do Mandalore em todas as clínicas da instalação. */
+    String agenda() {
+        if (agenda.isEmpty()) {
+            return titulo("Agenda da clínica") + "\nAgenda do Mandalore desligada (AGENDA_ENABLED).";
+        }
+        LocalDateTime agora = LocalDateTime.now(clock);
+        Agenda.ResumoPendencias resumo = agenda.get().resumo(null, agora);
+        StringBuilder texto = new StringBuilder(titulo("Agenda da clínica"))
+                .append("Agora, ").append(DIA_HORA.format(agora)).append("\n\n")
+                .append("Pendências para lançar no sistema da clínica: ").append(resumo.abertas()).append('\n')
+                .append("Atrasadas: ").append(resumo.atrasadas());
+        if (resumo.atrasadas() > 0 && resumo.prazoMaisAntigo() != null) {
+            texto.append(" (a mais antiga venceu em ").append(DIA_HORA.format(resumo.prazoMaisAntigo())).append(")");
+        }
+        texto.append('\n')
+                .append("Divergências da conferência: ").append(resumo.divergencias()).append('\n')
+                .append("Consultas de amanhã sem conferência: ").append(resumo.amanhaSemConferencia()).append('\n');
+        if (resumo.abertas() == 0 && resumo.amanhaSemConferencia() == 0) {
+            texto.append("\nAs duas agendas estão em dia.\n");
+        }
+        if (!url.isEmpty()) {
+            texto.append("\nResolver: ").append(url).append("/agenda");
         }
         return texto.toString().strip();
     }

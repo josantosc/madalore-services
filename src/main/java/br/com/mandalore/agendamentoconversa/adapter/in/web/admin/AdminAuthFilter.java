@@ -25,9 +25,12 @@ import jakarta.servlet.http.HttpSession;
 public class AdminAuthFilter extends OncePerRequestFilter {
 
     public static final String USUARIO = "admin.usuario";
+    /** Login completo ({@link AdminAcesso.Login}): a agenda confere por ele as clínicas que o usuário enxerga. */
+    public static final String LOGIN = "admin.login.atual";
     static final String SESSAO = "admin.login";
     static final String[] CAMINHOS = {
-            "/admin", "/admin/*", "/curadoria", "/curadoria/*", "/precos", "/precos/*", "/simulador", "/simulador/*"};
+            "/admin", "/admin/*", "/curadoria", "/curadoria/*", "/precos", "/precos/*", "/simulador", "/simulador/*",
+            "/agenda", "/agenda/*"};
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminAuthFilter.class);
 
@@ -89,6 +92,7 @@ public class AdminAuthFilter extends OncePerRequestFilter {
             return;
         }
         request.setAttribute(USUARIO, login.get().usuario());
+        request.setAttribute(LOGIN, login.get());
         chain.doFilter(request, response);
     }
 

@@ -11,7 +11,9 @@ public enum Modulo {
     PRECOS("/precos", "Tabela de preços",
             "Valores particulares usados no orçamento por foto do pedido médico."),
     SIMULADOR("/simulador", "Simulador de conversa",
-            "Converse com o assistente como paciente, direto no Dialogflow ou pelo Chatwoot.");
+            "Converse com o assistente como paciente, direto no Dialogflow ou pelo Chatwoot."),
+    AGENDA("/agenda", "Agenda da clínica",
+            "Consultas do bot e da recepção, pendências para lançar no sistema da clínica e conferência diária.");
 
     private final String caminho;
     private final String titulo;

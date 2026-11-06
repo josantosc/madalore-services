@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,8 +15,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Relatorio;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.AgendaMandalorePort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.NotificacaoPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.RelatorioPort;
 
@@ -145,6 +149,22 @@ class RelatorioServiceTest {
         assertThatThrownBy(() -> semTelegram.enviar(Relatorio.Tipo.CURADORIA))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("OpenClaw");
+    }
+
+    @Test
+    void agendaMostraPendenciasAtrasadasEConferenciaDeAmanha() {
+        AgendaMandalorePort agenda = Mockito.mock(AgendaMandalorePort.class);
+        Mockito.when(agenda.resumo(Mockito.isNull(), Mockito.any()))
+                .thenReturn(new Agenda.ResumoPendencias(4, 1, LocalDateTime.of(2026, 11, 5, 7, 15), 1, 6));
+        RelatorioService comAgenda = new RelatorioService(port, Optional.empty(), Optional.of(agenda), CLOCK, 0.6, "BioSaúde",
+                "https://bs-api.exemplo.com");
+
+        assertThat(comAgenda.texto(Relatorio.Tipo.AGENDA)).startsWith("Agenda da clínica - BioSaúde")
+                .contains("Pendências para lançar no sistema da clínica: 4", "Atrasadas: 1 (a mais antiga venceu em 05/11/2026 07:15)",
+                        "Divergências da conferência: 1", "Consultas de amanhã sem conferência: 6")
+                .endsWith("Resolver: https://bs-api.exemplo.com/agenda");
+        assertThat(comAgenda.texto(Relatorio.Tipo.CURADORIA)).contains("Agenda: 4 pendências para lançar no sistema da clínica, 1 atrasadas");
+        assertThat(service.texto(Relatorio.Tipo.AGENDA)).contains("AGENDA_ENABLED");
     }
 
     @Test

@@ -1,6 +1,6 @@
 ---
 name: mandalore-relatorios
-description: Relatórios do bot de atendimento da clínica (Mandalore). Use para o resumo diário da curadoria, a conversão diária, o relatório semanal do gestor e perguntas sobre números do bot, como conversas, conversão, consultas e exames marcados, transbordos por equipe, orçamentos e perguntas frequentes.
+description: Relatórios do bot de atendimento da clínica (Mandalore). Use para o resumo diário da curadoria, a conversão diária, o relatório semanal do gestor, as pendências da agenda da recepção e perguntas sobre números do bot, como conversas, conversão, consultas e exames marcados, transbordos por equipe, orçamentos e perguntas frequentes.
 metadata: {"openclaw": {"requires": {"env": ["MANDALORE_URL", "MANDALORE_OPENCLAW_TOKEN"], "bins": ["curl"]}, "primaryEnv": "MANDALORE_OPENCLAW_TOKEN"}}
 ---
 
@@ -15,6 +15,7 @@ Os números não têm nome, CPF nem fala de paciente.
 curl -s -H "Authorization: Bearer $MANDALORE_OPENCLAW_TOKEN" "$MANDALORE_URL/openclaw/relatorios/curadoria"
 curl -s -H "Authorization: Bearer $MANDALORE_OPENCLAW_TOKEN" "$MANDALORE_URL/openclaw/relatorios/conversao"
 curl -s -H "Authorization: Bearer $MANDALORE_OPENCLAW_TOKEN" "$MANDALORE_URL/openclaw/relatorios/gestor"
+curl -s -H "Authorization: Bearer $MANDALORE_OPENCLAW_TOKEN" "$MANDALORE_URL/openclaw/relatorios/agenda"
 ```
 
 Resposta: `{"tipo": "curadoria", "texto": "..."}`.
@@ -23,6 +24,9 @@ Resposta: `{"tipo": "curadoria", "texto": "..."}`.
 - `conversao`: das conversas de ontem, quantas terminaram com consulta ou exame marcado pelo bot, quantas foram
   para atendente sem marcar e quantas ficaram sem nenhum dos dois, comparado com os 7 dias anteriores.
 - `gestor`: semana anterior, de segunda a domingo, comparada com a semana antes dela, incluindo a taxa de conversão.
+- `agenda`: só para clínicas que usam a agenda do Mandalore. Pendências que a recepção ainda precisa lançar no
+  sistema da clínica, quantas estão atrasadas, divergências da conferência e consultas de amanhã sem conferência.
+  Use quando perguntarem se as duas agendas estão em dia ou se há algo atrasado para a recepção.
 
 Ao enviar um relatório, mande o campo `texto` exatamente como veio. Não arredonde, não reescreva números e não
 acrescente conclusões dentro do texto. Se quiser comentar, faça numa mensagem separada e deixe claro que é análise.

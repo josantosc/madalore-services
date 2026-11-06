@@ -1,6 +1,6 @@
 # Deploy na Hostinger com Coolify
 
-Um VPS da Hostinger roda o Coolify. O Coolify sobe o Chatwoot pelo template dele e o Mandalore pelo `Dockerfile` deste repositório, cuida do HTTPS (Traefik com Let's Encrypt) e faz backup dos bancos. O Oracle do Tasy fica na clínica, com a porta liberada só para o IP do VPS.
+Cada cliente tem a própria pilha, em servidor próprio ([decisão de escala](decisao-escala-clientes.md)). Um VPS da Hostinger roda o Coolify. O Coolify sobe o Chatwoot pelo template dele e o Mandalore pelo `Dockerfile` deste repositório, cuida do HTTPS (Traefik com Let's Encrypt) e faz backup dos bancos. O Oracle do Tasy fica na clínica, com a porta liberada só para o IP do VPS.
 
 | Endereço | Serviço |
 |---|---|

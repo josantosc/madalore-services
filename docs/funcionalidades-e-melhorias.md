@@ -14,6 +14,7 @@ O que o Mandalore já faz e o que está na fila. A ordem das melhorias e o passo
 | Marcar consulta sem cadastro | Agendamento nominal, sem criar `PESSOA_FISICA` | idem |
 | Marcar exame | Lista de exames, horários e confirmação com o preparo do Tasy e as orientações gerais | idem |
 | Ver, confirmar, cancelar e remarcar consulta | Grava status `CN`, libera o horário ou troca na mesma transação | idem |
+| Agenda do Mandalore | Para clínicas sem integração: o bot marca no PostgreSQL e a recepção repete no sistema da clínica pelas pendências da tela `/agenda`, com nota e etiqueta no Chatwoot e conferência diária | [`agenda-mandalore.md`](agenda-mandalore.md) |
 | Recuperação sem horário | Oferece outro período, nova busca ou atendente | [`testes-regressao-conversacional.md`](testes-regressao-conversacional.md) |
 | Voltar e reiniciar | "voltar" desfaz um passo, "reiniciar" começa de novo | idem |
 | Perguntas frequentes | Endereço, horário, convênios, preparo, resultado, documentos, estacionamento, contato e valores, com o texto de cada clínica | [`perguntas-frequentes.md`](perguntas-frequentes.md) |
@@ -33,12 +34,12 @@ O que o Mandalore já faz e o que está na fila. A ordem das melhorias e o passo
 | Funcionalidade | Detalhe | Documento |
 |---|---|---|
 | Várias clínicas numa instalação | Uma conta do Chatwoot por clínica, com token, segredo, Oracle e perguntas frequentes próprios | [`chatwoot.md`](chatwoot.md) |
-| Central de administração | `/admin` com login único para curadoria, preços e simulador | [`orcamento-pedido.md`](orcamento-pedido.md) |
+| Central de administração | `/admin` com login único para curadoria, preços, simulador e agenda. Login da recepção de cada clínica só com a agenda dela | [`orcamento-pedido.md`](orcamento-pedido.md) |
 | Curadoria | Falas não entendidas, indicadores e "Ensinar" frase no Dialogflow | [`curadoria.md`](curadoria.md) |
 | Tabela de preços | Tela do financeiro com importação e exportação em CSV | [`orcamento-pedido.md`](orcamento-pedido.md) |
 | Simulador | Conversa com o agente real, com foto, PDF e câmera | [`testes-regressao-conversacional.md`](testes-regressao-conversacional.md) |
 | Trilha operacional | Eventos de cada mensagem no PostgreSQL | [`observabilidade-postgres.md`](observabilidade-postgres.md) |
-| Relatórios pelo OpenClaw | Resumo diário da curadoria, conversão diária e relatório semanal do gestor, só com números. Card de conversão na curadoria. O OpenClaw lê por API, envia ao Telegram e responde perguntas avulsas no grupo | [`relatorios-openclaw.md`](relatorios-openclaw.md), [implantação por cliente](openclaw-implantacao-cliente.md) |
+| Relatórios pelo OpenClaw | Resumo diário da curadoria, conversão diária, relatório semanal do gestor e pendências da agenda, só com números. Card de conversão na curadoria. O OpenClaw lê por API, envia ao Telegram e responde perguntas avulsas no grupo | [`relatorios-openclaw.md`](relatorios-openclaw.md), [implantação por cliente](openclaw-implantacao-cliente.md) |
 | Testes | Regressão local por cenário, Robot no Dialogflow e no widget | [`testes-regressao-conversacional.md`](testes-regressao-conversacional.md) |
 | Deploy | Coolify na Hostinger | [`deploy-coolify-hostinger.md`](deploy-coolify-hostinger.md) |
 
@@ -72,3 +73,11 @@ Itens fora da tabela, sem prioridade definida.
 | Indicadores de negócio na central | Os números do relatório semanal em tela, com faltas quando houver o lembrete | médio |
 | Relatórios por clínica | Os relatórios somam a instalação inteira. Gravar a conta do Chatwoot em cada evento da trilha e filtrar a API por conta, para um Mandalore atender várias clínicas com relatórios separados | médio |
 | Cadastro de paciente novo no Tasy | Hoje o agendamento sem cadastro é nominal | alto (validação com a Philips) |
+| Retomada de agendamento abandonado | Quem parou no meio recebe uma mensagem na janela de 24 horas, sem template | baixo/médio |
+| Lista de espera e encaixe | Horário liberado é oferecido a quem está na fila da especialidade ou do exame | médio |
+| Resumo no transbordo | Nota privada com paciente, motivo, consultas e ações do bot: o atendente não começa do zero | médio |
+| Copiloto do atendente | Sugestão de resposta e próxima ação em nota privada | médio |
+| Motivo de cada conversa | Classificação ao resolver, inclusive as da equipe, cruzada com convênio e unidade no relatório semanal | médio/alto |
+| Status de autorização de convênio | Assunto de maior volume em clínicas. Depende de achar o status da guia no Tasy | alto |
+
+As fases que juntam esses itens estão na [visão de produto para clínicas](roadmap.md#visão-de-produto-para-clínicas).

@@ -7,6 +7,8 @@ minutos.
 
 ## Como fica cada cliente
 
+O OpenClaw segue a [decisão de escala](decisao-escala-clientes.md): uma pilha completa por cliente.
+
 ```
 Paciente ──> Chatwoot ──> Mandalore ──> trilha (PostgreSQL)
                               │

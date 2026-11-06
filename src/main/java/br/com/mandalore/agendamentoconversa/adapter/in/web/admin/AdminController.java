@@ -7,6 +7,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -34,7 +35,7 @@ import jakarta.servlet.http.HttpSession;
 public class AdminController {
 
     static final Duration SESSAO_INATIVA = Duration.ofHours(8);
-    private static final Pattern VOLTA = Pattern.compile("/(admin|curadoria|precos|simulador)([/?][A-Za-z0-9/?&=._%-]*)?");
+    private static final Pattern VOLTA = Pattern.compile("/(admin|curadoria|precos|simulador|agenda)([/?][A-Za-z0-9/?&=._%-]*)?");
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminController.class);
 
@@ -56,7 +57,8 @@ public class AdminController {
     public record ModuloResposta(String id, String titulo, String descricao, String caminho, boolean ativo) {
     }
 
-    public record EuResposta(String usuario, String nome, String chatwootUrl, List<ModuloResposta> modulos) {
+    /** administrador: entra em todos os módulos e em todas as clínicas. */
+    public record EuResposta(String usuario, String nome, String chatwootUrl, List<ModuloResposta> modulos, boolean administrador) {
     }
 
     @GetMapping("/admin")
@@ -114,13 +116,14 @@ public class AdminController {
 
     @GetMapping(value = "/admin/api/eu", produces = MediaType.APPLICATION_JSON_VALUE)
     public EuResposta eu(@RequestAttribute(AdminAuthFilter.USUARIO) String usuario, HttpServletRequest request) {
-        HttpSession sessao = request.getSession(false);
-        Object login = sessao == null ? null : sessao.getAttribute(AdminAuthFilter.SESSAO);
+        Object login = request.getAttribute(AdminAuthFilter.LOGIN);
         List<ModuloResposta> modulos = Arrays.stream(Modulo.values())
                 .filter(m -> !(login instanceof AdminAcesso.Login l) || l.modulos().contains(m))
                 .map(m -> new ModuloResposta(m.name().toLowerCase(), m.titulo(), m.descricao(), m.caminho(), acesso.ativo(m)))
                 .toList();
-        return new EuResposta(usuario, nome, chatwootUrl, modulos);
+        boolean administrador = login instanceof AdminAcesso.Login l
+                && l.modulos().containsAll(EnumSet.allOf(Modulo.class)) && l.contas().isEmpty();
+        return new EuResposta(usuario, nome, chatwootUrl, modulos, administrador);
     }
 
     @GetMapping("/admin/assets/{arquivo:nav\\.(?:js|css)}")

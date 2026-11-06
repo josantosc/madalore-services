@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -29,6 +30,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.qameta.allure.Allure;
 
 import br.com.mandalore.agendamentoconversa.adapter.in.web.controller.WebhookController;
+import br.com.mandalore.agendamentoconversa.adapter.out.agenda.AgendaMemoria;
+import br.com.mandalore.agendamentoconversa.adapter.out.agenda.MandaloreAgendaAdapter;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowTelemetry;
 import br.com.mandalore.agendamentoconversa.application.domain.service.AgendaConsultaService;
 import br.com.mandalore.agendamentoconversa.application.domain.service.ContextoCodec;
@@ -52,15 +56,22 @@ final class ConversaRegressionRunner {
     private final Map<String, ObjectNode> intentsPorEvento = new LinkedHashMap<>();
     private final Map<String, ObjectNode> contextos = new LinkedHashMap<>();
     private final FakeAgendaBackend backend = new FakeAgendaBackend();
+    private final AgendaMemoria memoria = AgendaMemoria.exemplo();
     private final StringBuilder transcricao = new StringBuilder();
     private final MockMvc mvc;
 
     ConversaRegressionRunner() {
+        this(false);
+    }
+
+    /** mandalore: o bot usa a agenda do Mandalore (em memória) em vez do backend falso do Tasy. */
+    ConversaRegressionRunner(boolean mandalore) {
         carregarManifesto();
         FlowTelemetry telemetry = Mockito.mock(FlowTelemetry.class);
+        MandaloreAgendaAdapter adaptador = memoria.adaptador(Clock.systemDefaultZone());
         AgendaConsultaService agenda = new AgendaConsultaService(
-                backend,
-                backend,
+                mandalore ? adaptador : backend,
+                mandalore ? adaptador : backend,
                 new IdentidadeSessao(),
                 telemetry
         );
@@ -222,6 +233,14 @@ final class ConversaRegressionRunner {
         }
         if (espera.has("ultimaEscrita")) {
             assertThat(backend.escritas()).as("operações de escrita").endsWith(espera.path("ultimaEscrita").asText());
+        }
+        JsonNode mandalore = espera.path("agendaMandalore");
+        if (mandalore.has("agendamentos")) {
+            assertThat(memoria.todos()).as("agendamentos na agenda do Mandalore").hasSize(mandalore.path("agendamentos").asInt());
+        }
+        if (mandalore.has("pendenciasAbertas")) {
+            assertThat(memoria.todasPendencias().stream().filter(p -> p.situacao() == Agenda.SituacaoPendencia.ABERTA))
+                    .as("pendências abertas para o sistema da clínica").hasSize(mandalore.path("pendenciasAbertas").asInt());
         }
     }
 

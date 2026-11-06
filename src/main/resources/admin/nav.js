@@ -6,10 +6,11 @@
     curadoria: '<path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v13"/>',
     precos: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/>',
     simulador: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/>',
+    agenda: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
     conversas: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
     sair: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>'
   };
-  const PERFIS = { curadoria: "Curadoria", precos: "Financeiro", simulador: "Simulador" };
+  const PERFIS = { curadoria: "Curadoria", precos: "Financeiro", simulador: "Simulador", agenda: "Recepção" };
 
   const voltaParaLogin = () => {
     location.href = "/admin/login?volta=" + encodeURIComponent(location.pathname + location.search);
@@ -65,7 +66,7 @@
       nav.append(el("div", { className: "adm-secao" }, "Atendimento"), item("conversas", "Conversas", eu.chatwootUrl + "/app", false));
     }
 
-    const perfis = eu.modulos.length === 3 ? "Administrador" : eu.modulos.map((m) => PERFIS[m.id]).join(", ");
+    const perfis = eu.administrador ? "Administrador" : eu.modulos.map((m) => PERFIS[m.id]).join(", ");
     nav.append(
       el("div", { className: "adm-espaco" }),
       el("div", { className: "adm-usuario" },

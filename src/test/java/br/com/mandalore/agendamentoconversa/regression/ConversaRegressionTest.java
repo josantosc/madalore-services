@@ -24,7 +24,7 @@ class ConversaRegressionTest {
             String recurso = "conversas/" + item.asText();
             return DynamicTest.dynamicTest(item.asText(), () -> {
                 JsonNode cenario = ler(recurso);
-                new ConversaRegressionRunner().executar(cenario);
+                new ConversaRegressionRunner("mandalore".equals(cenario.path("agenda").asText())).executar(cenario);
             });
         });
     }

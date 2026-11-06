@@ -57,7 +57,8 @@ public class PostgresObservabilityConfig {
     ) {
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator(
                 new ClassPathResource("db/observability/schema.sql"),
-                new ClassPathResource("db/orcamento/schema.sql")
+                new ClassPathResource("db/orcamento/schema.sql"),
+                new ClassPathResource("db/agenda/schema.sql")
         );
         DataSourceInitializer initializer = new DataSourceInitializer();
         initializer.setDataSource(dataSource);
