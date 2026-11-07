@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento.ItemPreco;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento.Linha;
@@ -30,6 +31,10 @@ final class NotaOrcamento {
             Não consegui consultar a tabela de preços agora. Tente o /orcamento de novo em instantes.""";
 
     private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
+    /** Primeiras palavras que não identificam um exame sozinhas ("exame de urina", "sangue oculto"). */
+    private static final Set<String> GENERICAS = Set.of(
+            "exame", "exames", "dosagem", "pesquisa", "teste", "perfil", "consulta", "coleta", "cultura", "analise",
+            "contagem", "sangue", "urina", "fezes", "painel", "avaliacao");
 
     private NotaOrcamento() {
     }
@@ -94,6 +99,54 @@ final class NotaOrcamento {
         return linhas;
     }
 
+    /**
+     * Exames da tabela citados na frase do paciente, na ordem em que aparecem. Casa nome e sinônimo inteiros (palavra
+     * a palavra, sem acento) e, para "hemograma" achar "Hemograma completo", a primeira palavra do nome quando só um
+     * item começa com ela. O termo mais longo vence: "T4 livre" não conta também como "T4".
+     */
+    static List<Linha> examesNaFrase(String frase, List<ItemPreco> tabela) {
+        Map<String, Long> primeiras = new HashMap<>();
+        tabela.forEach(item -> primeiras.merge(primeiraPalavra(item.nome()), 1L, Long::sum));
+        List<Map.Entry<String, ItemPreco>> termos = new ArrayList<>();
+        for (ItemPreco item : tabela) {
+            termos.add(Map.entry(palavras(item.nome()), item));
+            item.sinonimos().forEach(sinonimo -> termos.add(Map.entry(palavras(sinonimo), item)));
+            String primeira = primeiraPalavra(item.nome());
+            if (primeira.length() >= 5 && !GENERICAS.contains(primeira) && primeiras.get(primeira) == 1) {
+                termos.add(Map.entry(primeira, item));
+            }
+        }
+        termos.sort((a, b) -> b.getKey().length() - a.getKey().length());
+
+        StringBuilder texto = new StringBuilder(" ").append(palavras(frase)).append(' ');
+        Map<Integer, Linha> achados = new TreeMap<>();
+        Set<String> vistos = new HashSet<>();
+        for (Map.Entry<String, ItemPreco> termo : termos) {
+            if (termo.getKey().length() < 2) {
+                continue;
+            }
+            int posicao = texto.indexOf(" " + termo.getKey() + " ");
+            if (posicao < 0) {
+                continue;
+            }
+            texto.replace(posicao + 1, posicao + 1 + termo.getKey().length(), " ".repeat(termo.getKey().length()));
+            if (vistos.add(termo.getValue().codigo())) {
+                achados.put(posicao, new Linha(termo.getValue().nome(), termo.getValue()));
+            }
+        }
+        return List.copyOf(achados.values());
+    }
+
+    private static String palavras(String texto) {
+        return Textos.normalizar(texto).replaceAll("[^a-z0-9]+", " ").trim();
+    }
+
+    private static String primeiraPalavra(String nome) {
+        String palavras = palavras(nome);
+        int espaco = palavras.indexOf(' ');
+        return espaco < 0 ? palavras : palavras.substring(0, espaco);
+    }
+
     private static List<ItemPreco> parecidos(String termo, List<ItemPreco> tabela) {
         String normal = Textos.normalizar(termo);
         if (normal.length() < 2) {
@@ -124,6 +177,11 @@ final class NotaOrcamento {
         return linhas.stream().anyMatch(l -> l.item() != null)
                 ? nota + "\n\nValor registrado no funil. Para corrigir, mande o /orcamento de novo com a lista certa."
                 : nota;
+    }
+
+    static String notaTexto(List<Linha> linhas) {
+        return montar("Orçamento calculado pelos exames que o paciente escreveu. Confira com a mensagem dele antes "
+                + "de enviar; exame que ele citou e não está na tabela não aparece aqui.\n", linhas, List.of());
     }
 
     private static String montar(String cabecalho, List<Linha> linhas, List<ItemPreco> tabela) {

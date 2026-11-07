@@ -25,6 +25,7 @@ corporativo), com vendedor externo e proposta formal. Ele fica ao lado do Mandal
 | Origem | Como abre |
 |---|---|
 | Orçamento por foto | A conversa vai para o Faturamento: pedido lido (com total e quantidade de exames), exames não identificados ou leitura que falhou (sem valor). O Mandalore põe a etiqueta `orcamento` na conversa |
+| Orçamento por texto | O paciente pergunta o preço escrevendo os exames ("quanto fica hemograma e TSH?"), sem foto. O assistente acha na frase os exames da tabela de preços, avisa o paciente, deixa a nota com o cálculo e passa para o Faturamento. Abre com total e quantidade e põe a etiqueta `orcamento` |
 | Comando `/orcamento` | O atendente escreve uma **nota privada** `/orcamento hemograma, glicose, TSH`. O Mandalore calcula pela tabela de preços, responde em nota privada e abre (ou atualiza) a oportunidade com total e quantidade de exames. Põe a etiqueta `orcamento` |
 | Orçamento manual | O atendente **adiciona** a etiqueta `orcamento` na conversa (valor passado por texto, áudio ou telefone); o valor entra pela tela |
 
@@ -42,6 +43,12 @@ reabre uma oportunidade fechada; só conta quando acaba de ser adicionada.
 O valor vem da tabela de preços (`/orcamento`), a mesma do orçamento por foto, de três jeitos:
 
 - **Foto do pedido:** soma dos exames lidos que têm preço.
+- **Pergunta por texto:** só quando o assistente reconhece a pergunta de valores (`acao.faq.valores`) ou na
+  mensagem seguinte a essa resposta (o paciente perguntou "quanto custa?" e depois escreveu os exames). Casa o nome
+  ou sinônimo inteiro da tabela dentro da frase e a primeira palavra do nome quando só um item começa com ela
+  ("hemograma" acha "Hemograma completo"); palavras genéricas como exame, dosagem, sangue e urina não contam
+  sozinhas. Sem exame da tabela na frase, o assistente responde o texto de `valores` do `faq.yaml`, como antes. O
+  preço ao paciente continua sendo enviado por um atendente; a nota avisa que exame fora da tabela não aparece.
 - **Comando `/orcamento`:** o atendente lista os exames numa nota privada, separados por vírgula, ponto e vírgula
   ou linha. Cada termo casa por código, nome ou sinônimo, sem acento e sem diferença de maiúscula; sem igualdade,
   vale o único item da tabela que contém o termo ("hemograma" acha "Hemograma completo"). Termo que casa com mais
@@ -118,8 +125,12 @@ FUNIL_ENABLED=true
 ```
 
 Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZE_SCHEMA=true` (cria o schema
-`funil`). O orçamento por foto e o comando `/orcamento` (`ORCAMENTO_ENABLED`) são opcionais: sem eles, só a
-etiqueta abre oportunidade e o valor entra pela tela.
+`funil`). O orçamento por foto, por texto e o comando `/orcamento` (`ORCAMENTO_ENABLED`) são opcionais: sem
+eles, só a etiqueta abre oportunidade e o valor entra pela tela.
+
+No `faq.yaml` de produção, o texto de `valores` deve convidar o paciente a escrever os exames, como no modelo
+[`deploy/faq.exemplo.yaml`](../deploy/faq.exemplo.yaml): "Mande aqui uma foto do pedido médico ou escreva os nomes
+dos exames…".
 
 O `ADMIN_USER` entra na tela. `FUNIL_USER` e `FUNIL_PASSWORD` são opcionais: um login que só abre o funil, para
 quem não deve ver as outras telas da central.
@@ -147,7 +158,7 @@ Tabela `funil.oportunidade`, uma linha por oportunidade:
 | Coluna | Uso |
 |---|---|
 | `conta_id`, `conversa_id` | conversa de origem no Chatwoot |
-| `origem` | `ORCAMENTO_FOTO` ou `ORCAMENTO_MANUAL` |
+| `origem` | `ORCAMENTO_FOTO`, `ORCAMENTO_TEXTO` (exames escritos pelo paciente) ou `ORCAMENTO_MANUAL` (etiqueta ou `/orcamento`) |
 | `etapa`, `motivo_perda` | situação atual |
 | `valor`, `qtd_itens` | total e quantidade de exames (foto ou `/orcamento`); o valor também pode ser informado na tela |
 | `paciente` | nome do contato no Chatwoot, atualizado a cada mensagem ou mudança na conversa |

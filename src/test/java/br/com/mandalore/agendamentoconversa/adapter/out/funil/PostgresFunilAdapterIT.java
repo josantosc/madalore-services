@@ -88,6 +88,13 @@ class PostgresFunilAdapterIT {
     }
 
     @Test
+    void orcamentoPorTextoTemOrigemPropria() {
+        long id = funil.abrir(CONTA, "c6", Funil.Origem.ORCAMENTO_TEXTO, new BigDecimal("25"), 1, HOJE, "mandalore");
+
+        assertThat(funil.buscar(id)).hasValueSatisfying(o -> assertThat(o.origem()).isEqualTo(Funil.Origem.ORCAMENTO_TEXTO));
+    }
+
+    @Test
     void valorDoComandoGravaQuantidadeEValorDaTelaMantem() {
         long id = funil.abrir(CONTA, "c7", Funil.Origem.ORCAMENTO_MANUAL, null, null, HOJE, "mandalore");
 

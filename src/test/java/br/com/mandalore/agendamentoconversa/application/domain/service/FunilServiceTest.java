@@ -50,7 +50,7 @@ class FunilServiceTest {
 
     @Test
     void orcamentoPorFotoAbreComRetornoHojeEPoeAEtiqueta() {
-        service.abrirOrcamento("1", "7", new BigDecimal("37.00"), 2);
+        service.abrirOrcamento("1", "7", Funil.Origem.ORCAMENTO_FOTO, new BigDecimal("37.00"), 2);
 
         verify(port).abrir("1", "7", Funil.Origem.ORCAMENTO_FOTO, new BigDecimal("37.00"), 2, HOJE, FunilService.SISTEMA);
         verify(chatwoot).etiqueta("1", "7", "orcamento", true);
@@ -88,7 +88,7 @@ class FunilServiceTest {
     void falhaNaEtiquetaNaoDesfazAOportunidade() {
         doThrow(new IllegalStateException("chatwoot fora")).when(chatwoot).etiqueta(any(), any(), any(), anyBoolean());
 
-        service.abrirOrcamento("1", "7", null, null);
+        service.abrirOrcamento("1", "7", Funil.Origem.ORCAMENTO_FOTO, null, null);
 
         verify(port).abrir("1", "7", Funil.Origem.ORCAMENTO_FOTO, null, null, HOJE, FunilService.SISTEMA);
     }

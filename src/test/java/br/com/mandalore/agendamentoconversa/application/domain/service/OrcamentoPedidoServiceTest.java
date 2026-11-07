@@ -1,5 +1,6 @@
 package br.com.mandalore.agendamentoconversa.application.domain.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.contains;
@@ -22,6 +23,7 @@ import org.mockito.InOrder;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Anexo;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Canal;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
@@ -74,7 +76,7 @@ class OrcamentoPedidoServiceTest {
 
         service.orcar(mensagem());
 
-        verify(funil).abrirOrcamento("1", "7", new BigDecimal("25"), 2);
+        verify(funil).abrirOrcamento("1", "7", Funil.Origem.ORCAMENTO_FOTO, new BigDecimal("25"), 2);
     }
 
     @Test
@@ -135,6 +137,36 @@ class OrcamentoPedidoServiceTest {
         verify(chatwoot).notaPrivada("1", "7", NotaOrcamento.COMANDO_VAZIO);
         verify(chatwoot).notaPrivada(eq("1"), eq("7"), contains("- vitamina d"));
         verifyNoInteractions(funil);
+    }
+
+    @Test
+    void pedidoPorTextoComExameDaTabelaAvisaPacienteDeixaNotaEAbreOportunidade() {
+        FunilUseCase funil = mock(FunilUseCase.class);
+        service = new OrcamentoPedidoService(chatwoot, leitor, tabela, Runnable::run, () -> funil);
+
+        boolean tratou = service.orcarTexto(texto("quanto custa um hemograma?"));
+
+        assertThat(tratou).isTrue();
+        InOrder ordem = inOrder(chatwoot);
+        ordem.verify(chatwoot).publicar("1", "7", OrcamentoPedidoService.RECEBIDO_TEXTO);
+        ordem.verify(chatwoot).notaPrivada(eq("1"), eq("7"), contains("- Hemograma completo: R$ 25,00"));
+        ordem.verify(chatwoot).atribuirEquipe("1", "7", Setor.FATURAMENTO);
+        ordem.verify(chatwoot).abrirAtendente("1", "7");
+        verify(funil).abrirOrcamento("1", "7", Funil.Origem.ORCAMENTO_TEXTO, new BigDecimal("25"), 1);
+    }
+
+    @Test
+    void pedidoPorTextoSemExameDaTabelaNaoFazNada() {
+        assertThat(service.orcarTexto(texto("quanto custa o exame?"))).isFalse();
+
+        when(tabela.itens()).thenThrow(new IllegalStateException("banco fora"));
+        assertThat(service.orcarTexto(texto("hemograma"))).isFalse();
+        verifyNoInteractions(chatwoot);
+    }
+
+    private static MensagemEntrada texto(String conteudo) {
+        return new MensagemEntrada("message_created", "incoming", false, conteudo, "m2", "1", "7", "pending",
+                Canal.WHATSAPP);
     }
 
     private static MensagemEntrada mensagem() {

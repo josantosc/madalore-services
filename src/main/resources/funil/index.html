@@ -278,7 +278,7 @@
       const link = chatwootUrl
         ? el("a", { className: "conversa", href: chatwootUrl + "/app/accounts/" + encodeURIComponent(o.conta) + "/conversations/" + encodeURIComponent(o.conversa), target: "_blank", rel: "noopener" }, texto)
         : el("span", {}, texto);
-      const origem = o.origem === "ORCAMENTO_FOTO" ? "Orçamento por foto" : "Orçamento manual";
+      const origem = { ORCAMENTO_FOTO: "Orçamento por foto", ORCAMENTO_TEXTO: "Orçamento por texto" }[o.origem] || "Orçamento manual";
       return [link, el("span", { className: "sub" }, o.paciente ? "#" + o.conversa + " · " + origem : origem)];
     }
 

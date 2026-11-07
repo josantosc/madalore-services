@@ -65,9 +65,9 @@ public class FunilService implements FunilUseCase {
     }
 
     @Override
-    public void abrirOrcamento(String conta, String conversa, BigDecimal valor, Integer qtdItens) {
-        long id = funil.abrir(conta, conversa, Funil.Origem.ORCAMENTO_FOTO, valor, qtdItens, hoje(), SISTEMA);
-        LOG.info("conversation_id={} funil oportunidade={} origem=ORCAMENTO_FOTO", conversa, id);
+    public void abrirOrcamento(String conta, String conversa, Funil.Origem origem, BigDecimal valor, Integer qtdItens) {
+        long id = funil.abrir(conta, conversa, origem, valor, qtdItens, hoje(), SISTEMA);
+        LOG.info("conversation_id={} funil oportunidade={} origem={}", conversa, id, origem);
         etiquetar(conta, conversa);
     }
 

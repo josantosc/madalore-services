@@ -78,6 +78,51 @@ class MensagemChatwootServiceTest {
     }
 
     @Test
+    void perguntaDeValoresComExameDaTabelaVaiParaOrcamentoSemATextoDaFaq() {
+        when(orcamentos.getIfAvailable()).thenReturn(orcamento);
+        MensagemEntrada pergunta = mensagem("incoming", "quanto custa hemograma?", "30", "pending", Canal.WHATSAPP);
+        when(dialogflow.detectar("cw-8-9", "quanto custa hemograma?"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_VALORES, "Mande a foto do pedido."));
+        when(orcamento.orcarTexto(pergunta)).thenReturn(true);
+
+        service.receber(pergunta);
+
+        verify(chatwoot, never()).publicar(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
+        ArgumentCaptor<FlowEvent> evento = ArgumentCaptor.forClass(FlowEvent.class);
+        verify(telemetry).record(evento.capture());
+        assertThat(evento.getValue().stage()).isEqualTo("orcamento.texto");
+    }
+
+    @Test
+    void depoisDaRespostaDeValoresAProximaMensagemPodeTrazerOsExames() {
+        when(orcamentos.getIfAvailable()).thenReturn(orcamento);
+        MensagemEntrada pergunta = mensagem("incoming", "quanto custa?", "31", "pending", Canal.WHATSAPP);
+        MensagemEntrada exames = mensagem("incoming", "hemograma e tsh", "32", "pending", Canal.WHATSAPP);
+        when(dialogflow.detectar("cw-8-9", "quanto custa?"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_VALORES, "Mande a foto ou os exames."));
+        when(orcamento.orcarTexto(pergunta)).thenReturn(false);
+        when(orcamento.orcarTexto(exames)).thenReturn(true);
+
+        service.receber(pergunta);
+        service.receber(exames);
+
+        verify(chatwoot).publicar("8", "9", "Mande a foto ou os exames.");
+        verify(dialogflow, never()).detectar("cw-8-9", "hemograma e tsh");
+    }
+
+    @Test
+    void mensagemSemPerguntaDeValoresNaoProcuraExames() {
+        when(orcamentos.getIfAvailable()).thenReturn(orcamento);
+        when(dialogflow.detectar("cw-8-9", "hemograma")).thenReturn(new RespostaDialogflow("texto.fallback", "Não entendi."));
+
+        service.receber(mensagem("incoming", "hemograma", "33", "pending", Canal.WHATSAPP));
+
+        verify(orcamento, never()).orcarTexto(org.mockito.ArgumentMatchers.any());
+        verify(chatwoot).publicar("8", "9", "Não entendi.");
+    }
+
+    @Test
     void ignoraMensagemDeSaida() {
         service.receber(mensagem("outgoing", "oi", "1", "pending", Canal.SITE));
 

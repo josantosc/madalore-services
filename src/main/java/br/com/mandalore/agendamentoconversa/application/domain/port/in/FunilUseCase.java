@@ -9,8 +9,11 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 
 public interface FunilUseCase {
 
-    /** Orçamento por foto que foi para o Faturamento. {@code valor} e {@code qtdItens} nulos quando a leitura falhou. */
-    void abrirOrcamento(String conta, String conversa, BigDecimal valor, Integer qtdItens);
+    /**
+     * Orçamento automático (foto do pedido ou exames escritos pelo paciente) que foi para o Faturamento.
+     * {@code valor} e {@code qtdItens} nulos quando a leitura falhou.
+     */
+    void abrirOrcamento(String conta, String conversa, Funil.Origem origem, BigDecimal valor, Integer qtdItens);
 
     /** Comando /orcamento do atendente: abre (ou usa a aberta) e grava total e quantidade de exames. */
     void orcamentoCalculado(String conta, String conversa, BigDecimal valor, int qtdItens, String atendente);

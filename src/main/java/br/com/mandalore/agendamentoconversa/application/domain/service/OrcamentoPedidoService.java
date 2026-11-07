@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Anexo;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.model.MensagemEntrada;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Orcamento;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
@@ -31,6 +32,8 @@ public class OrcamentoPedidoService implements OrcarPedidoUseCase {
 
     static final String RECEBIDO = "Recebi o seu pedido. Vou conferir os exames e um atendente "
             + "te passa o orçamento por aqui em instantes.";
+    static final String RECEBIDO_TEXTO = "Anotei os exames e passei para a equipe do Faturamento. Um atendente "
+            + "te confirma os valores por aqui em instantes.";
 
     private static final Logger LOG = LoggerFactory.getLogger(OrcamentoPedidoService.class);
     private static final int LIMITE_COMANDOS = 10_000;
@@ -107,10 +110,43 @@ public class OrcamentoPedidoService implements OrcarPedidoUseCase {
         if (oportunidades != null && setor == Setor.FATURAMENTO) {
             BigDecimal valor = total;
             Integer quantidade = exames;
-            tentar(conversationId, "funil", () -> oportunidades.abrirOrcamento(accountId, conversationId, valor, quantidade));
+            tentar(conversationId, "funil", () -> oportunidades.abrirOrcamento(accountId, conversationId,
+                    Funil.Origem.ORCAMENTO_FOTO, valor, quantidade));
         }
         LOG.info("conversation_id={} orcamento_pedido {} equipe={} latencia_ms={}",
                 conversationId, resultado, setor, (System.nanoTime() - inicio) / 1_000_000);
+    }
+
+    @Override
+    public boolean orcarTexto(MensagemEntrada mensagem) {
+        List<Orcamento.Linha> linhas;
+        try {
+            linhas = NotaOrcamento.examesNaFrase(mensagem.content(), tabela.itens());
+        } catch (RuntimeException ex) {
+            LOG.warn("conversation_id={} orcamento_texto tabela falhou: {}",
+                    mensagem.conversationId(), ex.getClass().getSimpleName());
+            return false;
+        }
+        if (linhas.isEmpty()) {
+            return false;
+        }
+        chatwoot.publicar(mensagem.accountId(), mensagem.conversationId(), RECEBIDO_TEXTO);
+        executor.execute(() -> encaminharTexto(mensagem.accountId(), mensagem.conversationId(), linhas));
+        return true;
+    }
+
+    void encaminharTexto(String conta, String conversa, List<Orcamento.Linha> linhas) {
+        String nota = NotaOrcamento.notaTexto(linhas);
+        tentar(conversa, "nota", () -> chatwoot.notaPrivada(conta, conversa, nota));
+        tentar(conversa, "equipe", () -> chatwoot.atribuirEquipe(conta, conversa, Setor.FATURAMENTO));
+        tentar(conversa, "abrir", () -> chatwoot.abrirAtendente(conta, conversa));
+        FunilUseCase oportunidades = funil.get();
+        if (oportunidades != null) {
+            BigDecimal total = linhas.stream().map(l -> l.item().valor()).reduce(BigDecimal.ZERO, BigDecimal::add);
+            tentar(conversa, "funil", () -> oportunidades.abrirOrcamento(conta, conversa, Funil.Origem.ORCAMENTO_TEXTO,
+                    total, linhas.size()));
+        }
+        LOG.info("conversation_id={} orcamento_texto exames={}", conversa, linhas.size());
     }
 
     @Override

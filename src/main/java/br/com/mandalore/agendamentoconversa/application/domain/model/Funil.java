@@ -22,7 +22,7 @@ public final class Funil {
     }
 
     public enum Origem {
-        ORCAMENTO_FOTO, ORCAMENTO_MANUAL
+        ORCAMENTO_FOTO, ORCAMENTO_TEXTO, ORCAMENTO_MANUAL
     }
 
     public enum MotivoPerda {

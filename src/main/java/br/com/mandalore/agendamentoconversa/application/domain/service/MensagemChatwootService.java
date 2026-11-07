@@ -26,6 +26,8 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
 
     static final String FALHA = "Não consegui continuar agora. Pode tentar de novo ou pedir um atendente.";
     static final String SEM_TEXTO = "Consigo seguir por texto. Pode digitar a opção?";
+    static final String INTENT_VALORES = "acao.faq.valores";
+    private static final String ORCAMENTO_TEXTO = "orcamento.texto";
 
     private static final Logger LOG = LoggerFactory.getLogger(MensagemChatwootService.class);
     private static final int LIMITE_ASSUNTOS = 10_000;
@@ -34,6 +36,8 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
     private final ChatwootPort chatwoot;
     private final Set<String> mensagensVistas = ConcurrentHashMap.newKeySet();
     private final Map<String, Setor> assuntos = new ConcurrentHashMap<>();
+    /** Conversas em que o assistente acabou de responder sobre valores: a próxima mensagem pode trazer os exames. */
+    private final Set<String> aguardandoExames = ConcurrentHashMap.newKeySet();
     private final ObjectProvider<OrcarPedidoUseCase> orcamentos;
     private final FlowTelemetry telemetry;
 
@@ -77,11 +81,28 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
                 chatwoot.publicar(mensagem.accountId(), mensagem.conversationId(), SEM_TEXTO);
                 return;
             }
+            String chave = mensagem.accountId() + ":" + mensagem.conversationId();
+            if (orcamento != null && aguardandoExames.remove(chave) && orcamento.orcarTexto(mensagem)) {
+                intent = ORCAMENTO_TEXTO;
+                registrar(mensagem, ORCAMENTO_TEXTO, Setor.FATURAMENTO);
+                return;
+            }
             RespostaDialogflow resposta = dialogflow.detectar(
                     Textos.sessionId(mensagem.accountId(), mensagem.conversationId()),
                     mensagem.content()
             );
             intent = resposta.intent() == null ? "" : resposta.intent();
+            if (orcamento != null && INTENT_VALORES.equals(intent)) {
+                if (orcamento.orcarTexto(mensagem)) {
+                    intent = ORCAMENTO_TEXTO;
+                    registrar(mensagem, ORCAMENTO_TEXTO, Setor.FATURAMENTO);
+                    return;
+                }
+                if (aguardandoExames.size() >= LIMITE_ASSUNTOS) {
+                    aguardandoExames.clear();
+                }
+                aguardandoExames.add(chave);
+            }
             String texto = resposta.texto() == null || resposta.texto().isBlank() ? FALHA : resposta.texto();
             if (intent.startsWith("acao.")) {
                 status = "falha";
@@ -90,7 +111,6 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
             for (String parte : Textos.partes(texto, canal.limiteCaracteres(), canal.limiteBytes())) {
                 chatwoot.publicar(mensagem.accountId(), mensagem.conversationId(), parte);
             }
-            String chave = mensagem.accountId() + ":" + mensagem.conversationId();
             Optional<Setor> assunto = Encaminhamento.assunto(mensagem.content());
             if (intent.startsWith("transbordo.")) {
                 Setor setor = assunto.orElseGet(() -> Optional.ofNullable(assuntos.remove(chave)).orElse(Setor.RECEPCAO));

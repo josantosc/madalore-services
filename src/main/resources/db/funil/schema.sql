@@ -31,6 +31,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_oportunidade_aberta
     WHERE etapa IN ('NOVO', 'ORCAMENTO_ENVIADO', 'EM_NEGOCIACAO');
 -- Nome do contato no Chatwoot, para a tela. Sem CPF nem telefone.
 ALTER TABLE funil.oportunidade ADD COLUMN IF NOT EXISTS paciente VARCHAR(200);
+-- ORCAMENTO_TEXTO: paciente pediu o orçamento escrevendo os exames, sem foto do pedido.
+ALTER TABLE funil.oportunidade DROP CONSTRAINT IF EXISTS oportunidade_origem_check;
+ALTER TABLE funil.oportunidade ADD CONSTRAINT oportunidade_origem_check
+    CHECK (origem IN ('ORCAMENTO_FOTO', 'ORCAMENTO_TEXTO', 'ORCAMENTO_MANUAL'));
 
 CREATE INDEX IF NOT EXISTS idx_oportunidade_retorno ON funil.oportunidade (etapa, proxima_acao);
 CREATE INDEX IF NOT EXISTS idx_oportunidade_fechada ON funil.oportunidade (fechada_em);

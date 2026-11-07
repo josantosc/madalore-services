@@ -15,6 +15,11 @@ a conversa vai para o Faturamento com a nota "Não consegui ler a foto do pedido
 
 Funciona nas conversas que estão com o bot (status Pendente), em qualquer canal do Chatwoot.
 
+**Sem foto.** Se o paciente pergunta o preço escrevendo os exames ("quanto fica hemograma e TSH?"), o Mandalore
+acha na frase os exames da tabela, responde "Anotei os exames e passei para a equipe do Faturamento…", deixa a
+mesma nota privada e passa para o Faturamento, sem usar o Gemini. Vale na pergunta de valores e na mensagem logo
+depois da resposta de valores. Detalhes em [funil-orcamento.md](funil-orcamento.md#valor).
+
 ## Configuração
 
 ### Google Cloud

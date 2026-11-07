@@ -35,8 +35,8 @@ mandalore:
       Telefone: [(00) 0000-0000]
       E-mail: [contato@exemplo.com.br]
     valores: |
-      Os valores dependem dos exames do pedido. Mande aqui uma foto do pedido médico que a equipe do
-      Faturamento te passa o orçamento.
+      Os valores dependem dos exames do pedido. Mande aqui uma foto do pedido médico ou escreva os nomes
+      dos exames que a equipe do Faturamento te passa o orçamento.
 
   # Texto diferente numa clínica: mesmo tema dentro da conta do Chatwoot.
   # clientes:

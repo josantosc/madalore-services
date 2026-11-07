@@ -105,6 +105,31 @@ class NotaOrcamentoTest {
     }
 
     @Test
+    void acheExamesNaFraseDoPacienteNaOrdemSemRepetirNemPegarGenerico() {
+        List<ItemPreco> tabela = List.of(
+                new ItemPreco("HMG", "Hemograma completo", List.of(), new BigDecimal("25"), ""),
+                new ItemPreco("T4L", "T4 livre", List.of(), new BigDecimal("30"), ""),
+                new ItemPreco("T4", "T4", List.of(), new BigDecimal("20"), ""),
+                new ItemPreco("TSH", "TSH", List.of("hormonio tireoestimulante"), new BigDecimal("28"), ""),
+                new ItemPreco("EAS", "Exame de urina tipo 1", List.of("EAS"), new BigDecimal("15"), ""),
+                new ItemPreco("VITD", "Vitamina D", List.of(), new BigDecimal("80"), ""),
+                new ItemPreco("VB12", "Vitamina B12", List.of(), new BigDecimal("60"), ""));
+
+        assertThat(NotaOrcamento.examesNaFrase("Quanto fica TSH, t4 livre e o hemograma? E o TSH de novo", tabela))
+                .extracting(l -> l.item().codigo()).containsExactly("TSH", "T4L", "HMG");
+        assertThat(NotaOrcamento.examesNaFrase("quanto custa o exame de vitamina?", tabela)).isEmpty();
+        assertThat(NotaOrcamento.examesNaFrase("Hormônio tireoestimulante e EAS", tabela))
+                .extracting(l -> l.item().codigo()).containsExactly("TSH", "EAS");
+    }
+
+    @Test
+    void notaDoPedidoPorTextoAvisaQueExameForaDaTabelaNaoAparece() {
+        String nota = NotaOrcamento.notaTexto(NotaOrcamento.examesNaFrase("hmg", TABELA));
+
+        assertThat(nota).contains("que o paciente escreveu").contains("Total: R$ 25,00");
+    }
+
+    @Test
     void soExamesSemPrecoNaoMostraTextoParaPaciente() {
         PedidoLido pedido = new PedidoLido(true, List.of(new ExameLido("Vitamina D", "")));
 
