@@ -75,6 +75,23 @@
     .selo.PERDIDO { background: var(--rubi-suave); color: var(--rubi-texto); }
     .atrasado { color: var(--rubi-texto); font-weight: 500; }
 
+    details.regras { margin-top: 16px; border: 1px solid var(--borda); border-radius: 12px; background: var(--solido); }
+    details.regras summary { cursor: pointer; padding: 12px 16px; font-weight: 500; }
+    details.regras .corpo { padding: 0 16px 16px; display: grid; gap: 16px; }
+    details.regras h3 { font-size: 14px; font-weight: 500; margin: 0 0 6px; }
+    details.regras ul { margin: 0; padding-left: 18px; color: var(--texto-2); display: grid; gap: 4px; }
+    details.regras table { margin: 4px 0 8px; }
+    details.regras td, details.regras th { padding: 8px 16px 8px 0; }
+    details.regras .cabeca { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
+    details.regras .cabeca h3 { margin: 0; }
+    .linha-contato { display: flex; align-items: center; gap: 8px; }
+    .linha-contato input.campo { width: 90px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--alpha-2); border-radius: 6px; padding: 2px 4px 2px 8px; font-size: 13px; font-weight: 400; }
+    .chip button { background: none; border: 0; cursor: pointer; color: var(--texto-2); font-size: 14px; line-height: 1; padding: 2px 4px; }
+    .check { display: flex !important; align-items: center; gap: 8px; font-weight: 400 !important; }
+    dialog#dlgRegras { width: min(560px, calc(100vw - 32px)); }
+
     .quadro { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; overflow-x: auto; padding-bottom: 8px; }
     .coluna { background: var(--alpha-1); border-radius: 12px; padding: 10px; min-height: 240px; display: flex; flex-direction: column; gap: 8px; }
     .coluna.alvo { outline: 2px dashed var(--marca); }
@@ -127,6 +144,11 @@
         <div class="numero"><small>Agendados (30 dias)</small><strong id="nGanhas">0</strong><span id="vGanhas"></span></div>
         <div class="numero"><small>Conversão (30 dias)</small><strong id="conversao">-</strong><span id="nPerdidas"></span></div>
       </div>
+
+      <details class="regras">
+        <summary>Como o funil funciona nesta clínica</summary>
+        <div class="corpo" id="regras"></div>
+      </details>
 
       <div class="barra">
         <div class="abas">
@@ -201,6 +223,38 @@
     </form>
   </dialog>
 
+  <dialog id="dlgRegras">
+    <form method="dialog" id="formRegras">
+      <h2 id="gTitulo">Regras do funil</h2>
+      <p class="sub">Vale para os próximos contatos. As datas já marcadas não mudam.</p>
+      <div class="form">
+        <div>
+          <label>Contatos depois do envio do orçamento</label>
+          <div class="form" id="gContatos" style="margin-top: 8px; gap: 8px"></div>
+          <button class="btn cinza" type="button" id="gAdicionar" style="margin-top: 8px">Adicionar contato</button>
+        </div>
+        <label>Dias úteis sem resposta depois do último contato para fechar como perdido
+          <input class="campo" id="gEncerramento" type="number" min="1" max="60" style="width: 90px">
+        </label>
+        <label class="check"><input type="checkbox" id="gSabado"> Sábado é dia útil</label>
+        <div>
+          <label>Feriados locais (municipais, recesso, Carnaval ou Corpus Christi se a clínica fecha)</label>
+          <div class="linha-contato" style="margin-top: 8px">
+            <input class="campo" id="gFeriado" type="date" style="width: 170px">
+            <button class="btn cinza" type="button" id="gIncluirFeriado">Incluir</button>
+          </div>
+          <div class="chips" id="gFeriados" style="margin-top: 8px"></div>
+          <p class="sub" id="gNacionais" style="font-size: 12px; margin-top: 8px"></p>
+        </div>
+        <span class="msg-erro" id="gErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn solido" type="submit" id="gOk">Salvar regras</button>
+      </div>
+    </form>
+  </dialog>
+
   <div id="aviso" role="status"></div>
 
   <script>
@@ -222,6 +276,12 @@
     let chatwootUrl = "";
     let hoje = "";
     let oportunidades = [];
+    let regrasClinicas = [];
+    let diasSemResposta = 30;
+    let feriadosNacionais = [];
+    let podeEditarRegras = false;
+    let edicao = null;
+    const diaHora = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
     let aba = "hoje";
     let selecionada = null;
 
@@ -267,6 +327,14 @@
         const painel = await api("/funil/api/oportunidades");
         hoje = painel.hoje;
         oportunidades = painel.oportunidades;
+        diasSemResposta = painel.diasSemResposta;
+        feriadosNacionais = painel.feriadosNacionais;
+        podeEditarRegras = painel.podeEditarRegras;
+        const novas = JSON.stringify(painel.regras);
+        if (novas !== JSON.stringify(regrasClinicas)) {
+          regrasClinicas = painel.regras;
+          desenharRegras();
+        }
         desenhar();
       } catch (e) {
         aviso("Não foi possível carregar o funil. " + e.message, true);
@@ -282,12 +350,127 @@
       return [link, el("span", { className: "sub" }, o.paciente ? "#" + o.conversa + " · " + origem : origem)];
     }
 
+    function regrasDa(conta) {
+      const item = regrasClinicas.find((r) => r.conta === conta) || regrasClinicas.find((r) => r.conta === null);
+      return item ? item.regras : null;
+    }
+
     function retorno(o) {
       if (!aberta(o)) return el("span", { className: "sub" }, o.etapa === "PERDIDO" && o.motivoPerda ? MOTIVOS[o.motivoPerda] : "-");
+      if (o.encerraEm) return el("span", { className: "sub" }, "Contatos feitos. Fecha em " + diaCurto.format(new Date(o.encerraEm)) + " se não responder");
       if (!o.proximaAcao) return "-";
       const texto = o.proximaAcao === hoje ? "Hoje" : diaCurto.format(new Date(o.proximaAcao));
-      return el("span", { className: o.proximaAcao < hoje ? "atrasado" : "" }, o.proximaAcao < hoje ? texto + " (atrasado)" : texto);
+      const r = regrasDa(o.conta);
+      const contato = o.etapa !== "NOVO" && r
+        ? el("span", { className: "sub" }, "Contato " + Math.min(Math.max(o.toque, 1), r.cadencia.length) + " de " + r.cadencia.length)
+        : null;
+      return [el("span", { className: o.proximaAcao < hoje ? "atrasado" : "" }, o.proximaAcao < hoje ? texto + " (atrasado)" : texto), contato];
     }
+
+    const uteis = (n) => n + (n === 1 ? " dia útil" : " dias úteis");
+
+    function objetivo(toque, toques) {
+      if (toque >= toques) return "Avisar que vai encerrar por enquanto e que é só chamar";
+      if (toque === 1) return "Perguntar se ficou dúvida sobre os exames, o preparo ou o valor";
+      return "Oferecer dois horários para agendar";
+    }
+
+    function blocoRegras(r) {
+      const toques = r.cadencia.length;
+      const linhas = r.cadencia.map((dias, i) => el("tr", {},
+        el("td", {}, "Contato " + (i + 1)),
+        el("td", {}, uteis(dias) + (i === 0 ? " depois do envio do orçamento" : " depois do contato " + i)),
+        el("td", {}, objetivo(i + 1, toques))));
+      const feriados = [...r.feriados].sort().map((d) => diaCurto.format(new Date(d)));
+      const nacionais = feriadosNacionais.map((d) => diaCurto.format(new Date(d)));
+      return [
+        el("table", {}, el("thead", {}, el("tr", {}, el("th", {}, "Contato"), el("th", {}, "Quando"), el("th", {}, "O que fazer"))), el("tbody", {}, linhas)),
+        el("ul", {},
+          el("li", {}, "O orçamento entra como Novo e deve ser enviado no mesmo dia. A primeira mensagem do atendente marca como Orçamento enviado."),
+          el("li", {}, "Na manhã do dia de cada contato, a conversa recebe uma nota privada e volta para o Faturamento. A mensagem enviada nesse dia, ou depois se estiver atrasado, conta como contato feito. Responder antes do dia não muda as datas."),
+          el("li", {}, "Atrasado: passou o dia do contato sem mensagem. A nota não se repete; o atraso fica nesta tela e no resumo diário da equipe."),
+          el("li", {}, "Se o paciente responder, o orçamento vai para Em negociação e os contatos recomeçam do 1."),
+          el("li", {}, "Sem resposta " + uteis(r.diasEncerramento) + " depois do último contato, fecha como Perdido (não respondeu). Se os contatos não forem feitos, fecha " + diasSemResposta + " dias depois da última mensagem do paciente."),
+          el("li", {}, "Fecha como Agendado quando o assistente marca nesta conversa. O que a recepção marcar, marque aqui como Agendado."),
+          el("li", {}, "Dias úteis: segunda a " + (r.sabadoUtil ? "sábado" : "sexta") + ", menos os feriados nacionais (" + nacionais.join(", ") + ")"
+            + (feriados.length ? " e os locais (" + feriados.join(", ") + ")" : "; nenhum feriado local cadastrado") + "."),
+          el("li", {}, "Valor: tabela de preços particular; exame sem preço não entra no total. Responsável: atendente atribuído no Chatwoot ou, sem atribuição, quem respondeu por último."))];
+    }
+
+    function origemRegras(item) {
+      if (item.propria) return "Alterada por " + item.atualizadaPor + " em " + diaHora.format(new Date(item.atualizadaEm));
+      return "Cadência inicial da instalação" + (item.conta !== null && podeEditarRegras ? ". Edite para gravar a desta clínica." : ".");
+    }
+
+    function desenharRegras() {
+      const varias = regrasClinicas.length > 1;
+      $("regras").replaceChildren(...regrasClinicas.map((item) => el("section", {},
+        el("div", { className: "cabeca" },
+          el("div", {}, varias ? el("h3", {}, item.conta === null ? "Padrão" : "Conta " + item.conta) : null,
+            el("span", { className: "sub" }, origemRegras(item))),
+          podeEditarRegras && item.conta !== null
+            ? el("button", { className: "btn cinza", type: "button", onclick: () => abrirRegras(item) }, "Editar")
+            : null),
+        blocoRegras(item.regras))));
+    }
+
+    function abrirRegras(item) {
+      edicao = { conta: item.conta, cadencia: [...item.regras.cadencia], feriados: [...item.regras.feriados].sort() };
+      $("gTitulo").textContent = "Regras do funil" + (regrasClinicas.length > 1 ? " · Conta " + item.conta : "");
+      $("gEncerramento").value = item.regras.diasEncerramento;
+      $("gSabado").checked = item.regras.sabadoUtil;
+      $("gFeriado").value = "";
+      $("gNacionais").textContent = "Feriados nacionais já considerados: " + feriadosNacionais.map((d) => diaCurto.format(new Date(d))).join(", ") + ".";
+      $("gErro").textContent = "";
+      desenharEdicao();
+      $("dlgRegras").showModal();
+    }
+
+    function desenharEdicao() {
+      $("gContatos").replaceChildren(...edicao.cadencia.map((dias, i) => {
+        const campo = el("input", { className: "campo", type: "number", min: 1, max: 60, value: dias,
+          oninput: (ev) => edicao.cadencia[i] = Number(ev.target.value) });
+        return el("div", { className: "linha-contato" },
+          el("span", { style: "min-width: 80px" }, "Contato " + (i + 1)), campo,
+          el("span", { className: "sub" }, "dias úteis " + (i === 0 ? "depois do envio" : "depois do contato " + i)),
+          edicao.cadencia.length > 1
+            ? el("button", { className: "btn icone rubi", type: "button", title: "Remover contato",
+                onclick: () => { edicao.cadencia.splice(i, 1); desenharEdicao(); } }, icone("perdido"))
+            : null);
+      }));
+      $("gAdicionar").disabled = edicao.cadencia.length >= 10;
+      $("gFeriados").replaceChildren(...edicao.feriados.map((d) => el("span", { className: "chip" },
+        new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" }),
+        el("button", { type: "button", title: "Remover", onclick: () => { edicao.feriados = edicao.feriados.filter((x) => x !== d); desenharEdicao(); } }, "×"))));
+    }
+
+    $("gAdicionar").onclick = () => {
+      edicao.cadencia.push(edicao.cadencia[edicao.cadencia.length - 1] || 2);
+      desenharEdicao();
+    };
+    $("gIncluirFeriado").onclick = () => {
+      const dia = $("gFeriado").value;
+      if (dia && !edicao.feriados.includes(dia)) edicao.feriados = [...edicao.feriados, dia].sort();
+      $("gFeriado").value = "";
+      desenharEdicao();
+    };
+
+    $("formRegras").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      $("gOk").disabled = true;
+      try {
+        await api("/funil/api/regras/" + encodeURIComponent(edicao.conta), { method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cadencia: edicao.cadencia, diasEncerramento: Number($("gEncerramento").value),
+            sabadoUtil: $("gSabado").checked, feriados: edicao.feriados }) });
+        $("dlgRegras").close();
+        aviso("Regras salvas. Valem para os próximos contatos.");
+        await carregar();
+      } catch (e) {
+        $("gErro").textContent = e.message;
+      } finally {
+        $("gOk").disabled = false;
+      }
+    });
 
     function botaoValor(o) {
       const vazio = valor(o) === null;

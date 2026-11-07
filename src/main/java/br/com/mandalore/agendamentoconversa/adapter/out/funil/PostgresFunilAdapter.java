@@ -5,11 +5,14 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -35,7 +38,7 @@ public class PostgresFunilAdapter implements FunilPort {
 
     private static final String COLUNAS = """
             SELECT id, conta_id, conversa_id, origem, etapa, motivo_perda, valor, qtd_itens, responsavel,
-                   proxima_acao, ultima_resposta_em, aberta_em, fechada_em, paciente
+                   proxima_acao, ultima_resposta_em, aberta_em, fechada_em, paciente, toque, encerra_em
             FROM funil.oportunidade
             """;
 
@@ -54,6 +57,8 @@ public class PostgresFunilAdapter implements FunilPort {
                 etapa = :para,
                 motivo_perda = :motivo,
                 proxima_acao = :proxima,
+                toque = COALESCE(:toque, toque),
+                encerra_em = NULL,
                 responsavel = COALESCE(:responsavel, responsavel),
                 fechada_em = CASE WHEN :fechada THEN CURRENT_TIMESTAMP END,
                 retorno_avisado_em = CASE WHEN :fechada THEN retorno_avisado_em END,
@@ -86,19 +91,20 @@ public class PostgresFunilAdapter implements FunilPort {
             SELECT id, anterior, 'AGENDADO', 'mandalore', 'Agendamento pelo assistente' FROM mudou
             """.formatted(ABERTAS);
 
+    /** Formatar com a condição extra e o detalhe do histórico. */
     private static final String SEM_RESPOSTA = """
             WITH perdidas AS (
                 SELECT id, etapa FROM funil.oportunidade
-                WHERE etapa IN %s AND ultima_resposta_em < :limite
+                WHERE etapa IN %s AND %%s
                 FOR UPDATE
             ), mudou AS (
                 UPDATE funil.oportunidade o SET etapa = 'PERDIDO', motivo_perda = 'SEM_RESPOSTA', proxima_acao = NULL,
-                       fechada_em = CURRENT_TIMESTAMP, atualizada_em = CURRENT_TIMESTAMP
+                       encerra_em = NULL, fechada_em = CURRENT_TIMESTAMP, atualizada_em = CURRENT_TIMESTAMP
                 FROM perdidas p WHERE o.id = p.id
                 RETURNING o.id, p.etapa AS anterior
             )
             INSERT INTO funil.evento (oportunidade_id, etapa_anterior, etapa, usuario, detalhe)
-            SELECT id, anterior, 'PERDIDO', 'mandalore', 'Sem resposta do paciente' FROM mudou
+            SELECT id, anterior, 'PERDIDO', 'mandalore', '%%s' FROM mudou
             """.formatted(ABERTAS);
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -150,13 +156,14 @@ public class PostgresFunilAdapter implements FunilPort {
 
     @Override
     public boolean mudar(long id, Funil.Etapa de, Funil.Etapa para, Funil.MotivoPerda motivo, LocalDate proximaAcao,
-                         String responsavel, String usuario) {
+                         Integer toque, String responsavel, String usuario) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("id", id)
                 .addValue("de", de.name())
                 .addValue("para", para.name())
                 .addValue("motivo", motivo == null ? null : motivo.name())
                 .addValue("proxima", para.aberta() ? data(proximaAcao) : null)
+                .addValue("toque", toque, Types.SMALLINT)
                 .addValue("responsavel", responsavel == null || responsavel.isBlank() ? null : limitar(responsavel, 200))
                 .addValue("fechada", !para.aberta());
         try {
@@ -178,6 +185,29 @@ public class PostgresFunilAdapter implements FunilPort {
                 UPDATE funil.oportunidade SET proxima_acao = :proxima, atualizada_em = CURRENT_TIMESTAMP
                 WHERE id = :id AND etapa IN %s
                 """.formatted(ABERTAS), new MapSqlParameterSource().addValue("id", id).addValue("proxima", data(data)));
+    }
+
+    @Override
+    public void avancar(long id, int toque, LocalDate proximaAcao, LocalDate encerraEm, String usuario) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("toque", toque)
+                .addValue("proxima", encerraEm == null ? data(proximaAcao) : null)
+                .addValue("encerra", data(encerraEm))
+                .addValue("usuario", limitar(usuario == null || usuario.isBlank() ? "mandalore" : usuario, 200))
+                .addValue("detalhe", encerraEm == null ? "TOQUE " + toque : "ENCERRAMENTO " + encerraEm);
+        transacao.executeWithoutResult(status -> {
+            if (jdbc.update("""
+                    UPDATE funil.oportunidade SET toque = :toque, proxima_acao = :proxima, encerra_em = :encerra,
+                        atualizada_em = CURRENT_TIMESTAMP
+                    WHERE id = :id AND etapa IN %s
+                    """.formatted(ABERTAS), params) > 0) {
+                jdbc.update("""
+                        INSERT INTO funil.evento (oportunidade_id, etapa_anterior, etapa, usuario, detalhe)
+                        SELECT id, etapa, etapa, :usuario, :detalhe FROM funil.oportunidade WHERE id = :id
+                        """, params);
+            }
+        });
     }
 
     @Override
@@ -244,9 +274,26 @@ public class PostgresFunilAdapter implements FunilPort {
     public List<Funil.Oportunidade> retornosPendentes(LocalDate dia) {
         return jdbc.query(COLUNAS + """
                 WHERE etapa IN %s AND proxima_acao <= :dia
-                  AND (retorno_avisado_em IS NULL OR retorno_avisado_em < :dia)
+                  AND (retorno_avisado_em IS NULL OR retorno_avisado_em < proxima_acao)
                 ORDER BY proxima_acao, id
                 """.formatted(ABERTAS), new MapSqlParameterSource("dia", data(dia)), PostgresFunilAdapter::oportunidade);
+    }
+
+    @Override
+    public Funil.ResumoRetornos resumoRetornos(LocalDate dia) {
+        MapSqlParameterSource params = new MapSqlParameterSource("dia", data(dia));
+        Long doDia = jdbc.queryForObject("SELECT COUNT(*) FROM funil.oportunidade WHERE etapa IN %s AND proxima_acao = :dia"
+                .formatted(ABERTAS), params, Long.class);
+        Map<String, Long> atrasados = new LinkedHashMap<>();
+        jdbc.query("""
+                SELECT COALESCE(responsavel, '') AS responsavel, COUNT(*) AS total FROM funil.oportunidade
+                WHERE etapa IN %s AND proxima_acao < :dia
+                GROUP BY 1
+                """.formatted(ABERTAS), params,
+                rs -> {
+                    atrasados.put(rs.getString("responsavel"), rs.getLong("total"));
+                });
+        return new Funil.ResumoRetornos(doDia == null ? 0 : doDia, atrasados);
     }
 
     @Override
@@ -261,8 +308,14 @@ public class PostgresFunilAdapter implements FunilPort {
     }
 
     @Override
+    public int fecharEncerradas(LocalDate dia) {
+        return jdbc.update(SEM_RESPOSTA.formatted("encerra_em <= :dia", "Cadência encerrada sem resposta"),
+                new MapSqlParameterSource("dia", data(dia)));
+    }
+
+    @Override
     public int fecharSemResposta(Instant limite) {
-        return jdbc.update(SEM_RESPOSTA,
+        return jdbc.update(SEM_RESPOSTA.formatted("ultima_resposta_em < :limite", "Sem resposta do paciente"),
                 new MapSqlParameterSource("limite", OffsetDateTime.ofInstant(limite, ZoneOffset.UTC)));
     }
 
@@ -279,6 +332,7 @@ public class PostgresFunilAdapter implements FunilPort {
         String motivo = rs.getString("motivo_perda");
         Number qtd = (Number) rs.getObject("qtd_itens");
         Date proxima = rs.getDate("proxima_acao");
+        Date encerra = rs.getDate("encerra_em");
         return new Funil.Oportunidade(
                 rs.getLong("id"),
                 rs.getString("conta_id"),
@@ -293,7 +347,9 @@ public class PostgresFunilAdapter implements FunilPort {
                 instante(rs.getTimestamp("ultima_resposta_em")),
                 instante(rs.getTimestamp("aberta_em")),
                 instante(rs.getTimestamp("fechada_em")),
-                rs.getString("paciente"));
+                rs.getString("paciente"),
+                rs.getInt("toque"),
+                encerra == null ? null : encerra.toLocalDate());
     }
 
     private static Instant instante(Timestamp timestamp) {

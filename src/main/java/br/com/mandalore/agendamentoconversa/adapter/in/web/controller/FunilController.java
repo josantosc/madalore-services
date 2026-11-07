@@ -5,7 +5,10 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
@@ -16,12 +19,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties;
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAcesso;
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAuthFilter;
+import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.Modulo;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.FunilUseCase;
 
@@ -31,9 +37,16 @@ import br.com.mandalore.agendamentoconversa.application.domain.port.in.FunilUseC
 public class FunilController {
 
     private final FunilUseCase funil;
+    private final Set<String> contasConfiguradas;
 
-    public FunilController(FunilUseCase funil) {
+    public FunilController(FunilUseCase funil, ClientesProperties clientes) {
         this.funil = funil;
+        this.contasConfiguradas = clientes.clientes().keySet();
+    }
+
+    /** Dias úteis de cada contato, em ordem; feriados locais em AAAA-MM-DD. */
+    public record RegrasRequest(List<Integer> cadencia, Integer diasEncerramento, Boolean sabadoUtil,
+                                List<LocalDate> feriados) {
     }
 
     public record EtapaRequest(Funil.Etapa etapa, Funil.MotivoPerda motivo) {
@@ -47,7 +60,11 @@ public class FunilController {
 
     static final class Proibido extends RuntimeException {
         Proibido() {
-            super("Seu usuário não tem acesso a esta clínica");
+            this("Seu usuário não tem acesso a esta clínica");
+        }
+
+        Proibido(String mensagem) {
+            super(mensagem);
         }
     }
 
@@ -62,7 +79,31 @@ public class FunilController {
 
     @GetMapping(value = "/funil/api/oportunidades", produces = MediaType.APPLICATION_JSON_VALUE)
     public FunilUseCase.Painel painel(@RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
-        return funil.painel(login.contas());
+        return funil.painel(login.contas(), contasConfiguradas, podeEditarRegras(login));
+    }
+
+    @PutMapping(value = "/funil/api/regras/{conta}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> regras(@PathVariable String conta, @RequestBody RegrasRequest request,
+                                       @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        if (!podeEditarRegras(login)) {
+            throw new Proibido("Só o gestor da clínica altera as regras do funil");
+        }
+        if (!login.podeVer(conta)) {
+            throw new Proibido();
+        }
+        if (request.diasEncerramento() == null) {
+            throw new IllegalArgumentException("Informe em quantos dias úteis o orçamento fecha sem resposta");
+        }
+        Set<LocalDate> feriados = request.feriados() == null ? Set.of() : new HashSet<>(request.feriados());
+        feriados.remove(null);
+        funil.salvarRegras(conta, new Funil.Regras(request.cadencia(), request.diasEncerramento(),
+                Boolean.TRUE.equals(request.sabadoUtil()), feriados), login.usuario());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** O gestor e o administrador administram usuários da clínica; recepção e faturamento só leem as regras. */
+    private static boolean podeEditarRegras(AdminAcesso.Login login) {
+        return login.modulos().contains(Modulo.USUARIOS);
     }
 
     @PostMapping(value = "/funil/api/oportunidades/{id}/etapa", consumes = MediaType.APPLICATION_JSON_VALUE)

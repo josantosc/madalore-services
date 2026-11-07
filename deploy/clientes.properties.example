@@ -6,7 +6,6 @@ mandalore.clientes.1.webhook-secret=
 mandalore.clientes.1.tasy.url=jdbc:oracle:thin:@//ip-ou-dns-da-clinica:1521/SERVICO
 mandalore.clientes.1.tasy.username=
 mandalore.clientes.1.tasy.password=
-
 # Clinica sem integracao: o bot marca na agenda do Mandalore (AGENDA_ENABLED=true) e a recepcao
 # repete no sistema da clinica pelas pendencias da tela /agenda. Ver docs/agenda-mandalore.md.
 # mandalore.clientes.3.chatwoot-token=

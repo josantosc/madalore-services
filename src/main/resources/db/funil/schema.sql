@@ -36,8 +36,35 @@ ALTER TABLE funil.oportunidade DROP CONSTRAINT IF EXISTS oportunidade_origem_che
 ALTER TABLE funil.oportunidade ADD CONSTRAINT oportunidade_origem_check
     CHECK (origem IN ('ORCAMENTO_FOTO', 'ORCAMENTO_TEXTO', 'ORCAMENTO_MANUAL'));
 
+-- Cadência de retorno. toque: contato que vence em proxima_acao (0 enquanto NOVO).
+-- encerra_em: cadência cumprida sem resposta do paciente; nesse dia fecha como perdida.
+ALTER TABLE funil.oportunidade ADD COLUMN IF NOT EXISTS toque SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE funil.oportunidade ADD COLUMN IF NOT EXISTS encerra_em DATE;
+UPDATE funil.oportunidade SET toque = 1 WHERE toque = 0 AND etapa IN ('ORCAMENTO_ENVIADO', 'EM_NEGOCIACAO');
+
 CREATE INDEX IF NOT EXISTS idx_oportunidade_retorno ON funil.oportunidade (etapa, proxima_acao);
 CREATE INDEX IF NOT EXISTS idx_oportunidade_fechada ON funil.oportunidade (fechada_em);
+
+-- Cadência gravada pelo gestor na tela, por conta do Chatwoot. Conta sem linha usa FUNIL_CADENCIA do .env.
+-- cadencia: dias úteis de cada contato ("1,2,2"). feriados: locais, AAAA-MM-DD separados por vírgula.
+CREATE TABLE IF NOT EXISTS funil.regra (
+    conta_id VARCHAR(40) PRIMARY KEY,
+    cadencia VARCHAR(60) NOT NULL,
+    dias_encerramento SMALLINT NOT NULL CHECK (dias_encerramento >= 1),
+    sabado_util BOOLEAN NOT NULL DEFAULT FALSE,
+    feriados VARCHAR(1200) NOT NULL DEFAULT '',
+    atualizada_por VARCHAR(200) NOT NULL,
+    atualizada_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS funil.regra_evento (
+    id BIGSERIAL PRIMARY KEY,
+    conta_id VARCHAR(40) NOT NULL,
+    usuario VARCHAR(200) NOT NULL,
+    anterior VARCHAR(1500),
+    nova VARCHAR(1500) NOT NULL,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_funil_regra_evento ON funil.regra_evento (conta_id, criado_em);
 
 CREATE TABLE IF NOT EXISTS funil.evento (
     id BIGSERIAL PRIMARY KEY,

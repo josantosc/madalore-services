@@ -66,23 +66,61 @@ Exame sem preço não entra no total. O comando só vale em nota privada de aten
 | Etapa | Entra quando | Próximo retorno |
 |---|---|---|
 | Novo | A oportunidade abre | Hoje |
-| Orçamento enviado | O atendente manda a primeira mensagem ao paciente com a conversa aberta | 2 dias úteis |
-| Em negociação | O paciente responde depois do orçamento enviado | 1 dia útil |
+| Orçamento enviado | O atendente manda a primeira mensagem ao paciente com a conversa aberta | Contato 1 da cadência |
+| Em negociação | O paciente responde depois do orçamento enviado | A cadência recomeça no contato 1 |
 | Agendado (ganho) | O assistente marca nessa conversa depois da abertura, ou o atendente marca na tela | — |
-| Perdido | O atendente marca na tela, com o motivo, ou passam 15 dias sem mensagem do paciente | — |
+| Perdido | O atendente marca na tela, com o motivo, ou a cadência termina sem resposta | — |
 
-Cada nova mensagem do atendente empurra o retorno (2 dias úteis em Orçamento enviado, 3 em Em negociação). A
-resposta do bot não conta: ela sai com a conversa pendente, e só vale mensagem com a conversa aberta, não privada e
-que não seja de agent bot.
+### Cadência de contatos
 
-Na tela dá para mudar qualquer etapa, inclusive reabrir uma fechada (o retorno volta para hoje). Motivos de perda:
-achou caro, convênio não atendido, fez em outro lugar, sem horário, desistiu e não respondeu.
+O retorno segue uma **cadência**: uma lista de contatos, cada um a alguns dias úteis do anterior. A padrão é
+`1,2,2` mais 2 dias para encerrar, o que dá cerca de 7 dias úteis do envio até a perda, a prática de mercado para
+orçamento de clínica (o paciente decide em poucos dias, e mais de três ou quatro tentativas vira insistência).
+
+| Contato | Quando | Objetivo (vai na nota) |
+|---|---|---|
+| 1 | 1 dia útil depois do envio | Perguntar se ficou dúvida sobre os exames, o preparo ou o valor |
+| 2 | 2 dias úteis depois do contato 1 | Oferecer dois horários para agendar |
+| 3 (último) | 2 dias úteis depois do contato 2 | Avisar que vai encerrar por enquanto e que é só chamar quando quiser agendar |
+| Encerramento | 2 dias úteis depois do último contato | Fecha como perdido, motivo "não respondeu" |
+
+- O contato conta quando o atendente escreve ao paciente **no dia do retorno ou depois**. Mensagem antes do dia
+  não adianta a cadência: é a mesma conversa.
+- Quando o paciente responde, a oportunidade vai para Em negociação e a cadência volta ao contato 1, contado a
+  partir da resposta. A perda conta sempre do último contato da clínica, nunca do silêncio do paciente sozinho.
+- A resposta do bot não conta: ela sai com a conversa pendente, e só vale mensagem com a conversa aberta, não
+  privada e que não seja de agent bot.
+- Dias úteis: segunda a sexta (sábado se a clínica marcar), menos os feriados nacionais e os locais da clínica.
+
+Na tela dá para mudar qualquer etapa, inclusive reabrir uma fechada (o retorno volta para hoje e a cadência para o
+contato 1). Motivos de perda: achou caro, convênio não atendido, fez em outro lugar, sem horário, desistiu e não
+respondeu.
+
+### Regras por clínica
+
+O **Gestor** da clínica (e o administrador) muda a cadência em `/funil`, no bloco **Como o funil funciona nesta
+clínica** > Editar:
+
+- os contatos (de 1 a 10, cada um de 1 a 60 dias úteis);
+- os dias úteis sem resposta, depois do último contato, para fechar como perdido;
+- se sábado é dia útil;
+- os feriados locais: municipais, recesso e, se a clínica fecha, Carnaval e Corpus Christi (são ponto
+  facultativo, por isso não entram nos nacionais).
+
+A mudança vale para os próximos contatos; as datas já marcadas não mudam. Recepção e Faturamento veem as regras,
+mas não editam. Clínica sem regra gravada usa a cadência inicial da instalação (`FUNIL_CADENCIA`), e a tela avisa.
+
+Feriados nacionais são automáticos: 1/1, Sexta-feira Santa, 21/4, 1/5, 7/9, 12/10, 2/11, 15/11, 20/11 e 25/12. A
+Sexta-feira Santa é calculada pela data da Páscoa de cada ano.
 
 ### Fechar sozinho
 
 - **Agendado:** de hora em hora, a rotina procura na trilha um agendamento gravado pelo assistente
   (`RESULTADO_SUCESSO_ESCRITA` com `escrita=agendar`) na mesma conversa, depois da abertura.
-- **Perdido:** sem mensagem do paciente há `FUNIL_DIAS_SEM_RESPOSTA` dias (padrão 15), motivo "não respondeu".
+- **Perdido pela cadência:** passou o prazo de encerramento depois do último contato, sem resposta do paciente
+  (histórico "Cadência encerrada sem resposta").
+- **Perdido pelo limite de segurança:** sem mensagem do paciente há `FUNIL_DIAS_SEM_RESPOSTA` dias corridos
+  (padrão 30), mesmo que a cadência não tenha terminado, por exemplo porque ninguém fez os contatos.
 
 O agendamento feito pela recepção, por telefone ou no balcão não fecha sozinho nesta versão: o atendente marca
 Agendado na tela.
@@ -90,10 +128,13 @@ Agendado na tela.
 ### Retorno ao paciente
 
 Às 8h, de segunda a sábado, a rotina pega as oportunidades abertas com retorno até o dia, deixa uma nota privada na
-conversa, atribui a equipe Faturamento e abre a conversa. Cada oportunidade recebe no máximo um aviso por dia.
+conversa, atribui a equipe Faturamento e abre a conversa. Cada data de retorno gera **uma** nota: o retorno
+atrasado não repete a nota todo dia, ele aparece em vermelho na tela e no resumo diário.
 
 ```
 Retorno do orçamento: orçamento enviado, sem resposta do paciente.
+Contato 2 de 3: ofereça dois horários para agendar.
+Atrasado: vencia em 04/11.
 Valor: R$ 37,00 (2 exames).
 Última mensagem do paciente há 3 dias.
 Até 24 horas depois da última mensagem do paciente dá para escrever aqui. Depois disso, ligue.
@@ -102,6 +143,13 @@ Quando fechar, marque Agendado ou Perdido no funil: https://bs-api.jscinfor.com/
 
 O retorno é sempre do atendente, nunca automático. Fora da janela de 24 horas do WhatsApp não há template nesta
 versão: o atendente liga.
+
+O resumo diário da curadoria (OpenClaw / Telegram) ganha uma linha quando há retorno no dia ou atrasado, sem nome
+de paciente:
+
+```
+Funil de orçamentos: 4 retornos para hoje, 3 atrasados (Ana 2, sem responsável 1)
+```
 
 ### Tela
 
@@ -112,7 +160,10 @@ versão: o atendente liga.
 - **Hoje:** retornos do dia e atrasados, com link para a conversa no Chatwoot e os botões Agendado, Perdido e Adiar
   retorno.
 - **Quadro:** uma coluna por etapa, com o valor total. Arrastar o cartão muda a etapa; soltar em Perdido pede o
-  motivo. Mostra as abertas e as fechadas nos últimos 30 dias.
+  motivo. Mostra as abertas e as fechadas nos últimos 30 dias. O cartão mostra "Contato 2 de 3" ou, depois do
+  último, "Contatos feitos. Fecha em dd/MM se não responder".
+- **Como o funil funciona nesta clínica:** a cadência em tabela, os dias úteis, os feriados, quem mudou a regra
+  por último e o botão Editar para o Gestor.
 
 A tela se atualiza a cada minuto.
 
@@ -139,9 +190,16 @@ Opcionais:
 
 | Variável | Padrão | Uso |
 |---|---|---|
-| `FUNIL_DIAS_SEM_RESPOSTA` | `15` | Dias sem mensagem do paciente para fechar como perdida |
+| `FUNIL_CADENCIA` | `1,2,2` | Cadência inicial das clínicas sem regra gravada na tela: dias úteis de cada contato |
+| `FUNIL_DIAS_ENCERRAMENTO` | `2` | Inicial: dias úteis depois do último contato para fechar como perdida |
+| `FUNIL_SABADO_UTIL` | `false` | Inicial: sábado conta como dia útil |
+| `FUNIL_DIAS_SEM_RESPOSTA` | `30` | Limite de segurança: dias corridos sem mensagem do paciente para fechar como perdida |
 | `FUNIL_RETORNO_CRON` | `0 0 8 * * MON-SAT` | Horário dos retornos do dia (cron do Spring, horário de Brasília) |
-| `FUNIL_FECHAMENTO_CRON` | `0 10 * * * *` | Fechamento automático (agendadas e sem resposta) |
+| `FUNIL_FECHAMENTO_CRON` | `0 10 * * * *` | Fechamento automático (agendadas, cadência encerrada e limite de segurança) |
+
+Cadência inválida no `.env` (letra, mais de 10 contatos, dia fora de 1 a 60) impede o Mandalore de subir, com a
+mensagem `FUNIL_CADENCIA / FUNIL_DIAS_ENCERRAMENTO`. As regras gravadas na tela são lidas de novo a cada minuto;
+com mais de uma réplica, a mudança chega às outras nesse prazo.
 | `FUNIL_URL` | `RELATORIOS_URL` | Endereço público do Mandalore para o link na nota de retorno |
 
 ### Chatwoot
@@ -163,12 +221,19 @@ Tabela `funil.oportunidade`, uma linha por oportunidade:
 | `valor`, `qtd_itens` | total e quantidade de exames (foto ou `/orcamento`); o valor também pode ser informado na tela |
 | `paciente` | nome do contato no Chatwoot, atualizado a cada mensagem ou mudança na conversa |
 | `responsavel` | atendente atribuído à conversa no Chatwoot; sem atribuição, o último atendente que respondeu |
-| `proxima_acao`, `retorno_avisado_em` | dia do retorno e dia em que a rotina avisou |
-| `ultima_resposta_em` | última mensagem do paciente, para o prazo de perda |
+| `proxima_acao`, `retorno_avisado_em` | dia do retorno e dia em que a rotina avisou (uma nota por data) |
+| `toque` | contato da cadência em que a oportunidade está (0 em Novo) |
+| `encerra_em` | depois do último contato, dia em que fecha como perdida se o paciente não responder |
+| `ultima_resposta_em` | última mensagem do paciente, para o limite de segurança |
 | `aberta_em`, `fechada_em` | ciclo |
 
 Índice único parcial em (`conta_id`, `conversa_id`) para oportunidade aberta. Tabela `funil.evento` com cada
-mudança de etapa (anterior, nova, quem mudou e quando).
+mudança de etapa (anterior, nova, quem mudou e quando) e cada avanço da cadência (`TOQUE 2`,
+`ENCERRAMENTO 2026-11-12`).
+
+Tabela `funil.regra`, uma linha por clínica com regra gravada na tela: `cadencia` (`1,2,2`),
+`dias_encerramento`, `sabado_util`, `feriados` (datas locais) e quem mudou por último. Tabela
+`funil.regra_evento` com cada mudança (regra anterior, nova, usuário e quando), para auditoria.
 
 **LGPD.** Mesma regra do orçamento por foto: o funil não grava o nome dos exames, a foto, o texto da conversa, o
 CPF nem o telefone. Os exames do `/orcamento` ficam só nas notas privadas do Chatwoot. O detalhe fica no Chatwoot; o funil guarda valor, quantidade, as chaves e o nome do contato
@@ -180,7 +245,7 @@ etiqueta).
 
 ## Fora do escopo
 
-Campos personalizados, vários funis configuráveis, proposta em PDF, e-mail marketing, previsão de vendas,
+Campos personalizados, vários funis configuráveis (a cadência é configurável; as etapas, não), proposta em PDF, e-mail marketing, previsão de vendas,
 permissões por registro e importação de leads. Se a clínica precisar disso, é sinal de CRM pronto ao lado.
 
 ## Próximos passos

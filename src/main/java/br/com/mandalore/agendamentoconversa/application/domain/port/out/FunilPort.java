@@ -20,13 +20,19 @@ public interface FunilPort {
     Optional<Funil.Oportunidade> buscar(long id);
 
     /**
-     * Muda a etapa só se ela ainda for {@code de}. Etapa fechada zera a próxima ação; {@code responsavel} nulo
-     * mantém o atual. Retorna false quando outra mudança chegou antes.
+     * Muda a etapa só se ela ainda for {@code de} e desfaz o encerramento. Etapa fechada zera a próxima ação;
+     * {@code toque} e {@code responsavel} nulos mantêm os atuais. Retorna false quando outra mudança chegou antes.
      */
     boolean mudar(long id, Funil.Etapa de, Funil.Etapa para, Funil.MotivoPerda motivo, LocalDate proximaAcao,
-                  String responsavel, String usuario);
+                  Integer toque, String responsavel, String usuario);
 
     void proximaAcao(long id, LocalDate data, String usuario);
+
+    /**
+     * Passa para o {@code toque} com vencimento em {@code proximaAcao} ou, com {@code encerraEm}, encerra a cadência
+     * (sem próxima ação). Registra no histórico.
+     */
+    void avancar(long id, int toque, LocalDate proximaAcao, LocalDate encerraEm, String usuario);
 
     /** O paciente respondeu: zera o prazo de perda por falta de resposta. */
     void respondeu(long id);
@@ -43,14 +49,20 @@ public interface FunilPort {
     /** Abertas e as fechadas desde {@code fechadasDesde}. {@code contas} vazio: todas. */
     List<Funil.Oportunidade> listar(Set<String> contas, Instant fechadasDesde);
 
-    /** Abertas com retorno até {@code dia} e ainda sem aviso no Chatwoot nesse dia. */
+    /** Abertas com retorno até {@code dia} e ainda sem aviso no Chatwoot para esse retorno. */
     List<Funil.Oportunidade> retornosPendentes(LocalDate dia);
 
     void retornoAvisado(long id, LocalDate dia);
 
+    /** Retornos que vencem em {@code dia} e atrasados por responsável (chave vazia: sem responsável). */
+    Funil.ResumoRetornos resumoRetornos(LocalDate dia);
+
     /** Fecha como agendada a oportunidade cuja conversa teve agendamento pelo assistente depois da abertura. */
     int fecharAgendadasPelaTrilha();
 
-    /** Fecha como perdida a oportunidade sem resposta do paciente desde {@code limite}. */
+    /** Fecha como perdida a oportunidade com a cadência encerrada até {@code dia}. */
+    int fecharEncerradas(LocalDate dia);
+
+    /** Fecha como perdida a oportunidade sem resposta do paciente desde {@code limite}, mesmo com toques pendentes. */
     int fecharSemResposta(Instant limite);
 }

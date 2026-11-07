@@ -18,8 +18,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Relatorio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AgendaMandalorePort;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.FunilPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.NotificacaoPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.RelatorioPort;
 
@@ -165,6 +167,21 @@ class RelatorioServiceTest {
                 .endsWith("Resolver: https://bs-api.exemplo.com/agenda");
         assertThat(comAgenda.texto(Relatorio.Tipo.CURADORIA)).contains("Agenda: 4 pendências para lançar no sistema da clínica, 1 atrasadas");
         assertThat(service.texto(Relatorio.Tipo.AGENDA)).contains("AGENDA_ENABLED");
+    }
+
+    @Test
+    void curadoriaTrazRetornosDoFunilAtrasadosPorResponsavel() {
+        FunilPort funil = Mockito.mock(FunilPort.class);
+        Mockito.when(funil.resumoRetornos(LocalDate.of(2026, 11, 5)))
+                .thenReturn(new Funil.ResumoRetornos(5, Map.of("Ana", 2L, "", 1L)));
+        RelatorioService comFunil = new RelatorioService(port, Optional.empty(), Optional.empty(), Optional.of(funil), CLOCK,
+                0.6, "BioSaúde", "");
+
+        assertThat(comFunil.texto(Relatorio.Tipo.CURADORIA))
+                .contains("Funil de orçamentos: 5 retornos para hoje, 3 atrasados (Ana 2, sem responsável 1)");
+
+        Mockito.when(funil.resumoRetornos(Mockito.any())).thenReturn(new Funil.ResumoRetornos(0, Map.of()));
+        assertThat(comFunil.texto(Relatorio.Tipo.CURADORIA)).doesNotContain("Funil de orçamentos");
     }
 
     @Test

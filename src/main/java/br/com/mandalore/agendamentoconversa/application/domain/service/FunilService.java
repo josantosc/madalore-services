@@ -3,15 +3,18 @@ package br.com.mandalore.agendamentoconversa.application.domain.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,28 +23,30 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import br.com.mandalore.agendamentoconversa.application.domain.model.FeriadosNacionais;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Funil;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Funil.Etapa;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.FunilUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.FunilPort;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.RegrasFunilPort;
 
 @Service
 @ConditionalOnProperty(name = {"funil.enabled", "observability.postgres.enabled"}, havingValue = "true")
 public class FunilService implements FunilUseCase {
 
     static final String SISTEMA = "mandalore";
-    static final int DIAS_ORCAMENTO_ENVIADO = 2;
-    static final int DIAS_EM_NEGOCIACAO = 3;
     static final BigDecimal VALOR_MAXIMO = new BigDecimal("999999.99");
 
     private static final Logger LOG = LoggerFactory.getLogger(FunilService.class);
     private static final ZoneId ZONA = ZoneId.of("America/Sao_Paulo");
     private static final Duration HISTORICO = Duration.ofDays(30);
+    private static final DateTimeFormatter DIA_CURTO = DateTimeFormatter.ofPattern("dd/MM");
 
     private final FunilPort funil;
     private final ChatwootPort chatwoot;
+    private final RegrasFunilPort regras;
     private final Clock relogio;
     private final int diasSemResposta;
     private final String url;
@@ -50,15 +55,18 @@ public class FunilService implements FunilUseCase {
     public FunilService(
             FunilPort funil,
             ChatwootPort chatwoot,
-            @Value("${funil.dias-sem-resposta:15}") int diasSemResposta,
+            RegrasFunilPort regras,
+            @Value("${funil.dias-sem-resposta:30}") int diasSemResposta,
             @Value("${funil.url:}") String url
     ) {
-        this(funil, chatwoot, Clock.system(ZONA), diasSemResposta, url);
+        this(funil, chatwoot, regras, Clock.system(ZONA), diasSemResposta, url);
     }
 
-    FunilService(FunilPort funil, ChatwootPort chatwoot, Clock relogio, int diasSemResposta, String url) {
+    FunilService(FunilPort funil, ChatwootPort chatwoot, RegrasFunilPort regras, Clock relogio, int diasSemResposta,
+                 String url) {
         this.funil = funil;
         this.chatwoot = chatwoot;
+        this.regras = regras;
         this.relogio = relogio;
         this.diasSemResposta = diasSemResposta;
         this.url = url == null ? "" : url.trim().replaceAll("/+$", "");
@@ -127,28 +135,77 @@ public class FunilService implements FunilUseCase {
         return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
-    private void atendenteRespondeu(Funil.Oportunidade oportunidade, String atendente) {
+    /**
+     * A primeira mensagem envia o orçamento e agenda o toque 1. Depois, a mensagem do dia do toque (ou de um
+     * atrasado) cumpre o toque e agenda o próximo; a que chega antes do vencimento não mexe na cadência.
+     */
+    private void atendenteRespondeu(Funil.Oportunidade o, String atendente) {
         String usuario = atendente == null || atendente.isBlank() ? "chatwoot" : atendente;
-        switch (oportunidade.etapa()) {
-            case NOVO -> funil.mudar(oportunidade.id(), Etapa.NOVO, Etapa.ORCAMENTO_ENVIADO, null,
-                    diasUteis(DIAS_ORCAMENTO_ENVIADO), atendente, usuario);
-            case ORCAMENTO_ENVIADO -> funil.proximaAcao(oportunidade.id(), diasUteis(DIAS_ORCAMENTO_ENVIADO), usuario);
-            case EM_NEGOCIACAO -> funil.proximaAcao(oportunidade.id(), diasUteis(DIAS_EM_NEGOCIACAO), usuario);
-            default -> {
+        Funil.Regras r = regras.regras(o.conta());
+        if (o.etapa() == Etapa.NOVO) {
+            funil.mudar(o.id(), Etapa.NOVO, Etapa.ORCAMENTO_ENVIADO, null, r.diasUteis(hoje(), r.diasAte(1)), 1,
+                    atendente, usuario);
+            return;
+        }
+        if (!o.etapa().aberta() || o.encerraEm() != null || o.proximaAcao() == null || hoje().isBefore(o.proximaAcao())) {
+            return;
+        }
+        int cumprido = Math.max(o.toque(), 1);
+        if (cumprido < r.toques()) {
+            funil.avancar(o.id(), cumprido + 1, r.diasUteis(hoje(), r.diasAte(cumprido + 1)), null, usuario);
+        } else {
+            funil.avancar(o.id(), cumprido, null, r.diasUteis(hoje(), r.diasEncerramento()), usuario);
+        }
+    }
+
+    /** Resposta do paciente depois do orçamento: Em negociação e a cadência recomeça do toque 1. */
+    private void pacienteRespondeu(Funil.Oportunidade o) {
+        funil.respondeu(o.id());
+        Funil.Regras r = regras.regras(o.conta());
+        LocalDate toque1 = r.diasUteis(hoje(), r.diasAte(1));
+        if (o.etapa() == Etapa.ORCAMENTO_ENVIADO) {
+            funil.mudar(o.id(), Etapa.ORCAMENTO_ENVIADO, Etapa.EM_NEGOCIACAO, null, toque1, 1, null, SISTEMA);
+        } else if (o.etapa() == Etapa.EM_NEGOCIACAO) {
+            if (o.toque() != 1 || o.encerraEm() != null) {
+                funil.avancar(o.id(), 1, toque1, null, SISTEMA);
+            } else if (!toque1.equals(o.proximaAcao())) {
+                funil.proximaAcao(o.id(), toque1, SISTEMA);
             }
         }
     }
 
-    private void pacienteRespondeu(Funil.Oportunidade oportunidade) {
-        funil.respondeu(oportunidade.id());
-        if (oportunidade.etapa() == Etapa.ORCAMENTO_ENVIADO) {
-            funil.mudar(oportunidade.id(), Etapa.ORCAMENTO_ENVIADO, Etapa.EM_NEGOCIACAO, null, diasUteis(1), null, SISTEMA);
+    @Override
+    public Painel painel(Set<String> contas, Set<String> contasConhecidas, boolean podeEditarRegras) {
+        List<Funil.Oportunidade> oportunidades = funil.listar(contas, relogio.instant().minus(HISTORICO));
+        Map<String, Funil.RegrasSalvas> salvas = regras.salvas();
+        Set<String> visiveis = new TreeSet<>(contas);
+        if (contas.isEmpty()) {
+            contasConhecidas.stream().filter(Objects::nonNull).forEach(visiveis::add);
+            visiveis.addAll(salvas.keySet());
+            oportunidades.forEach(o -> visiveis.add(o.conta()));
         }
+        List<RegrasDaConta> lista = new ArrayList<>();
+        visiveis.forEach(conta -> {
+            Funil.RegrasSalvas salva = salvas.get(conta);
+            lista.add(salva == null ? new RegrasDaConta(conta, regras.padrao(), false, null, null)
+                    : new RegrasDaConta(conta, salva.regras(), true, salva.atualizadaPor(), salva.atualizadaEm()));
+        });
+        if (lista.isEmpty()) {
+            lista.add(new RegrasDaConta(null, regras.padrao(), false, null, null));
+        }
+        LocalDate hoje = hoje();
+        return new Painel(hoje, oportunidades, lista, diasSemResposta, FeriadosNacionais.entre(hoje, hoje.plusYears(1)),
+                podeEditarRegras);
     }
 
     @Override
-    public Painel painel(Set<String> contas) {
-        return new Painel(hoje(), funil.listar(contas, relogio.instant().minus(HISTORICO)));
+    public void salvarRegras(String conta, Funil.Regras novas, String usuario) {
+        if (conta == null || conta.isBlank()) {
+            throw new IllegalArgumentException("Escolha a clínica");
+        }
+        regras.salvar(conta.trim(), novas, usuario);
+        LOG.info("funil regras conta={} contatos={} encerramento={} usuario={}", conta, novas.cadencia(),
+                novas.diasEncerramento(), usuario);
     }
 
     @Override
@@ -171,7 +228,10 @@ public class FunilService implements FunilUseCase {
         }
         LocalDate proxima = !etapa.aberta() ? null
                 : atual.etapa().aberta() && atual.proximaAcao() != null ? atual.proximaAcao() : hoje();
-        if (!funil.mudar(id, atual.etapa(), etapa, motivoFinal, proxima, null, usuario)) {
+        Integer toque = !etapa.aberta() ? null
+                : etapa == Etapa.NOVO ? Integer.valueOf(0)
+                : !atual.etapa().aberta() || atual.toque() < 1 ? Integer.valueOf(1) : null;
+        if (!funil.mudar(id, atual.etapa(), etapa, motivoFinal, proxima, toque, null, usuario)) {
             throw new IllegalStateException("A oportunidade mudou enquanto você editava. Atualize a tela.");
         }
         LOG.info("funil oportunidade={} etapa {} -> {} usuario={}", id, atual.etapa(), etapa, usuario);
@@ -202,12 +262,14 @@ public class FunilService implements FunilUseCase {
     @Override
     public void fecharAutomaticas() {
         int agendadas = funil.fecharAgendadasPelaTrilha();
+        int encerradas = funil.fecharEncerradas(hoje());
         int semResposta = funil.fecharSemResposta(relogio.instant().minus(Duration.ofDays(diasSemResposta)));
-        if (agendadas + semResposta > 0) {
-            LOG.info("funil fechamento agendadas={} sem_resposta={}", agendadas, semResposta);
+        if (agendadas + encerradas + semResposta > 0) {
+            LOG.info("funil fechamento agendadas={} encerradas={} sem_resposta={}", agendadas, encerradas, semResposta);
         }
     }
 
+    /** Uma nota por vencimento: o atrasado fica na tela e no resumo diário, sem repetir nota na conversa. */
     @Override
     public int avisarRetornos() {
         LocalDate hoje = hoje();
@@ -215,7 +277,7 @@ public class FunilService implements FunilUseCase {
         int avisados = 0;
         for (Funil.Oportunidade o : pendentes) {
             try {
-                chatwoot.notaPrivada(o.conta(), o.conversa(), notaRetorno(o, hoje));
+                chatwoot.notaPrivada(o.conta(), o.conversa(), notaRetorno(o, regras.regras(o.conta()), hoje));
                 tentar(o, "equipe", () -> chatwoot.atribuirEquipe(o.conta(), o.conversa(), Setor.FATURAMENTO));
                 tentar(o, "abrir", () -> chatwoot.abrirAtendente(o.conta(), o.conversa()));
                 funil.retornoAvisado(o.id(), hoje);
@@ -229,12 +291,20 @@ public class FunilService implements FunilUseCase {
         return avisados;
     }
 
-    String notaRetorno(Funil.Oportunidade o, LocalDate hoje) {
+    String notaRetorno(Funil.Oportunidade o, Funil.Regras r, LocalDate hoje) {
         StringBuilder texto = new StringBuilder("Retorno do orçamento: ").append(switch (o.etapa()) {
             case NOVO -> "o orçamento ainda não foi enviado ao paciente";
             case ORCAMENTO_ENVIADO -> "orçamento enviado, sem resposta do paciente";
             default -> "em negociação";
         }).append(".\n");
+        if (o.etapa() != Etapa.NOVO) {
+            int toque = Math.min(Math.max(o.toque(), 1), r.toques());
+            texto.append("Contato ").append(toque).append(" de ").append(r.toques()).append(": ")
+                    .append(objetivo(toque, r.toques())).append('\n');
+            if (o.proximaAcao() != null && o.proximaAcao().isBefore(hoje)) {
+                texto.append("Atrasado: vencia em ").append(DIA_CURTO.format(o.proximaAcao())).append(".\n");
+            }
+        }
         if (o.valor() != null) {
             texto.append("Valor: ").append(NotaOrcamento.reais(o.valor()));
             if (o.qtdItens() != null) {
@@ -255,20 +325,19 @@ public class FunilService implements FunilUseCase {
         return texto.toString();
     }
 
-    private LocalDate hoje() {
-        return LocalDate.now(relogio);
+    /** O primeiro contato tira dúvidas, o último encerra com a porta aberta e os do meio oferecem horário. */
+    static String objetivo(int toque, int toques) {
+        if (toque >= toques) {
+            return "avise que vai encerrar o atendimento por enquanto e que é só chamar quando quiser agendar.";
+        }
+        if (toque == 1) {
+            return "pergunte se ficou alguma dúvida sobre os exames, o preparo ou o valor.";
+        }
+        return "ofereça dois horários para agendar.";
     }
 
-    LocalDate diasUteis(int dias) {
-        LocalDate data = hoje();
-        int restantes = dias;
-        while (restantes > 0) {
-            data = data.plusDays(1);
-            if (data.getDayOfWeek() != DayOfWeek.SATURDAY && data.getDayOfWeek() != DayOfWeek.SUNDAY) {
-                restantes--;
-            }
-        }
-        return data;
+    private LocalDate hoje() {
+        return LocalDate.now(relogio);
     }
 
     private static void tentar(Funil.Oportunidade o, String etapa, Runnable acao) {

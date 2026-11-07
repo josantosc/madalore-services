@@ -22,6 +22,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Relatorio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.RelatorioUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AgendaMandalorePort;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.FunilPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.NotificacaoPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.RelatorioPort;
 
@@ -50,6 +51,7 @@ public class RelatorioService implements RelatorioUseCase {
     private final RelatorioPort relatorio;
     private final Optional<NotificacaoPort> notificacao;
     private final Optional<AgendaMandalorePort> agenda;
+    private final Optional<FunilPort> funil;
     private final Clock clock;
     private final double limiteConfianca;
     private final String nome;
@@ -60,11 +62,12 @@ public class RelatorioService implements RelatorioUseCase {
             RelatorioPort relatorio,
             Optional<NotificacaoPort> notificacao,
             Optional<AgendaMandalorePort> agenda,
+            Optional<FunilPort> funil,
             @Value("${curadoria.limite-confianca:0.6}") double limiteConfianca,
             @Value("${admin.nome:}") String nome,
             @Value("${relatorios.url:}") String url
     ) {
-        this(relatorio, notificacao, agenda, Clock.system(FUSO), limiteConfianca, nome, url);
+        this(relatorio, notificacao, agenda, funil, Clock.system(FUSO), limiteConfianca, nome, url);
     }
 
     RelatorioService(
@@ -87,9 +90,23 @@ public class RelatorioService implements RelatorioUseCase {
             String nome,
             String url
     ) {
+        this(relatorio, notificacao, agenda, Optional.empty(), clock, limiteConfianca, nome, url);
+    }
+
+    RelatorioService(
+            RelatorioPort relatorio,
+            Optional<NotificacaoPort> notificacao,
+            Optional<AgendaMandalorePort> agenda,
+            Optional<FunilPort> funil,
+            Clock clock,
+            double limiteConfianca,
+            String nome,
+            String url
+    ) {
         this.relatorio = relatorio;
         this.notificacao = notificacao;
         this.agenda = agenda;
+        this.funil = funil;
         this.clock = clock;
         this.limiteConfianca = limiteConfianca;
         this.nome = nome == null ? "" : nome.trim();
@@ -161,6 +178,17 @@ public class RelatorioService implements RelatorioUseCase {
                 .filter(resumo -> resumo.abertas() > 0)
                 .ifPresent(resumo -> texto.append("Agenda: ").append(resumo.abertas())
                         .append(" pendências para lançar no sistema da clínica, ").append(resumo.atrasadas()).append(" atrasadas\n"));
+        funil.map(port -> port.resumoRetornos(LocalDate.now(clock)))
+                .filter(resumo -> resumo.doDia() + resumo.atrasados() > 0)
+                .ifPresent(resumo -> {
+                    texto.append("Funil de orçamentos: ").append(resumo.doDia()).append(" retornos para hoje, ")
+                            .append(resumo.atrasados()).append(" atrasados");
+                    if (resumo.atrasados() > 0) {
+                        texto.append(" (").append(lista(resumo.atrasadosPorResponsavel(), Map.of("", "sem responsável")))
+                                .append(")");
+                    }
+                    texto.append('\n');
+                });
         if (!url.isEmpty()) {
             texto.append("\nRevisar a fila: ").append(url).append("/curadoria");
         }
