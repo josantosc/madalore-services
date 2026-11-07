@@ -269,7 +269,7 @@ public class AdminAcesso {
                 credencial(env, "admin", EnumSet.allOf(Modulo.class)),
                 credencial(env, "curadoria", EnumSet.of(Modulo.CURADORIA)),
                 credencial(env, "precos", EnumSet.of(Modulo.PRECOS)),
-                credencial(env, "agenda", EnumSet.of(Modulo.AGENDA)),
+                credencial(env, "agenda", EnumSet.of(Modulo.AGENDA, Modulo.AGENDA_CADASTROS)),
                 credencial(env, "funil", EnumSet.of(Modulo.FUNIL))));
         Binder.get(env)
                 .bind("mandalore.clientes", Bindable.mapOf(String.class, ClientesProperties.Cliente.class))
@@ -277,7 +277,7 @@ public class AdminAcesso {
                 .forEach((conta, cliente) -> {
                     if (cliente.recepcao() != null && cliente.recepcao().configurada()) {
                         todas.add(new Credencial(cliente.recepcao().usuario().trim(), cliente.recepcao().senha(),
-                                EnumSet.of(Modulo.AGENDA), Set.of(conta)));
+                                EnumSet.of(Modulo.AGENDA, Modulo.AGENDA_CADASTROS), Set.of(conta)));
                     }
                 });
         return todas;
@@ -297,6 +297,7 @@ public class AdminAcesso {
         ativos.put(Modulo.PRECOS, postgres && env.getProperty("orcamento.enabled", Boolean.class, false));
         ativos.put(Modulo.SIMULADOR, env.getProperty("simulador.enabled", Boolean.class, false));
         ativos.put(Modulo.AGENDA, postgres && env.getProperty("agenda.enabled", Boolean.class, false));
+        ativos.put(Modulo.AGENDA_CADASTROS, ativos.get(Modulo.AGENDA));
         ativos.put(Modulo.FUNIL, postgres && env.getProperty("funil.enabled", Boolean.class, false));
         ativos.put(Modulo.USUARIOS, postgres);
         return ativos;

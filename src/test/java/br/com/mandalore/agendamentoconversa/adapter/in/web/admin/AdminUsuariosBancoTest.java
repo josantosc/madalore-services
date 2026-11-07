@@ -44,6 +44,20 @@ class AdminUsuariosBancoTest {
     }
 
     @Test
+    void cadastrosDaAgendaSaoUmaTelaSeparadaDaAgenda() {
+        assertThat(Modulo.doCaminho("/agenda")).contains(Modulo.AGENDA);
+        assertThat(Modulo.doCaminho("/agenda/api/dia")).contains(Modulo.AGENDA);
+        assertThat(Modulo.doCaminho("/agenda/cadastros")).contains(Modulo.AGENDA_CADASTROS);
+        assertThat(Modulo.doCaminho("/agenda/cadastros/api/especialidade/3")).contains(Modulo.AGENDA_CADASTROS);
+        assertThat(Modulo.doCaminho("/agendamentos")).isEmpty();
+
+        Usuario.Cadastro cadastrador = new Usuario.Cadastro(8, "Bia", "bia@clinica.com", Usuario.Perfil.CADASTRO_AGENDA,
+                true, false, Set.of("1"), Set.of(), Set.of(), 1, "admin", null, null);
+        assertThat(AdminAcesso.Login.de(cadastrador).modulos()).containsExactly(Modulo.AGENDA_CADASTROS);
+        assertThat(AdminAcesso.Login.de(ANA).modulos()).doesNotContain(Modulo.AGENDA_CADASTROS);
+    }
+
+    @Test
     void usuarioDoBancoEntraPeloEmailComAsTelasEClinicasDoPerfil() {
         when(usuarios.autenticar("ana@clinica.com", "segredo1234")).thenReturn(Optional.of(ANA));
 

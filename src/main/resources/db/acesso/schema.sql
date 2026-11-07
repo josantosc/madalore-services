@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS acesso.usuario (
     email VARCHAR(200) NOT NULL,
     senha_hash VARCHAR(100) NOT NULL,
     perfil VARCHAR(20) NOT NULL
-        CHECK (perfil IN ('ADMINISTRADOR', 'GESTOR', 'RECEPCAO', 'FATURAMENTO', 'CURADORIA')),
+        CHECK (perfil IN ('ADMINISTRADOR', 'GESTOR', 'RECEPCAO', 'CADASTRO_AGENDA', 'FATURAMENTO', 'CURADORIA')),
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     trocar_senha BOOLEAN NOT NULL DEFAULT TRUE,
     versao INTEGER NOT NULL DEFAULT 1,
@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS acesso.usuario (
     ultimo_acesso_em TIMESTAMPTZ
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_usuario_email ON acesso.usuario (lower(email));
+ALTER TABLE acesso.usuario DROP CONSTRAINT IF EXISTS usuario_perfil_check;
+ALTER TABLE acesso.usuario ADD CONSTRAINT usuario_perfil_check
+    CHECK (perfil IN ('ADMINISTRADOR', 'GESTOR', 'RECEPCAO', 'CADASTRO_AGENDA', 'FATURAMENTO', 'CURADORIA'));
 
 -- Clínicas (conta do Chatwoot) que o usuário enxerga. O administrador geral não tem linha: vê todas.
 CREATE TABLE IF NOT EXISTS acesso.usuario_conta (

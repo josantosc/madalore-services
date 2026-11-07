@@ -156,7 +156,20 @@ public class AgendaService implements AgendaUseCase {
         if (item.nome().trim().length() > 200) {
             throw new IllegalArgumentException("Nome com mais de 200 caracteres");
         }
+        String nome = Textos.normalizar(item.nome()).replaceAll("\\s+", " ");
+        boolean repetido = agenda.itens(conta, cadastro).stream()
+                .anyMatch(outro -> !outro.id().equals(item.id())
+                        && Textos.normalizar(outro.nome()).replaceAll("\\s+", " ").equals(nome));
+        if (repetido) {
+            throw new IllegalArgumentException("Já existe " + (cadastro == Agenda.Cadastro.ESPECIALIDADE ? "uma " : "um ")
+                    + cadastro.titulo() + " com esse nome");
+        }
         return agenda.salvarItem(conta, cadastro, item);
+    }
+
+    @Override
+    public Agenda.Exclusao excluirItem(String conta, Agenda.Cadastro cadastro, long id) {
+        return agenda.excluirItem(conta, cadastro, id);
     }
 
     @Override

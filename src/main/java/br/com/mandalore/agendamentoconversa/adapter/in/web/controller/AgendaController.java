@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAcesso;
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAuthFilter;
+import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.Modulo;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
 import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AgendaUseCase;
@@ -97,6 +98,7 @@ public class AgendaController {
         corpo.put("hoje", LocalDate.now(ZONA).toString());
         corpo.put("resumo", agenda.resumo(escolhida));
         corpo.put("cadastros", agenda.cadastros(escolhida));
+        corpo.put("podeCadastrar", login.modulos().contains(Modulo.AGENDA_CADASTROS));
         return corpo;
     }
 
@@ -172,33 +174,70 @@ public class AgendaController {
         return agenda.desbloquear(conta(conta, login), id) ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 
-    @PutMapping(value = "/agenda/api/cadastros/{tipo}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Agenda.Item salvarItem(@PathVariable String tipo, @RequestParam(required = false) String conta, @RequestBody Agenda.Item item,
-                                  @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
-        Agenda.Cadastro cadastro;
-        try {
-            cadastro = Agenda.Cadastro.valueOf(tipo.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Cadastro inválido: use profissional, especialidade ou convenio");
+    @GetMapping("/agenda/cadastros")
+    public ResponseEntity<byte[]> paginaCadastros() throws IOException {
+        try (InputStream html = new ClassPathResource("agenda/cadastros.html").getInputStream()) {
+            return ResponseEntity.ok()
+                    .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
+                    .body(html.readAllBytes());
         }
-        return agenda.salvarItem(conta(conta, login), cadastro, item);
     }
 
-    @GetMapping(value = "/agenda/api/grades", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Agenda.Grade> grades(@RequestParam(required = false) String conta, @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
-        return agenda.grades(conta(conta, login));
+    @GetMapping(value = "/agenda/cadastros/api/contexto", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Map<String, Object> contextoCadastros(@RequestParam(required = false) String conta,
+                                                 @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        String escolhida = conta(conta, login);
+        Map<String, Object> corpo = new LinkedHashMap<>();
+        corpo.put("conta", escolhida);
+        corpo.put("contas", contasVisiveis(login));
+        corpo.put("cadastros", agenda.cadastros(escolhida));
+        corpo.put("grades", agenda.grades(escolhida));
+        corpo.put("agenda", login.modulos().contains(Modulo.AGENDA));
+        return corpo;
     }
 
-    @PutMapping(value = "/agenda/api/grades", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/agenda/cadastros/api/grades", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Agenda.Grade salvarGrade(@RequestParam(required = false) String conta, @RequestBody Agenda.Grade grade,
                                     @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
         return agenda.salvarGrade(conta(conta, login), grade);
     }
 
-    @DeleteMapping("/agenda/api/grades/{id}")
+    @DeleteMapping("/agenda/cadastros/api/grades/{id}")
     public ResponseEntity<Void> removerGrade(@PathVariable long id, @RequestParam(required = false) String conta,
                                              @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
         return agenda.removerGrade(conta(conta, login), id) ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    @PutMapping(value = "/agenda/cadastros/api/{tipo}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Agenda.Item salvarItem(@PathVariable String tipo, @RequestParam(required = false) String conta, @RequestBody Agenda.Item item,
+                                  @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return agenda.salvarItem(conta(conta, login), cadastro(tipo), item);
+    }
+
+    @DeleteMapping("/agenda/cadastros/api/{tipo}/{id}")
+    public ResponseEntity<Map<String, Object>> excluirItem(@PathVariable String tipo, @PathVariable long id,
+                                                           @RequestParam(required = false) String conta,
+                                                           @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        Agenda.Cadastro cadastro = cadastro(tipo);
+        Agenda.Exclusao exclusao = agenda.excluirItem(conta(conta, login), cadastro, id);
+        String mensagem = switch (exclusao) {
+            case EXCLUIDO -> "Excluído.";
+            case DESATIVADO -> "Já existem consultas com este " + cadastro.titulo()
+                    + ", então ele foi desativado (o histórico continua) e o bot deixa de oferecê-lo.";
+            case NAO_ENCONTRADO -> "Cadastro não encontrado. Atualize a tela.";
+        };
+        Map<String, Object> corpo = Map.of("resultado", exclusao.name(), "mensagem", mensagem);
+        return exclusao == Agenda.Exclusao.NAO_ENCONTRADO
+                ? ResponseEntity.status(HttpStatus.NOT_FOUND).body(corpo)
+                : ResponseEntity.ok(corpo);
+    }
+
+    private static Agenda.Cadastro cadastro(String tipo) {
+        try {
+            return Agenda.Cadastro.valueOf(tipo.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Cadastro inválido: use profissional, especialidade ou convenio");
+        }
     }
 
     @GetMapping(value = "/agenda/api/pacientes", produces = MediaType.APPLICATION_JSON_VALUE)

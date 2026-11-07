@@ -66,6 +66,8 @@ public interface AgendaUseCase {
 
     Agenda.Item salvarItem(String conta, Agenda.Cadastro cadastro, Agenda.Item item);
 
+    Agenda.Exclusao excluirItem(String conta, Agenda.Cadastro cadastro, long id);
+
     List<Agenda.Grade> grades(String conta);
 
     Agenda.Grade salvarGrade(String conta, Agenda.Grade grade);

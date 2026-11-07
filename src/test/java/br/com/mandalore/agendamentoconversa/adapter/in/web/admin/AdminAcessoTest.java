@@ -89,7 +89,7 @@ class AdminAcessoTest {
         AdminAcesso acesso = new AdminAcesso(env);
 
         AdminAcesso.Login recepcao = acesso.autenticar("rec3", "s3").orElseThrow();
-        assertThat(recepcao.modulos()).containsExactly(Modulo.AGENDA);
+        assertThat(recepcao.modulos()).containsExactlyInAnyOrder(Modulo.AGENDA, Modulo.AGENDA_CADASTROS);
         assertThat(recepcao.podeVer("3")).isTrue();
         assertThat(recepcao.podeVer("4")).isFalse();
         assertThat(acesso.autenticar("rec4", "")).as("sem senha não vira login").isEmpty();

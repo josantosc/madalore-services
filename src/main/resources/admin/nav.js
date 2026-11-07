@@ -7,13 +7,14 @@
     precos: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/>',
     simulador: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/>',
     agenda: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+    agenda_cadastros: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 15h8"/><path d="M8 18h5"/>',
     funil: '<path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/>',
     usuarios: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     conversas: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
     senha: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
     sair: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>'
   };
-  const PERFIS = { curadoria: "Curadoria", precos: "Financeiro", simulador: "Simulador", agenda: "Recepção", funil: "Funil", usuarios: "Usuários" };
+  const PERFIS = { curadoria: "Curadoria", precos: "Financeiro", simulador: "Simulador", agenda: "Recepção", agenda_cadastros: "Cadastros da agenda", funil: "Funil", usuarios: "Usuários" };
 
   const voltaParaLogin = () => {
     location.href = "/admin/login?volta=" + encodeURIComponent(location.pathname + location.search);
@@ -64,7 +65,9 @@
 
     const modulos = eu.modulos.filter((m) => m.ativo);
     if (modulos.length) nav.append(el("div", { className: "adm-secao" }, "Ferramentas"));
-    modulos.forEach((m) => nav.append(item(m.id, m.titulo, m.caminho, caminho === m.caminho || caminho.startsWith(m.caminho + "/"))));
+    const atual = modulos.filter((m) => caminho === m.caminho || caminho.startsWith(m.caminho + "/"))
+      .sort((a, b) => b.caminho.length - a.caminho.length)[0];
+    modulos.forEach((m) => nav.append(item(m.id, m.titulo, m.caminho, m === atual)));
     if (eu.chatwootUrl) {
       nav.append(el("div", { className: "adm-secao" }, "Atendimento"), item("conversas", "Conversas", eu.chatwootUrl + "/app", false));
     }

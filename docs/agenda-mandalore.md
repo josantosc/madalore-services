@@ -87,8 +87,11 @@ Toda alteração fica no histórico do agendamento, com quem fez e quando.
    `AGENDA_ORIGEM=mandalore`.
 5. Login da recepção da clínica, no `clientes.properties`: `mandalore.clientes.<account_id>.recepcao.usuario` e
    `.recepcao.senha`. A senha vai no cofre de senhas, nunca no repositório.
-6. Na tela `/agenda`, aba Cadastros: profissionais, especialidades, convênios e a grade semanal de cada profissional,
-   marcando quais horários o bot pode oferecer. Use os bloqueios para férias e feriados.
+6. Na tela `/agenda/cadastros` (Cadastros da agenda): profissionais, especialidades, convênios e os horários de
+   atendimento de cada profissional, marcando quais o bot pode oferecer. Cada cadastro tem Editar, Ativar/Desativar e
+   Excluir; nome repetido (sem diferenciar maiúscula e acento) é recusado. Excluir algo que já tem consulta só
+   desativa, para manter o histórico; sem consulta, apaga junto os horários e bloqueios dele. Os bloqueios para
+   férias e feriados ficam na `/agenda`, aba Bloqueios.
 7. Teste no simulador: marque, cancele e remarque uma consulta e veja as pendências e a nota no Chatwoot.
 8. Treine a recepção na rotina acima.
 9. No OpenClaw, agende o relatório `agenda` (ver abaixo).

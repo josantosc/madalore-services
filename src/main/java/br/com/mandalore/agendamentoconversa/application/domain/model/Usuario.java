@@ -9,15 +9,17 @@ import java.util.Set;
 public final class Usuario {
 
     /** Telas da central, pelo nome do módulo ({@code Modulo} no adaptador web). */
-    public static final List<String> TELAS = List.of("CURADORIA", "PRECOS", "SIMULADOR", "AGENDA", "FUNIL", "USUARIOS");
+    public static final List<String> TELAS = List.of("CURADORIA", "PRECOS", "SIMULADOR", "AGENDA", "AGENDA_CADASTROS",
+            "FUNIL", "USUARIOS");
 
     private Usuario() {
     }
 
     public enum Perfil {
         ADMINISTRADOR("Administrador geral", TELAS),
-        GESTOR("Gestor da clínica", List.of("AGENDA", "FUNIL", "PRECOS", "USUARIOS")),
+        GESTOR("Gestor da clínica", List.of("AGENDA", "AGENDA_CADASTROS", "FUNIL", "PRECOS", "USUARIOS")),
         RECEPCAO("Recepção", List.of("AGENDA", "FUNIL")),
+        CADASTRO_AGENDA("Cadastros da agenda", List.of("AGENDA_CADASTROS")),
         FATURAMENTO("Faturamento", List.of("FUNIL", "PRECOS")),
         CURADORIA("Curadoria", List.of("CURADORIA", "SIMULADOR"));
 

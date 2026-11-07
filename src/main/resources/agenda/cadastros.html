@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Cadastros da agenda</title>
+  <link rel="stylesheet" href="/admin/assets/nav.css">
+  <script src="/admin/assets/nav.js"></script>
+  <style>
+    :root {
+      --fundo: #fdfdfd; --solido: #ffffff; --alpha-1: rgba(0, 0, 51, .03); --alpha-2: rgba(0, 0, 59, .055);
+      --borda: #e8e8ec; --borda-forte: #d9d9e0;
+      --texto: #1c2024; --texto-2: #60646c; --texto-3: #8b8d98;
+      --marca: #0b5c7a; --marca-hover: #0a536e; --marca-suave: #e7eff2; --marca-texto: #094b64;
+      --rubi: #e54666; --rubi-hover: #dc3b5d; --rubi-suave: #feeaed; --rubi-texto: #ca244d;
+      --ambar-suave: #fff7c2; --ambar-texto: #ab6400;
+      --verde-suave: #e6f6eb; --verde-texto: #218358;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; background: var(--fundo); color: var(--texto);
+      font: 14px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; }
+
+    main { flex: 1; min-width: 0; overflow-y: auto; }
+    .conteudo { max-width: 1120px; margin: 0 auto; padding: 32px 32px 48px; }
+    .cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
+    .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 640px; }
+    .botoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px;
+      border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .12s; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.solido { background: var(--marca); color: #fff; }
+    .btn.solido:hover:not(:disabled) { background: var(--marca-hover); }
+    .btn.cinza { background: var(--alpha-2); color: var(--texto); }
+    .btn.cinza:hover:not(:disabled) { background: rgba(0, 0, 59, .09); }
+    .btn.perigo { background: var(--rubi); color: #fff; }
+    .btn.perigo:hover:not(:disabled) { background: var(--rubi-hover); }
+    .btn.perigo-suave { background: var(--rubi-suave); color: var(--rubi-texto); }
+    .btn.perigo-suave:hover:not(:disabled) { background: #fddde3; }
+    .btn.mini { height: 26px; padding: 0 8px; font-size: 13px; border-radius: 6px; }
+
+    .barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 24px; border-bottom: 1px solid var(--borda); flex-wrap: wrap; }
+    .abas { display: flex; gap: 20px; flex-wrap: wrap; }
+    .aba { background: none; border: 0; padding: 8px 0 10px; font: inherit; font-size: 14px; color: var(--texto-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
+    .aba:hover { color: var(--texto); }
+    .aba.ativa { color: var(--marca); border-color: var(--marca); font-weight: 500; }
+    .contador { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+    .ferramentas { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 16px 0 8px; }
+    .ferramentas .ajuda { color: var(--texto-2); font-size: 13px; flex: 1; min-width: 220px; }
+
+    input.campo, select.campo { height: 36px; width: 100%; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1);
+      outline: 1px solid var(--borda); font: inherit; font-size: 14px; color: var(--texto); }
+    .ferramentas .campo { width: auto; }
+    .ferramentas input.campo { width: 240px; }
+    input.campo:focus, select.campo:focus { outline: 1px solid var(--marca); background: var(--solido); }
+    input.campo.invalido { outline: 1px solid var(--rubi); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th { text-align: left; font-weight: 500; color: var(--texto-2); padding: 12px 16px 12px 0; font-size: 13px; }
+    td { padding: 10px 16px 10px 0; border-top: 1px solid var(--borda); vertical-align: middle; }
+    tr.inativo td { color: var(--texto-3); }
+    .hora { font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .nome { font-weight: 500; color: var(--texto); }
+    tr.inativo .nome { color: var(--texto-3); }
+    .sub { color: var(--texto-3); font-size: 12px; display: block; }
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tag { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 20px; white-space: nowrap; }
+    .tag.ambar { background: var(--ambar-suave); color: var(--ambar-texto); }
+    .tag.verde { background: var(--verde-suave); color: var(--verde-texto); }
+    .tag.marca { background: var(--marca-suave); color: var(--marca-texto); }
+    .acoes { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+    .vazio { text-align: center; color: var(--texto-2); padding: 48px 0; }
+    .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
+
+    dialog { border: 0; padding: 24px; border-radius: 12px; width: min(520px, calc(100vw - 32px)); color: var(--texto);
+      box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
+    dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
+    dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
+    dialog p.sub { color: var(--texto-2); margin: 4px 0 0; font-size: 14px; }
+    [hidden] { display: none !important; }
+    .form { display: grid; gap: 14px; margin-top: 18px; }
+    .form label { display: grid; gap: 6px; font-weight: 500; }
+    .form label.check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
+    .form label.check input { margin-top: 4px; }
+    .form .dica { font-weight: 400; color: var(--texto-3); font-size: 12px; }
+    .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 13px; }
+    .caixa { border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+    .caixa.ambar { background: var(--ambar-suave); color: var(--ambar-texto); }
+    .caixa.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
+    .caixa ul { margin: 6px 0 0; padding-left: 18px; }
+    .linha2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .linha3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .rodape { display: flex; gap: 12px; margin-top: 22px; }
+    .rodape .btn { flex: 1; height: 36px; }
+
+    #aviso { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px); background: var(--texto); color: #fff;
+      padding: 10px 16px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; pointer-events: none;
+      transition: opacity .15s, transform .15s; max-width: calc(100vw - 32px); display: flex; gap: 8px; align-items: center; z-index: 10; }
+    #aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+    #aviso.erro::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rubi); flex: none; }
+
+    @media (max-width: 860px) {
+      .conteudo { padding: 20px 16px 40px; }
+      .linha2, .linha3 { grid-template-columns: 1fr; }
+      .col-opc { display: none; }
+      .ferramentas input.campo { width: 100%; }
+    }
+  </style>
+  <link rel="stylesheet" href="/admin/assets/tema.css">
+</head>
+<body>
+  <main>
+    <div class="conteudo">
+      <div class="cabecalho">
+        <div>
+          <h1>Cadastros da agenda</h1>
+          <p class="descricao">Profissionais, especialidades, convênios e horários de atendimento da clínica. É daqui que saem as
+            opções e os horários vagos que o bot oferece aos pacientes. Use os mesmos nomes do sistema da clínica.</p>
+        </div>
+        <div class="botoes">
+          <select class="campo" id="conta" title="Clínica (conta do Chatwoot)" hidden></select>
+          <a class="btn cinza" href="/agenda" id="irAgenda" hidden>Abrir agenda</a>
+        </div>
+      </div>
+
+      <div class="barra">
+        <div class="abas" role="tablist">
+          <button class="aba ativa" type="button" data-aba="PROFISSIONAL">Profissionais <span class="contador" id="n-PROFISSIONAL">0</span></button>
+          <button class="aba" type="button" data-aba="ESPECIALIDADE">Especialidades <span class="contador" id="n-ESPECIALIDADE">0</span></button>
+          <button class="aba" type="button" data-aba="CONVENIO">Convênios <span class="contador" id="n-CONVENIO">0</span></button>
+          <button class="aba" type="button" data-aba="GRADE">Horários de atendimento <span class="contador" id="n-GRADE">0</span></button>
+        </div>
+      </div>
+
+      <section id="painelItens">
+        <div class="ferramentas">
+          <input class="campo" type="search" id="busca" placeholder="Buscar">
+          <select class="campo" id="situacao">
+            <option value="">Ativos e inativos</option>
+            <option value="ativo">Só ativos</option>
+            <option value="inativo">Só inativos</option>
+          </select>
+          <span class="ajuda" id="ajudaItens"></span>
+          <button class="btn solido" type="button" id="novoItem"></button>
+        </div>
+        <table>
+          <thead><tr><th>Nome</th><th>Situação</th><th class="col-opc" id="thUso">Horários de atendimento</th><th></th></tr></thead>
+          <tbody id="linhasItens"></tbody>
+        </table>
+      </section>
+
+      <section id="painelGrades" hidden>
+        <div class="ferramentas">
+          <select class="campo" id="filtroProf"><option value="">Todos os profissionais</option></select>
+          <span class="ajuda">Cada linha vira vagas do tamanho da duração. Com "Bot: sim", o bot oferece essas vagas aos pacientes.</span>
+          <button class="btn solido" type="button" id="novaGrade">+ Novo horário de atendimento</button>
+        </div>
+        <table>
+          <thead><tr><th>Dia</th><th>Horário</th><th>Profissional</th><th class="col-opc">Especialidade</th><th>Bot</th><th class="col-opc">Situação</th><th></th></tr></thead>
+          <tbody id="linhasGrade"></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="dlgItem">
+    <form method="dialog" id="formItem" novalidate>
+      <h2 id="iTitulo"></h2>
+      <p class="sub" id="iSub"></p>
+      <div class="form">
+        <label><span id="iRotulo"></span>
+          <input class="campo" id="iNome" maxlength="200" autocomplete="off">
+          <span class="dica">Igual ao sistema da clínica, para facilitar o lançamento das consultas.</span></label>
+        <div class="caixa ambar" id="iRepetido" hidden></div>
+        <label class="check"><input type="checkbox" id="iAtivo">
+          <span>Ativo<span class="sub" id="iAtivoDica"></span></span></label>
+        <span class="msg-erro" id="iErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn solido" type="submit" id="iOk"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgGrade">
+    <form method="dialog" id="formGrade" novalidate>
+      <h2 id="gTitulo"></h2>
+      <p class="sub">Escolha quem atende, o dia da semana e a faixa de horário. A faixa é dividida em consultas do tamanho da duração.</p>
+      <div class="form">
+        <div class="linha2">
+          <label>Profissional<select class="campo" id="gProf"></select></label>
+          <label>Especialidade<select class="campo" id="gEsp"></select></label>
+        </div>
+        <div class="linha3">
+          <label>Dia da semana<select class="campo" id="gDia"></select></label>
+          <label>Das<input class="campo" type="time" id="gInicio"></label>
+          <label>Até<input class="campo" type="time" id="gFim"></label>
+        </div>
+        <div class="linha2">
+          <label>Duração de cada consulta<select class="campo" id="gDur"></select></label>
+          <label>Local <span class="dica">Opcional. Ex.: Consultório 2</span><input class="campo" id="gLocal" maxlength="200"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="gBot">
+          <span>O bot pode oferecer estes horários<span class="sub">Desmarcado: as vagas só aparecem para a recepção.</span></span></label>
+        <label class="check"><input type="checkbox" id="gAtivo">
+          <span>Ativo<span class="sub">Inativo: o horário fica guardado, mas não gera vagas.</span></span></label>
+        <span class="msg-erro" id="gErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+        <button class="btn solido" type="submit" id="gOk"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgExcluir">
+    <h2 id="eTitulo"></h2>
+    <p class="sub" id="eSub"></p>
+    <div class="form"><div class="caixa rubi" id="eDetalhe" hidden></div></div>
+    <span class="msg-erro" id="eErro"></span>
+    <div class="rodape">
+      <button class="btn cinza" type="button" data-fechar>Cancelar</button>
+      <button class="btn perigo" type="button" id="eOk">Excluir</button>
+    </div>
+  </dialog>
+
+  <div id="aviso" role="status"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const DIAS = ["", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+    const DURACOES = [10, 15, 20, 30, 40, 45, 50, 60, 90, 120];
+    const TIPO = {
+      PROFISSIONAL: { um: "profissional", artigo: "o", novo: "Novo profissional", plural: "profissionais", rotulo: "Nome do profissional",
+        ajuda: "Quem atende na clínica. Depois de cadastrar, crie os horários de atendimento dele." },
+      ESPECIALIDADE: { um: "especialidade", artigo: "a", novo: "Nova especialidade", plural: "especialidades", rotulo: "Nome da especialidade",
+        ajuda: "O que o paciente escolhe no bot (Cardiologia, Clínica Geral...)." },
+      CONVENIO: { um: "convênio", artigo: "o", novo: "Novo convênio", plural: "convênios", rotulo: "Nome do convênio",
+        ajuda: "Convênios aceitos. Inclua \"Particular\" se a clínica atende sem convênio." }
+    };
+    const COLUNA = { PROFISSIONAL: "profissionalId", ESPECIALIDADE: "especialidadeId" };
+
+    const estado = { conta: null, cadastros: {}, grades: [], aba: "PROFISSIONAL" };
+    const params = new URLSearchParams(location.search);
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => f !== null && f !== undefined && f !== false && node.append(f));
+      return node;
+    }
+
+    function aviso(texto, erro) {
+      const a = $("aviso");
+      a.textContent = texto;
+      a.className = "ver" + (erro ? " erro" : "");
+      clearTimeout(aviso.t);
+      aviso.t = setTimeout(() => a.className = erro ? "erro" : "", erro ? 6000 : 4500);
+    }
+
+    async function api(caminho, opcoes) {
+      const q = estado.conta ? "?conta=" + encodeURIComponent(estado.conta) : "";
+      const resp = await fetch(caminho + q, opcoes);
+      if (resp.status === 204) return null;
+      const corpo = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(corpo.erro || corpo.mensagem || ("Erro " + resp.status));
+      return corpo;
+    }
+
+    const json = (metodo, corpo) => ({ method: metodo, headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    const normal = (t) => (t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim().replace(/\s+/g, " ");
+    const itens = (tipo) => estado.cadastros[tipo] || [];
+    const nomeDe = (tipo, id) => itens(tipo).find((i) => i.id === id)?.nome || "(excluído)";
+    const hhmm = (t) => (t || "").substring(0, 5);
+    const gradesDe = (tipo, id) => COLUNA[tipo] ? estado.grades.filter((g) => g[COLUNA[tipo]] === id) : [];
+    const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+
+    async function carregar() {
+      const ctx = await api("/agenda/cadastros/api/contexto");
+      estado.conta = ctx.conta;
+      estado.cadastros = ctx.cadastros;
+      estado.grades = ctx.grades;
+      const sel = $("conta");
+      sel.hidden = ctx.contas.length < 2;
+      sel.replaceChildren(...ctx.contas.map((c) => el("option", { value: c }, "Clínica (conta " + c + ")")));
+      sel.value = ctx.conta;
+      $("irAgenda").hidden = !ctx.agenda;
+      $("irAgenda").href = "/agenda?conta=" + encodeURIComponent(ctx.conta);
+      Object.keys(TIPO).forEach((t) => $("n-" + t).textContent = itens(t).length);
+      $("n-GRADE").textContent = estado.grades.length;
+      desenhar();
+    }
+
+    function abrirAba(aba) {
+      estado.aba = aba;
+      history.replaceState(null, "", "#" + aba.toLowerCase());
+      document.querySelectorAll(".aba").forEach((a) => a.classList.toggle("ativa", a.dataset.aba === aba));
+      $("busca").value = "";
+      desenhar();
+    }
+
+    function desenhar() {
+      const grade = estado.aba === "GRADE";
+      $("painelItens").hidden = grade;
+      $("painelGrades").hidden = !grade;
+      if (grade) desenharGrades(); else desenharItens();
+    }
+
+    // ---------- Profissionais, especialidades e convênios ----------
+    function desenharItens() {
+      const tipo = estado.aba;
+      const t = TIPO[tipo];
+      $("novoItem").textContent = "+ " + t.novo;
+      $("ajudaItens").textContent = t.ajuda;
+      $("busca").placeholder = "Buscar " + t.um;
+      $("thUso").hidden = !COLUNA[tipo];
+      const busca = normal($("busca").value);
+      const situacao = $("situacao").value;
+      const contagem = {};
+      itens(tipo).forEach((i) => contagem[normal(i.nome)] = (contagem[normal(i.nome)] || 0) + 1);
+      const lista = itens(tipo).filter((i) => (!busca || normal(i.nome).includes(busca))
+        && (!situacao || (situacao === "ativo") === i.ativo));
+      const corpo = $("linhasItens");
+      corpo.replaceChildren(...lista.map((i) => {
+        const grades = gradesDe(tipo, i.id);
+        return el("tr", { className: i.ativo ? "" : "inativo" },
+          el("td", {}, el("span", { className: "nome" }, i.nome),
+            contagem[normal(i.nome)] > 1 ? el("span", { className: "sub" }, el("span", { className: "tag ambar" }, "Nome repetido: exclua ou renomeie um deles")) : null),
+          el("td", {}, el("span", { className: "tag " + (i.ativo ? "verde" : "") }, i.ativo ? "Ativo" : "Inativo")),
+          COLUNA[tipo] ? el("td", { className: "col-opc" }, grades.length
+            ? el("button", { className: "btn cinza mini", type: "button", title: "Ver horários", onclick: () => verHorarios(tipo, i) }, plural(grades.length, "horário", "horários"))
+            : el("span", { className: "sub" }, "Nenhum")) : null,
+          el("td", {}, el("div", { className: "acoes" },
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => editarItem(tipo, i) }, "Editar"),
+            el("button", { className: "btn cinza mini", type: "button", onclick: () => alternar(tipo, i) }, i.ativo ? "Desativar" : "Ativar"),
+            el("button", { className: "btn perigo-suave mini", type: "button", onclick: () => confirmarExclusao(tipo, i) }, "Excluir"))));
+      }));
+      if (!lista.length) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 4, className: "vazio" },
+          itens(tipo).length
+            ? el("strong", {}, "Nada encontrado com esse filtro")
+            : [el("strong", {}, tipo === "ESPECIALIDADE" ? "Nenhuma especialidade cadastrada" : "Nenhum " + t.um + " cadastrado"),
+               "Clique em \"+ " + t.novo + "\" para começar."])));
+      }
+    }
+
+    function verHorarios(tipo, item) {
+      $("filtroProf").value = tipo === "PROFISSIONAL" ? String(item.id) : "";
+      estado.filtroEsp = tipo === "ESPECIALIDADE" ? item.id : null;
+      abrirAba("GRADE");
+    }
+
+    function editarItem(tipo, item) {
+      const t = TIPO[tipo];
+      $("iTitulo").textContent = item ? "Editar " + t.um + ": " + item.nome : t.novo;
+      $("iSub").textContent = item ? "Você está alterando " + t.artigo + " " + t.um + " \"" + item.nome + "\"." : "Você está cadastrando " + (t.artigo === "a" ? "uma nova " : "um novo ") + t.um + ".";
+      $("iRotulo").textContent = t.rotulo;
+      $("iNome").value = item?.nome || "";
+      $("iNome").classList.remove("invalido");
+      $("iAtivo").checked = item ? item.ativo : true;
+      $("iAtivoDica").textContent = "Inativo: some do bot e das opções da agenda, mas continua no histórico das consultas.";
+      $("iOk").textContent = item ? "Salvar alterações" : "Cadastrar " + t.um;
+      $("iErro").textContent = "";
+      $("iOk").disabled = false;
+      const conferir = () => {
+        const nome = normal($("iNome").value);
+        const igual = nome && itens(tipo).find((o) => o.id !== item?.id && normal(o.nome) === nome);
+        $("iRepetido").hidden = !igual;
+        if (igual) $("iRepetido").textContent = "Já existe " + (t.artigo === "a" ? "uma " : "um ") + t.um + " \"" + igual.nome + "\""
+          + (igual.ativo ? "" : " (inativo: reative em vez de criar outro)") + ".";
+        $("iNome").classList.toggle("invalido", !!igual);
+        $("iOk").disabled = !!igual;
+      };
+      $("iNome").oninput = conferir;
+      conferir();
+      $("formItem").onsubmit = async (ev) => {
+        ev.preventDefault();
+        if (!$("iNome").value.trim()) { $("iErro").textContent = "Informe o nome."; return; }
+        $("iOk").disabled = true;
+        try {
+          await api("/agenda/cadastros/api/" + tipo.toLowerCase(), json("PUT", { id: item?.id ?? null, nome: $("iNome").value, ativo: $("iAtivo").checked }));
+          $("dlgItem").close();
+          aviso(item ? "Alterações salvas." : t.um.charAt(0).toUpperCase() + t.um.slice(1) + " cadastrad" + t.artigo + ".");
+          await carregar();
+        } catch (e) {
+          $("iErro").textContent = e.message;
+          $("iOk").disabled = false;
+        }
+      };
+      $("dlgItem").showModal();
+      $("iNome").focus();
+    }
+
+    async function alternar(tipo, item) {
+      try {
+        await api("/agenda/cadastros/api/" + tipo.toLowerCase(), json("PUT", { id: item.id, nome: item.nome, ativo: !item.ativo }));
+        aviso("\"" + item.nome + "\" " + (item.ativo ? "desativad" : "ativad") + TIPO[tipo].artigo + ".");
+        await carregar();
+      } catch (e) {
+        aviso(e.message, true);
+      }
+    }
+
+    function confirmarExclusao(tipo, item) {
+      const t = TIPO[tipo];
+      const grades = gradesDe(tipo, item.id);
+      $("eTitulo").textContent = "Excluir " + t.um + "?";
+      $("eSub").textContent = "\"" + item.nome + "\" sai dos cadastros. Se já houver consultas com " + (t.artigo === "a" ? "ela" : "ele")
+        + ", " + (t.artigo === "a" ? "ela" : "ele") + " só é desativad" + t.artigo + ", para manter o histórico.";
+      const detalhe = [];
+      if (grades.length) detalhe.push(plural(grades.length, "horário de atendimento", "horários de atendimento") + " também "
+        + (grades.length === 1 ? "será excluído" : "serão excluídos") + ".");
+      if (tipo === "PROFISSIONAL") detalhe.push("Os bloqueios de agenda deste profissional também são removidos.");
+      $("eDetalhe").hidden = !detalhe.length;
+      $("eDetalhe").replaceChildren(...detalhe.map((d) => el("div", {}, d)));
+      $("eErro").textContent = "";
+      $("eOk").disabled = false;
+      $("eOk").textContent = "Excluir " + t.um;
+      $("eOk").onclick = async () => {
+        $("eOk").disabled = true;
+        try {
+          const r = await api("/agenda/cadastros/api/" + tipo.toLowerCase() + "/" + item.id, { method: "DELETE" });
+          $("dlgExcluir").close();
+          aviso(r.mensagem, r.resultado !== "EXCLUIDO");
+          await carregar();
+        } catch (e) {
+          $("eErro").textContent = e.message;
+          $("eOk").disabled = false;
+        }
+      };
+      $("dlgExcluir").showModal();
+    }
+
+    // ---------- Horários de atendimento ----------
+    function opcoes(select, lista, valor) {
+      select.replaceChildren(...lista.map(([v, t]) => el("option", { value: v }, t)));
+      if (valor !== undefined && valor !== null) select.value = String(valor);
+    }
+
+    function desenharGrades() {
+      const atual = $("filtroProf").value;
+      opcoes($("filtroProf"), [["", "Todos os profissionais"], ...itens("PROFISSIONAL").map((i) => [i.id, i.nome])], atual);
+      const prof = $("filtroProf").value;
+      const lista = estado.grades.filter((g) => (!prof || String(g.profissionalId) === prof)
+        && (!estado.filtroEsp || g.especialidadeId === estado.filtroEsp));
+      const corpo = $("linhasGrade");
+      corpo.replaceChildren(...lista.map((g) => el("tr", { className: g.ativo ? "" : "inativo" },
+        el("td", {}, DIAS[g.diaSemana]),
+        el("td", { className: "hora" }, hhmm(g.inicio) + " às " + hhmm(g.fim), el("span", { className: "sub" }, "consultas de " + g.duracaoMin + " min")),
+        el("td", {}, el("span", { className: "nome" }, nomeDe("PROFISSIONAL", g.profissionalId)), g.local ? el("span", { className: "sub" }, g.local) : null),
+        el("td", { className: "col-opc" }, nomeDe("ESPECIALIDADE", g.especialidadeId)),
+        el("td", {}, el("span", { className: "tag " + (g.ofereceBot ? "marca" : "") }, g.ofereceBot ? "Sim" : "Não")),
+        el("td", { className: "col-opc" }, el("span", { className: "tag " + (g.ativo ? "verde" : "") }, g.ativo ? "Ativo" : "Inativo")),
+        el("td", {}, el("div", { className: "acoes" },
+          el("button", { className: "btn cinza mini", type: "button", onclick: () => editarGrade(g) }, "Editar"),
+          el("button", { className: "btn perigo-suave mini", type: "button", onclick: () => confirmarExclusaoGrade(g) }, "Excluir"))))));
+      if (estado.filtroEsp) {
+        corpo.prepend(el("tr", {}, el("td", { colSpan: 7 }, el("span", { className: "tag marca" }, "Especialidade: " + nomeDe("ESPECIALIDADE", estado.filtroEsp)), " ",
+          el("button", { className: "btn cinza mini", type: "button", onclick: () => { estado.filtroEsp = null; desenharGrades(); } }, "Ver todas"))));
+      }
+      if (!lista.length) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 7, className: "vazio" }, el("strong", {}, "Nenhum horário de atendimento"),
+          "Crie um por profissional e dia da semana, por exemplo: Dra. Ana, segunda, das 08:00 às 12:00.")));
+      }
+    }
+
+    function editarGrade(g) {
+      const profs = itens("PROFISSIONAL").filter((i) => i.ativo || i.id === g?.profissionalId);
+      const esps = itens("ESPECIALIDADE").filter((i) => i.ativo || i.id === g?.especialidadeId);
+      if (!profs.length || !esps.length) {
+        aviso("Cadastre antes pelo menos um profissional e uma especialidade.", true);
+        return abrirAba(profs.length ? "ESPECIALIDADE" : "PROFISSIONAL");
+      }
+      $("gTitulo").textContent = g ? "Editar horário de atendimento" : "Novo horário de atendimento";
+      $("gOk").textContent = g ? "Salvar alterações" : "Cadastrar horário";
+      opcoes($("gProf"), profs.map((i) => [i.id, i.nome + (i.ativo ? "" : " (inativo)")]), g?.profissionalId ?? ($("filtroProf").value || undefined));
+      opcoes($("gEsp"), esps.map((i) => [i.id, i.nome + (i.ativo ? "" : " (inativo)")]), g?.especialidadeId ?? estado.filtroEsp);
+      opcoes($("gDia"), DIAS.slice(1).map((d, i) => [i + 1, d]), g?.diaSemana ?? 1);
+      const durs = DURACOES.includes(g?.duracaoMin) || !g ? DURACOES : [...DURACOES, g.duracaoMin].sort((a, b) => a - b);
+      opcoes($("gDur"), durs.map((d) => [d, d + " minutos"]), g?.duracaoMin ?? 30);
+      $("gInicio").value = g ? hhmm(g.inicio) : "08:00";
+      $("gFim").value = g ? hhmm(g.fim) : "12:00";
+      $("gLocal").value = g?.local || "";
+      $("gBot").checked = g ? g.ofereceBot : true;
+      $("gAtivo").checked = g ? g.ativo : true;
+      $("gErro").textContent = "";
+      $("gOk").disabled = false;
+      $("formGrade").onsubmit = async (ev) => {
+        ev.preventDefault();
+        if (!$("gInicio").value || !$("gFim").value || $("gFim").value <= $("gInicio").value) {
+          $("gErro").textContent = "O fim precisa ser depois do início.";
+          return;
+        }
+        $("gOk").disabled = true;
+        try {
+          await api("/agenda/cadastros/api/grades", json("PUT", { id: g?.id ?? null, profissionalId: Number($("gProf").value),
+            especialidadeId: Number($("gEsp").value), diaSemana: Number($("gDia").value), inicio: $("gInicio").value, fim: $("gFim").value,
+            duracaoMin: Number($("gDur").value), ofereceBot: $("gBot").checked, local: $("gLocal").value, ativo: $("gAtivo").checked }));
+          $("dlgGrade").close();
+          aviso(g ? "Horário alterado." : "Horário cadastrado.");
+          await carregar();
+        } catch (e) {
+          $("gErro").textContent = e.message;
+          $("gOk").disabled = false;
+        }
+      };
+      $("dlgGrade").showModal();
+    }
+
+    function confirmarExclusaoGrade(g) {
+      $("eTitulo").textContent = "Excluir horário de atendimento?";
+      $("eSub").textContent = nomeDe("PROFISSIONAL", g.profissionalId) + ", " + DIAS[g.diaSemana].toLowerCase() + " das "
+        + hhmm(g.inicio) + " às " + hhmm(g.fim) + ". As vagas deixam de existir; consultas já marcadas continuam.";
+      $("eDetalhe").hidden = true;
+      $("eErro").textContent = "";
+      $("eOk").disabled = false;
+      $("eOk").textContent = "Excluir horário";
+      $("eOk").onclick = async () => {
+        $("eOk").disabled = true;
+        try {
+          await api("/agenda/cadastros/api/grades/" + g.id, { method: "DELETE" });
+          $("dlgExcluir").close();
+          aviso("Horário excluído.");
+          await carregar();
+        } catch (e) {
+          $("eErro").textContent = e.message;
+          $("eOk").disabled = false;
+        }
+      };
+      $("dlgExcluir").showModal();
+    }
+
+    // ---------- Eventos ----------
+    document.querySelectorAll(".aba").forEach((a) => a.onclick = () => { estado.filtroEsp = null; abrirAba(a.dataset.aba); });
+    document.querySelectorAll("[data-fechar]").forEach((b) => b.onclick = () => b.closest("dialog").close());
+    document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (ev) => {
+      const r = d.getBoundingClientRect();
+      const fora = ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom;
+      if (ev.target === d && fora) d.close();
+    }));
+    $("busca").addEventListener("input", desenharItens);
+    $("situacao").addEventListener("change", desenharItens);
+    $("filtroProf").addEventListener("change", desenharGrades);
+    $("novoItem").onclick = () => editarItem(estado.aba, null);
+    $("novaGrade").onclick = () => editarGrade(null);
+    $("conta").addEventListener("change", async () => {
+      estado.conta = $("conta").value;
+      $("filtroProf").value = "";
+      estado.filtroEsp = null;
+      await carregar().catch((e) => aviso(e.message, true));
+    });
+
+    (async () => {
+      if (params.get("conta")) estado.conta = params.get("conta");
+      const hash = location.hash.replace("#", "").toUpperCase();
+      if (["PROFISSIONAL", "ESPECIALIDADE", "CONVENIO", "GRADE"].includes(hash)) estado.aba = hash;
+      document.querySelectorAll(".aba").forEach((a) => a.classList.toggle("ativa", a.dataset.aba === estado.aba));
+      try {
+        await carregar();
+      } catch (e) {
+        aviso("Não foi possível abrir os cadastros. " + e.message, true);
+      }
+    })();
+  </script>
+</body>
+</html>

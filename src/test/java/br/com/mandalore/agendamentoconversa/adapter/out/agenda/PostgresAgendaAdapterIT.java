@@ -1,7 +1,9 @@
 package br.com.mandalore.agendamentoconversa.adapter.out.agenda;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -190,6 +193,42 @@ class PostgresAgendaAdapterIT {
         mvc.perform(get("/agenda/api/pendencias").param("conta", conta).header("Authorization", LOGIN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resumo.abertas").value(1));
+    }
+
+    @Test
+    void excluirSemConsultaApagaComOsHorariosEComConsultaSoDesativa() {
+        long pediatria = agenda.salvarItem(conta, Agenda.Cadastro.ESPECIALIDADE, new Agenda.Item(null, "Pediatria", true)).id();
+        agenda.salvarGrade(conta, new Agenda.Grade(null, profissional, pediatria, 2, LocalTime.of(14, 0), LocalTime.of(16, 0), 30, true, "", true));
+
+        assertThat(agenda.excluirItem(conta, Agenda.Cadastro.ESPECIALIDADE, pediatria)).isEqualTo(Agenda.Exclusao.EXCLUIDO);
+        assertThat(agenda.itens(conta, Agenda.Cadastro.ESPECIALIDADE)).extracting(Agenda.Item::nome).containsExactly("Cardiologia");
+        assertThat(agenda.grades(conta)).singleElement().satisfies(g -> assertThat(g.especialidadeId()).isEqualTo(especialidade));
+
+        agenda.marcar(conta, marcacao(null, 9, 0, "W1"));
+        assertThat(agenda.excluirItem(conta, Agenda.Cadastro.PROFISSIONAL, profissional)).isEqualTo(Agenda.Exclusao.DESATIVADO);
+        assertThat(agenda.itens(conta, Agenda.Cadastro.PROFISSIONAL)).singleElement().satisfies(i -> assertThat(i.ativo()).isFalse());
+        assertThat(agenda.grades(conta)).singleElement().satisfies(g -> assertThat(g.ativo()).isFalse());
+        assertThat(ativos()).as("a consulta continua").hasSize(1);
+        assertThat(agenda.excluirItem(conta, Agenda.Cadastro.CONVENIO, 999_999_999L)).isEqualTo(Agenda.Exclusao.NAO_ENCONTRADO);
+    }
+
+    @Test
+    void telaDeCadastrosRecusaNomeRepetidoEExclui() throws Exception {
+        mvc.perform(get("/agenda/cadastros/api/contexto").param("conta", conta).header("Authorization", LOGIN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cadastros.ESPECIALIDADE.length()").value(1))
+                .andExpect(jsonPath("$.grades.length()").value(1));
+        mvc.perform(put("/agenda/cadastros/api/especialidade").param("conta", conta).header("Authorization", LOGIN)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"nome\":\"  cardiología \",\"ativo\":true}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value("Já existe uma especialidade com esse nome"));
+        long particular = agenda.itens(conta, Agenda.Cadastro.CONVENIO).get(0).id();
+        mvc.perform(delete("/agenda/cadastros/api/convenio/" + particular).param("conta", conta).header("Authorization", LOGIN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultado").value("EXCLUIDO"));
+        mvc.perform(put("/agenda/api/cadastros/convenio").param("conta", conta).header("Authorization", LOGIN)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"nome\":\"Unimed\",\"ativo\":true}"))
+                .andExpect(status().is4xxClientError());
     }
 
     private List<Agenda.Agendamento> ativos() {

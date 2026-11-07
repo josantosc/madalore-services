@@ -19,6 +19,12 @@ public interface AgendaMandalorePort {
 
     Agenda.Item salvarItem(String conta, Agenda.Cadastro cadastro, Agenda.Item item);
 
+    /**
+     * Exclui o cadastro com os horários de atendimento e bloqueios dele. Se já houver consulta com ele, só desativa o
+     * cadastro e os horários.
+     */
+    Agenda.Exclusao excluirItem(String conta, Agenda.Cadastro cadastro, long id);
+
     List<Agenda.Grade> grades(String conta);
 
     Optional<Agenda.Grade> grade(String conta, long id);

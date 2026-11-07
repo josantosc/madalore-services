@@ -81,6 +81,11 @@ public class AgendaMemoria implements AgendaMandalorePort {
     }
 
     @Override
+    public Agenda.Exclusao excluirItem(String conta, Agenda.Cadastro cadastro, long id) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<Agenda.Grade> grades(String conta) {
         return List.copyOf(grades);
     }

@@ -97,11 +97,6 @@
     .cartao.feita { opacity: .7; }
     .cartao header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
     .cartao pre { white-space: pre-wrap; font: inherit; margin: 10px 0 0; padding: 10px 12px; background: var(--alpha-1); border-radius: 8px; }
-    .colunas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .lista-cad { list-style: none; padding: 0; margin: 0; }
-    .lista-cad li { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--borda); }
-    .lista-cad li.inativo span { color: var(--texto-3); text-decoration: line-through; }
-
     dialog { border: 0; padding: 24px; border-radius: 12px; width: min(560px, calc(100vw - 32px)); color: var(--texto);
       box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
     dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
@@ -131,7 +126,7 @@
     @media (max-width: 860px) {
       .conteudo { padding: 20px 16px 40px; }
       .semana { grid-template-columns: repeat(4, 1fr); }
-      .colunas, .linha3 { grid-template-columns: 1fr; }
+      .linha3 { grid-template-columns: 1fr; }
       .col-opc { display: none; }
     }
   </style>
@@ -158,8 +153,9 @@
           <button class="aba ativa" type="button" data-painel="agenda">Agenda</button>
           <button class="aba" type="button" data-painel="pendencias">Pendências <span class="contador" id="nPend">0</span></button>
           <button class="aba" type="button" data-painel="conferencia">Conferência <span class="contador" id="nConf">0</span></button>
-          <button class="aba" type="button" data-painel="cadastros">Cadastros</button>
+          <button class="aba" type="button" data-painel="bloqueios">Bloqueios</button>
         </div>
+        <a class="btn cinza mini" href="/agenda/cadastros" id="irCadastros" hidden>Cadastros da agenda</a>
       </div>
 
       <section class="painel ativo" id="painel-agenda">
@@ -204,23 +200,12 @@
         </table>
       </section>
 
-      <section class="painel" id="painel-cadastros">
-        <div class="colunas">
-          <div><h3>Profissionais</h3><ul class="lista-cad" id="cad-PROFISSIONAL"></ul>
-            <button class="btn cinza mini" type="button" data-novo="PROFISSIONAL" style="margin-top:8px">Adicionar</button></div>
-          <div><h3>Especialidades</h3><ul class="lista-cad" id="cad-ESPECIALIDADE"></ul>
-            <button class="btn cinza mini" type="button" data-novo="ESPECIALIDADE" style="margin-top:8px">Adicionar</button></div>
-          <div><h3>Convênios</h3><ul class="lista-cad" id="cad-CONVENIO"></ul>
-            <button class="btn cinza mini" type="button" data-novo="CONVENIO" style="margin-top:8px">Adicionar</button></div>
+      <section class="painel" id="painel-bloqueios">
+        <div class="ferramentas">
+          <span class="sub">Bloqueios dos próximos 60 dias. Nesses períodos o bot não oferece horários.</span>
+          <span style="flex:1"></span>
+          <button class="btn solido" type="button" id="novoBloqueio2">Bloquear período</button>
         </div>
-        <h3>Horários de atendimento</h3>
-        <p class="descricao">Os horários vagos da semana saem daqui. "Bot" marcado: o bot pode oferecer esses horários aos pacientes.</p>
-        <div class="ferramentas"><button class="btn solido" type="button" id="novaGrade">Adicionar horário</button></div>
-        <table>
-          <thead><tr><th>Dia</th><th>Horário</th><th>Profissional</th><th class="col-opc">Especialidade</th><th>Bot</th><th></th></tr></thead>
-          <tbody id="linhasGrade"></tbody>
-        </table>
-        <h3>Bloqueios (próximos 60 dias)</h3>
         <table>
           <thead><tr><th>Período</th><th>Profissional</th><th>Motivo</th><th></th></tr></thead>
           <tbody id="linhasBloq"></tbody>
@@ -406,6 +391,8 @@
       sel.hidden = ctx.contas.length < 2;
       sel.replaceChildren(...ctx.contas.map((c) => el("option", { value: c }, "Clínica (conta " + c + ")")));
       sel.value = ctx.conta;
+      $("irCadastros").hidden = !ctx.podeCadastrar;
+      $("irCadastros").href = "/agenda/cadastros?conta=" + encodeURIComponent(ctx.conta);
       opcoes($("filtroProf"), ativos("PROFISSIONAL"), "Todos os profissionais", $("filtroProf").value);
       resumo(ctx.resumo);
     }
@@ -464,7 +451,7 @@
       if (!linhas.length) {
         corpo.append(el("tr", {}, el("td", { colSpan: 5, className: "vazio" },
           el("strong", {}, "Nenhum horário neste dia"),
-          ativos("PROFISSIONAL").length ? "Cadastre horários de atendimento em Cadastros ou marque um encaixe." : "Comece pelos Cadastros: profissionais, especialidades e horários.")));
+          ativos("PROFISSIONAL").length ? "Cadastre horários de atendimento em \"Cadastros da agenda\" ou marque um encaixe." : "Comece por \"Cadastros da agenda\": profissionais, especialidades e horários.")));
       }
     }
 
@@ -809,7 +796,7 @@
       await Promise.all([carregarConferencia(), atualizarResumo()]);
     };
 
-    // ---------- Cadastros ----------
+    // ---------- Formulário genérico e bloqueios ----------
     function formulario(titulo, sub, campos, salvar) {
       $("tTitulo").textContent = titulo;
       $("tSub").textContent = sub || "";
@@ -847,83 +834,6 @@
       $("dlgTexto").showModal();
     }
 
-    function desenharCadastros() {
-      ["PROFISSIONAL", "ESPECIALIDADE", "CONVENIO"].forEach((tipo) => {
-        const itens = estado.cadastros[tipo] || [];
-        $("cad-" + tipo).replaceChildren(...itens.map((i) => el("li", { className: i.ativo ? "" : "inativo" },
-          el("span", {}, i.nome),
-          el("button", { className: "btn cinza mini", type: "button", onclick: () => editarItem(tipo, i) }, "Editar"))));
-        if (!itens.length) $("cad-" + tipo).append(el("li", {}, el("span", { className: "sub" }, "Nenhum cadastrado")));
-      });
-    }
-
-    function editarItem(tipo, item) {
-      const nomes = { PROFISSIONAL: "profissional", ESPECIALIDADE: "especialidade", CONVENIO: "convênio" };
-      formulario(item ? "Editar " + nomes[tipo] : "Adicionar " + nomes[tipo], "Use o mesmo nome do sistema da clínica para facilitar o lançamento.",
-        [{ id: "nome", rotulo: "Nome", valor: item?.nome }, { id: "ativo", rotulo: "Ativo (aparece para o bot e na agenda)", tipo: "checkbox", valor: item ? item.ativo : true }],
-        async (v) => {
-          await api("/agenda/api/cadastros/" + tipo.toLowerCase(), json("PUT", { id: item?.id ?? null, nome: v.nome, ativo: v.ativo }));
-          aviso("Cadastro salvo.");
-          await atualizarResumo();
-          desenharCadastros();
-          opcoes($("filtroProf"), ativos("PROFISSIONAL"), "Todos os profissionais", $("filtroProf").value);
-        });
-    }
-
-    document.querySelectorAll("[data-novo]").forEach((b) => b.onclick = () => editarItem(b.dataset.novo, null));
-
-    async function carregarGrades() {
-      try {
-        const grades = await api("/agenda/api/grades");
-        const corpo = $("linhasGrade");
-        corpo.replaceChildren(...grades.map((g) => el("tr", { className: g.ativo ? "" : "livre" },
-          el("td", {}, DIAS[g.diaSemana]),
-          el("td", { className: "hora" }, g.inicio.substring(0, 5) + " às " + g.fim.substring(0, 5), el("span", { className: "sub" }, "a cada " + g.duracaoMin + " min")),
-          el("td", {}, nomeDe("PROFISSIONAL", g.profissionalId), g.ativo ? null : el("span", { className: "sub" }, "Inativo")),
-          el("td", { className: "col-opc" }, nomeDe("ESPECIALIDADE", g.especialidadeId)),
-          el("td", {}, g.ofereceBot ? el("span", { className: "tag marca" }, "Sim") : el("span", { className: "tag" }, "Não")),
-          el("td", {}, el("div", { className: "acoes" },
-            el("button", { className: "btn cinza mini", type: "button", onclick: () => editarGrade(g) }, "Editar"),
-            el("button", { className: "btn cinza mini", type: "button", onclick: () => removerGrade(g) }, "Excluir"))))));
-        if (!grades.length) corpo.append(el("tr", {}, el("td", { colSpan: 6, className: "vazio" }, el("strong", {}, "Nenhum horário de atendimento"), "Adicione um por profissional e dia da semana.")));
-      } catch (e) {
-        aviso(e.message, true);
-      }
-    }
-
-    function editarGrade(g) {
-      const profs = ativos("PROFISSIONAL").map((i) => [i.id, i.nome]);
-      const esps = ativos("ESPECIALIDADE").map((i) => [i.id, i.nome]);
-      if (!profs.length || !esps.length) return aviso("Cadastre antes um profissional e uma especialidade.", true);
-      formulario(g ? "Editar horário de atendimento" : "Adicionar horário de atendimento", "Cada horário vira vagas do tamanho da duração.",
-        [{ id: "prof", rotulo: "Profissional", tipo: "select", opcoes: profs, valor: g?.profissionalId },
-         { id: "esp", rotulo: "Especialidade", tipo: "select", opcoes: esps, valor: g?.especialidadeId },
-         { id: "dia", rotulo: "Dia da semana", tipo: "select", opcoes: DIAS.slice(1).map((d, i) => [i + 1, d]), valor: g?.diaSemana },
-         { id: "inicio", rotulo: "Início", tipo: "time", valor: g ? g.inicio.substring(0, 5) : "08:00" },
-         { id: "fim", rotulo: "Fim", tipo: "time", valor: g ? g.fim.substring(0, 5) : "12:00" },
-         { id: "duracao", rotulo: "Duração de cada consulta (min)", tipo: "number", valor: g ? g.duracaoMin : 30 },
-         { id: "local", rotulo: "Local (opcional)", valor: g?.local },
-         { id: "bot", rotulo: "O bot pode oferecer estes horários", tipo: "checkbox", valor: g ? g.ofereceBot : true },
-         { id: "ativo", rotulo: "Ativo", tipo: "checkbox", valor: g ? g.ativo : true }],
-        async (v) => {
-          await api("/agenda/api/grades", json("PUT", { id: g?.id ?? null, profissionalId: Number(v.prof), especialidadeId: Number(v.esp),
-            diaSemana: Number(v.dia), inicio: v.inicio, fim: v.fim, duracaoMin: Number(v.duracao), ofereceBot: v.bot, local: v.local, ativo: v.ativo }));
-          aviso("Horário salvo.");
-          await Promise.all([carregarGrades(), carregarDia()]);
-        });
-    }
-
-    async function removerGrade(g) {
-      if (!confirm("Excluir o horário de " + DIAS[g.diaSemana] + " " + g.inicio.substring(0, 5) + "? Consultas já marcadas continuam.")) return;
-      try {
-        await api("/agenda/api/grades/" + g.id, { method: "DELETE" });
-        aviso("Horário excluído.");
-        await Promise.all([carregarGrades(), carregarDia()]);
-      } catch (e) {
-        aviso(e.message, true);
-      }
-    }
-
     async function carregarBloqueios() {
       try {
         const lista = await api("/agenda/api/bloqueios");
@@ -939,7 +849,7 @@
       }
     }
 
-    $("novoBloqueio").onclick = () => {
+    $("novoBloqueio").onclick = $("novoBloqueio2").onclick = () => {
       const dia = $("data").value || estado.hoje;
       formulario("Bloquear período", "Férias, feriado, reunião. O bot não oferece e a agenda mostra bloqueado.",
         [{ id: "prof", rotulo: "Profissional", tipo: "select", opcoes: [["", "Clínica inteira"], ...ativos("PROFISSIONAL").map((i) => [i.id, i.nome])] },
@@ -960,7 +870,7 @@
       if (nome === "agenda") carregarDia();
       if (nome === "pendencias") carregarPendencias();
       if (nome === "conferencia") carregarConferencia();
-      if (nome === "cadastros") { desenharCadastros(); carregarGrades(); carregarBloqueios(); }
+      if (nome === "bloqueios") carregarBloqueios();
     }
 
     document.querySelectorAll(".aba").forEach((aba) => aba.onclick = () => abrirAba(aba.dataset.painel));
@@ -978,7 +888,6 @@
     $("filtroPend").addEventListener("change", carregarPendencias);
     $("dataConf").addEventListener("change", carregarConferencia);
     $("novaConsulta").onclick = () => abrirMarcar(null);
-    $("novaGrade").onclick = () => editarGrade(null);
     $("conta").addEventListener("change", async () => {
       estado.conta = $("conta").value;
       await carregarContexto();

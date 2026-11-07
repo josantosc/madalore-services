@@ -99,9 +99,13 @@ Perfil é um conjunto de telas. Os perfis são fixos no código, iguais para tod
 |---|---|---|
 | Administrador geral | todas, todas as clínicas, inclusive `/usuarios` | fornecedor do Mandalore |
 | Gestor da clínica | todas as telas da clínica, inclusive `/usuarios` da clínica | gestor ou encarregado da clínica |
-| Recepção | agenda e funil | recepção |
+| Recepção | agenda e funil (sem os cadastros da agenda) | recepção |
+| Cadastros da agenda | cadastros da agenda: profissionais, especialidades, convênios e horários | quem mantém a agenda que o bot oferece |
 | Faturamento | funil e tabela de preços | faturamento e financeiro |
 | Curadoria | curadoria e simulador | quem treina o assistente |
+
+A recepção que também mantém os cadastros ganha a tela "Cadastros da agenda" como tela extra. Os logins por variável
+de ambiente (`agenda.user` e a recepção de cada clínica em `clientes.properties`) continuam com agenda e cadastros.
 
 O usuário pode ganhar ou perder uma tela além do perfil (tabela `acesso.usuario_modulo`, com `concedido`
 verdadeiro ou falso). Mais que isso, como perfis configuráveis pela clínica, fica fora do escopo.

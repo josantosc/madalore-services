@@ -16,7 +16,22 @@ public final class Agenda {
     }
 
     public enum Cadastro {
-        PROFISSIONAL, ESPECIALIDADE, CONVENIO
+        PROFISSIONAL("profissional"), ESPECIALIDADE("especialidade"), CONVENIO("convênio");
+
+        private final String titulo;
+
+        Cadastro(String titulo) {
+            this.titulo = titulo;
+        }
+
+        public String titulo() {
+            return titulo;
+        }
+    }
+
+    /** Resultado de excluir um cadastro: quem já foi usado em consulta só é desativado, para manter o histórico. */
+    public enum Exclusao {
+        EXCLUIDO, DESATIVADO, NAO_ENCONTRADO
     }
 
     public enum Status {

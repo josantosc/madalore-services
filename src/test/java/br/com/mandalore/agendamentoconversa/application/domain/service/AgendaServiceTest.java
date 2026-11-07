@@ -86,6 +86,22 @@ class AgendaServiceTest {
     }
 
     @Test
+    void cadastroComNomeRepetidoNaoChegaAoBancoMasRenomearOProprioPode() {
+        Agenda.Item clinica = new Agenda.Item(3L, "Clínica Geral", true);
+        when(port.itens("1", Agenda.Cadastro.ESPECIALIDADE)).thenReturn(List.of(clinica, new Agenda.Item(4L, "Cardiologia", false)));
+
+        assertThatThrownBy(() -> service.salvarItem("1", Agenda.Cadastro.ESPECIALIDADE, new Agenda.Item(null, " clinica   geral ", true)))
+                .hasMessage("Já existe uma especialidade com esse nome");
+        assertThatThrownBy(() -> service.salvarItem("1", Agenda.Cadastro.ESPECIALIDADE, new Agenda.Item(3L, "CARDIOLOGIA", true)))
+                .as("inativo também conta").hasMessageContaining("Já existe");
+        verify(port, never()).salvarItem(any(), any(), any());
+
+        Agenda.Item renomeado = new Agenda.Item(3L, "clínica geral", true);
+        service.salvarItem("1", Agenda.Cadastro.ESPECIALIDADE, renomeado);
+        verify(port).salvarItem("1", Agenda.Cadastro.ESPECIALIDADE, renomeado);
+    }
+
+    @Test
     void divergenciaPrecisaDeDescricao() {
         assertThatThrownBy(() -> service.conferir("1", 10L, Agenda.SituacaoConferencia.DIVERGENTE, "", "ana"))
                 .hasMessageContaining("Descreva");

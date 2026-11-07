@@ -127,6 +127,38 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
     }
 
     @Override
+    public Agenda.Exclusao excluirItem(String conta, Agenda.Cadastro cadastro, long id) {
+        String tabela = tabela(cadastro);
+        String coluna = coluna(cadastro);
+        MapSqlParameterSource params = conta(conta).addValue("id", id);
+        return transacao.execute(status -> {
+            Long existe = jdbc.queryForObject("SELECT COUNT(*) FROM " + tabela + " WHERE id = :id AND conta_id = :conta",
+                    params, Long.class);
+            if (existe == null || existe == 0) {
+                return Agenda.Exclusao.NAO_ENCONTRADO;
+            }
+            Long consultas = jdbc.queryForObject("SELECT COUNT(*) FROM agenda.agendamento WHERE " + coluna + " = :id",
+                    params, Long.class);
+            boolean comGrade = cadastro != Agenda.Cadastro.CONVENIO;
+            if (consultas != null && consultas > 0) {
+                jdbc.update("UPDATE " + tabela + " SET ativo = FALSE WHERE id = :id AND conta_id = :conta", params);
+                if (comGrade) {
+                    jdbc.update("UPDATE agenda.grade SET ativo = FALSE WHERE " + coluna + " = :id AND conta_id = :conta", params);
+                }
+                return Agenda.Exclusao.DESATIVADO;
+            }
+            if (comGrade) {
+                jdbc.update("DELETE FROM agenda.grade WHERE " + coluna + " = :id AND conta_id = :conta", params);
+            }
+            if (cadastro == Agenda.Cadastro.PROFISSIONAL) {
+                jdbc.update("DELETE FROM agenda.bloqueio WHERE profissional_id = :id AND conta_id = :conta", params);
+            }
+            jdbc.update("DELETE FROM " + tabela + " WHERE id = :id AND conta_id = :conta", params);
+            return Agenda.Exclusao.EXCLUIDO;
+        });
+    }
+
+    @Override
     public List<Agenda.Grade> grades(String conta) {
         return jdbc.query("SELECT * FROM agenda.grade WHERE conta_id = :conta ORDER BY dia_semana, inicio, profissional_id",
                 conta(conta), this::grade);
@@ -623,6 +655,14 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
             case PROFISSIONAL -> "agenda.profissional";
             case ESPECIALIDADE -> "agenda.especialidade";
             case CONVENIO -> "agenda.convenio";
+        };
+    }
+
+    private static String coluna(Agenda.Cadastro cadastro) {
+        return switch (cadastro) {
+            case PROFISSIONAL -> "profissional_id";
+            case ESPECIALIDADE -> "especialidade_id";
+            case CONVENIO -> "convenio_id";
         };
     }
 
