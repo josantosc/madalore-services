@@ -103,6 +103,11 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/")
+    public ResponseEntity<byte[]> raiz() {
+        return ir("/admin");
+    }
+
     @GetMapping("/admin/login")
     public ResponseEntity<byte[]> login(HttpServletRequest request) throws IOException {
         HttpSession sessao = request.getSession(false);
