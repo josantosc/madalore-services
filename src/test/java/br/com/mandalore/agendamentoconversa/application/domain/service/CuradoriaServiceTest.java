@@ -39,8 +39,18 @@ class CuradoriaServiceTest {
 
     private final TreinamentoPort treinamento = new TreinamentoPort() {
         @Override
-        public List<String> intents() {
-            return List.of("acao.agenda.agendar");
+        public List<Curadoria.IntentAgente> intents() {
+            return List.of(
+                    new Curadoria.IntentAgente("acao.agenda.agendar", List.of("pode marcar"),
+                            List.of("paciente", "aguardando_confirmacao"), false, false),
+                    new Curadoria.IntentAgente("texto.conversa.encerrar", List.of("encerrar", "tchau", "era só isso"),
+                            List.of(), false, false),
+                    new Curadoria.IntentAgente("texto.conversa.encerrar.pos_agendamento", List.of("2", "encerrar"),
+                            List.of("pos_agendamento"), false, false),
+                    new Curadoria.IntentAgente("texto.conversa.agradecimento", List.of("obrigado", "valeu"),
+                            List.of(), false, false),
+                    new Curadoria.IntentAgente("texto.resultado.sem_horario", List.of(), List.of(), false, true),
+                    new Curadoria.IntentAgente("texto.fallback", List.of(), List.of(), true, false));
         }
 
         @Override
@@ -90,6 +100,42 @@ class CuradoriaServiceTest {
         assertThat(ensinadas).isEmpty();
         assertThat(registradas).singleElement()
                 .satisfies(d -> assertThat(d.acao()).isEqualTo(Curadoria.Acao.FORA_ESCOPO));
+    }
+
+    @Test
+    void listaSoIntentsEnsinaveisComDescricaoExemplosEMomento() {
+        List<Curadoria.IntentInfo> intents = service.intents();
+
+        assertThat(intents).extracting(Curadoria.IntentInfo::nome).containsExactly("acao.agenda.agendar",
+                "texto.conversa.agradecimento", "texto.conversa.encerrar", "texto.conversa.encerrar.pos_agendamento");
+        assertThat(intents.get(0).descricao()).isEqualTo("Confirma o horário escolhido para marcar");
+        assertThat(intents.get(0).momento()).isEqualTo("Só vale com o paciente já identificado e confirmando o horário");
+        assertThat(intents.get(2).momento()).isNull();
+        assertThat(intents.get(2).exemplos()).containsExactly("encerrar", "tchau", "era só isso");
+    }
+
+    @Test
+    void sugereAIntentQueValeAQualquerMomentoAntesDaQueDependeDoPasso() {
+        assertThat(service.sugestoes("encerrar")).extracting(Curadoria.Sugestao::intent)
+                .startsWith("texto.conversa.encerrar", "texto.conversa.encerrar.pos_agendamento");
+        assertThat(service.sugestoes("Encerrar!").get(0).semelhanca()).isEqualTo(100);
+    }
+
+    @Test
+    void sugestaoPegaErroDeDigitacao() {
+        assertThat(service.sugestoes("brigado")).first().satisfies(s -> {
+            assertThat(s.intent()).isEqualTo("texto.conversa.agradecimento");
+            assertThat(s.exemplo()).isEqualTo("obrigado");
+        });
+        assertThat(service.sugestoes("qual a previsão do tempo amanhã")).isEmpty();
+    }
+
+    @Test
+    void naoEnsinaEmIntentDisparadaPeloSistema() {
+        assertThatThrownBy(() -> service.decidir(new Curadoria.Decisao(
+                "x", Curadoria.Acao.ENSINAR, "texto.resultado.sem_horario", "não tem horário", "ana")))
+                .hasMessageContaining("disparada pelo sistema");
+        assertThat(ensinadas).isEmpty();
     }
 
     @Test

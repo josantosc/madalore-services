@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import br.com.mandalore.agendamentoconversa.application.domain.model.Curadoria;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.TreinamentoPort;
 
 /**
@@ -58,12 +59,33 @@ public class DialogflowIntentsAdapter implements TreinamentoPort {
     }
 
     @Override
-    public List<String> intents() {
-        List<String> nomes = new ArrayList<>();
-        listar().forEach(intent -> nomes.add(intent.path("displayName").asText("")));
-        nomes.removeIf(String::isBlank);
-        nomes.sort(String.CASE_INSENSITIVE_ORDER);
-        return nomes;
+    public List<Curadoria.IntentAgente> intents() {
+        List<Curadoria.IntentAgente> lista = new ArrayList<>();
+        for (JsonNode intent : listar()) {
+            Curadoria.IntentAgente convertida = converter(intent);
+            if (!convertida.nome().isBlank()) {
+                lista.add(convertida);
+            }
+        }
+        return lista;
+    }
+
+    static Curadoria.IntentAgente converter(JsonNode intent) {
+        List<String> frases = new ArrayList<>();
+        intent.path("trainingPhrases").forEach(frase -> {
+            StringBuilder texto = new StringBuilder();
+            frase.path("parts").forEach(parte -> texto.append(parte.path("text").asText("")));
+            if (!texto.toString().isBlank()) {
+                frases.add(texto.toString().trim());
+            }
+        });
+        List<String> contextos = new ArrayList<>();
+        intent.path("inputContextNames").forEach(c -> {
+            String nome = c.asText("");
+            contextos.add(nome.substring(nome.lastIndexOf('/') + 1));
+        });
+        return new Curadoria.IntentAgente(intent.path("displayName").asText(""), frases, contextos,
+                intent.path("isFallback").asBoolean(false), !intent.path("events").isEmpty());
     }
 
     @Override
@@ -130,6 +152,7 @@ public class DialogflowIntentsAdapter implements TreinamentoPort {
                     .uri(b -> {
                         b.path("/v2/" + agente() + "/intents")
                                 .queryParam("languageCode", idioma)
+                                .queryParam("intentView", "INTENT_VIEW_FULL")
                                 .queryParam("pageSize", 1000);
                         if (!atual.isBlank()) {
                             b.queryParam("pageToken", atual);

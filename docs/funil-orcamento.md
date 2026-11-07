@@ -49,6 +49,14 @@ O valor vem da tabela de preços (`/orcamento`), a mesma do orçamento por foto,
   ("hemograma" acha "Hemograma completo"); palavras genéricas como exame, dosagem, sangue e urina não contam
   sozinhas. Sem exame da tabela na frase, o assistente responde o texto de `valores` do `faq.yaml`, como antes. O
   preço ao paciente continua sendo enviado por um atendente; a nota avisa que exame fora da tabela não aparece.
+  - O menu tem a opção **4. Orçamento de exames** (intents `texto.menu.orcamento` e `.retomar`), que pede a foto
+    ou os nomes dos exames e funciona como a pergunta de valores.
+  - Depois da resposta, o assistente procura os exames nas próximas 3 mensagens do paciente.
+  - "Não tenho o pedido" (ou sem guia, sem receita) recebe o pedido para escrever os nomes, com exemplo.
+  - Mensagem que o assistente não entende nesse intervalo (exame fora da tabela, por exemplo) vai para o
+    Faturamento com o aviso "Não achei esses exames na nossa tabela".
+  - Se o texto de `valores` da clínica não convida a escrever os exames, o assistente acrescenta a dica antes do
+    "Posso ajudar em algo mais?".
 - **Comando `/orcamento`:** o atendente lista os exames numa nota privada, separados por vírgula, ponto e vírgula
   ou linha. Cada termo casa por código, nome ou sinônimo, sem acento e sem diferença de maiúscula; sem igualdade,
   vale o único item da tabela que contém o termo ("hemograma" acha "Hemograma completo"). Termo que casa com mais

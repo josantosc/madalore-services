@@ -45,4 +45,23 @@ public final class Curadoria {
 
     public record Decisao(String texto, Acao acao, String intent, String frase, String usuario) {
     }
+
+    /**
+     * Intent como está no agente. {@code porEvento}: disparada pelo backend (resultado do webhook), sem frase de
+     * treino; ensinar frase nela não faz o bot reconhecer nada.
+     */
+    public record IntentAgente(String nome, List<String> frases, List<String> contextos, boolean fallback,
+                               boolean porEvento) {
+        public boolean ensinavel() {
+            return !fallback && !(porEvento && frases.isEmpty());
+        }
+    }
+
+    /** Intent explicada para quem faz a curadoria: o que ela faz, frases que já reconhece e quando vale. */
+    public record IntentInfo(String nome, String descricao, List<String> exemplos, String momento) {
+    }
+
+    /** Intent provável para a fala, pela semelhança com as frases que ela já reconhece (0 a 100). */
+    public record Sugestao(String intent, String descricao, int semelhanca, String exemplo, String momento) {
+    }
 }

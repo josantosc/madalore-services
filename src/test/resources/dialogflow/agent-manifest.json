@@ -4961,7 +4961,277 @@
       "resetContexts": false
     },
     {
+      "displayName": "texto.conversa.agradecimento",
+      "priority": 500000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "obrigado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "obrigada"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "brigado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "brigada"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "muito obrigado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "muito obrigada"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "obg"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "valeu"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "agradeço"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ok obrigado"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "obrigado pela ajuda"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "show, obrigado"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Por nada! Se precisar de mais alguma coisa, digite menu. Para encerrar o atendimento, digite encerrar."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
       "displayName": "texto.conversa.encerrar",
+      "priority": 1000000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "encerrar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "encerrar atendimento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "encerrar conversa"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "pode encerrar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "finalizar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "finalizar atendimento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "sair"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "tchau"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "até logo"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ate mais"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "era só isso"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "só isso"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "não preciso de mais nada"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "nao preciso de mais nada"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "não quero mais"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "fim"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Atendimento encerrado. Foi um prazer ajudar!\n\nQuando precisar, é só enviar uma nova mensagem."
+            ]
+          }
+        }
+      ],
+      "resetContexts": true
+    },
+    {
+      "displayName": "texto.conversa.encerrar.pos_agendamento",
       "priority": 990000,
       "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
       "isFallback": false,
@@ -5110,7 +5380,7 @@
         {
           "text": {
             "text": [
-              "Pronto, vamos começar uma nova conversa.\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n\nComo posso ajudar?"
+              "Pronto, vamos começar uma nova conversa.\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames\n\nComo posso ajudar?"
             ]
           }
         }
@@ -5211,6 +5481,190 @@
           "text": {
             "text": [
               "Não entendi. Pode reformular ou pedir um atendente?"
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.menu.orcamento",
+      "priority": 600000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "4"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opção 4"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opcao 4"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "orçamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "orcamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "orçamento de exames"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero um orçamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "fazer orçamento"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/menu"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/menu",
+          "lifespanCount": 0
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Mande aqui uma foto do pedido médico ou, se não tiver o pedido, escreva os nomes dos exames (por exemplo: hemograma, glicose e TSH). A equipe do Faturamento te passa o orçamento."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.menu.orcamento.retomar",
+      "priority": 660000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "4"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opção 4"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "opcao 4"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "orçamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "orcamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "orçamento de exames"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero um orçamento"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "fazer orçamento"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/paciente",
+        "projects/regression-project/agent/sessions/-/contexts/apos_identificar"
+      ],
+      "outputContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Mande aqui uma foto do pedido médico ou, se não tiver o pedido, escreva os nomes dos exames (por exemplo: hemograma, glicose e TSH). A equipe do Faturamento te passa o orçamento."
             ]
           }
         }
@@ -6578,7 +7032,7 @@
         {
           "text": {
             "text": [
-              "Olá! Como posso ajudar?\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n\nResponda com o número ou descreva o que você precisa."
+              "Olá! Como posso ajudar?\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames\n\nResponda com o número ou descreva o que você precisa."
             ]
           }
         }
@@ -6693,7 +7147,7 @@
         {
           "text": {
             "text": [
-              "Olá novamente, $nome! O que você gostaria de fazer agora?\n\n1. Marcar uma consulta\n2. Marcar um exame\n3. Ver, remarcar ou cancelar um agendamento"
+              "Olá novamente, $nome! O que você gostaria de fazer agora?\n\n1. Marcar uma consulta\n2. Marcar um exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames"
             ]
           }
         }

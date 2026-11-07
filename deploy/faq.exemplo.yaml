@@ -1,7 +1,7 @@
 # Perguntas frequentes do bot. Montado no container em /app/config/faq.yaml (Coolify: Storages > File Mount).
 # Troque os textos entre colchetes antes de publicar. Tema sem texto responde
 # "Essa informação eu não tenho por aqui..." e oferece atendente.
-# O bot acrescenta ao final: "Posso ajudar em algo mais? Para marcar consulta ou exame, digite menu."
+# O bot acrescenta ao final: "Posso ajudar em algo mais? Para marcar consulta ou exame, digite menu. Para encerrar, digite encerrar."
 # Não informe preços aqui: valores só por uma pessoa.
 
 mandalore:
@@ -35,8 +35,9 @@ mandalore:
       Telefone: [(00) 0000-0000]
       E-mail: [contato@exemplo.com.br]
     valores: |
-      Os valores dependem dos exames do pedido. Mande aqui uma foto do pedido médico ou escreva os nomes
-      dos exames que a equipe do Faturamento te passa o orçamento.
+      Os valores dependem dos exames. Mande aqui uma foto do pedido médico ou, se não tiver o pedido,
+      escreva os nomes dos exames (por exemplo: hemograma, glicose e TSH). A equipe do Faturamento te
+      passa o orçamento.
 
   # Texto diferente numa clínica: mesmo tema dentro da conta do Chatwoot.
   # clientes:

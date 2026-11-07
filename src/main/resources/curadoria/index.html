@@ -51,6 +51,17 @@
     .form-ensinar { display: grid; grid-template-columns: 1fr 260px auto auto; gap: 8px; align-items: center; }
     .form-ensinar input { padding: 8px 10px; border: 1px solid #c8d1d9; border-radius: 6px; font-size: 14px; width: 100%; }
     .dica { grid-column: 1 / -1; font-size: 12px; color: #7b8794; }
+    .ajuda { grid-column: 1 / -1; display: grid; gap: 8px; }
+    .ajuda h4 { margin: 4px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #52606d; }
+    .sugestoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+    .sugestao { text-align: left; border: 1px solid #c8d1d9; background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 13px; display: grid; gap: 3px; }
+    .sugestao:hover, .sugestao.escolhida { border-color: #0f766e; box-shadow: 0 0 0 1px #0f766e; }
+    .sugestao .topo { display: flex; justify-content: space-between; gap: 8px; }
+    .sugestao small, .detalhe small { color: #52606d; }
+    .detalhe { border-left: 3px solid #0f766e; background: #fff; border-radius: 4px; padding: 8px 10px; font-size: 13px; display: grid; gap: 4px; }
+    .exemplos { display: flex; flex-wrap: wrap; gap: 4px; }
+    .exemplos span { background: #eef2f5; border-radius: 10px; padding: 1px 8px; font-size: 12px; }
+    .momento { color: #8a4b00; background: #fff4e5; border-radius: 4px; padding: 3px 6px; font-size: 12px; }
     .vazio { color: #7b8794; padding: 18px 0; text-align: center; }
     #aviso { position: fixed; right: 20px; bottom: 20px; max-width: 420px; padding: 12px 14px; border-radius: 8px; color: #fff; background: #1f2933; box-shadow: 0 6px 18px rgba(0,0,0,.2); opacity: 0; transition: opacity .2s; pointer-events: none; }
     #aviso.ver { opacity: 1; }
@@ -264,6 +275,22 @@
       }));
     }
 
+    const nomeIntent = (i) => i.nome;
+    const porNome = (nome) => intents.find((i) => i.nome === nome);
+
+    function detalheIntent(info) {
+      if (!info) return el("p", { className: "dica" }, "Escolha uma sugestão ou uma intent da lista para ver o que ela faz.");
+      return el("div", { className: "detalhe" },
+        el("div", {}, el("code", {}, info.nome), " · ", info.descricao || el("small", {}, "sem descrição; confira pelos exemplos")),
+        info.exemplos.length
+          ? el("div", {}, el("small", {}, "Já entende frases como:"), el("div", { className: "exemplos" }, ...info.exemplos.map((x) => el("span", {}, x))))
+          : null,
+        info.momento
+          ? el("div", { className: "momento" }, info.momento + ". Se o paciente escreveu isso em outro ponto da conversa, ensinar aqui não resolve: "
+            + "prefira uma intent que vale a qualquer momento ou peça uma intent nova à equipe técnica.")
+          : el("small", {}, "Vale em qualquer ponto da conversa."));
+    }
+
     function abrirEditor(tr, f) {
       document.querySelectorAll("tr.editor").forEach((e) => e.remove());
       const frase = el("input", { value: f.texto, title: "Frase de treino. Troque os marcadores por exemplos fictícios." });
@@ -271,13 +298,25 @@
       intent.setAttribute("list", "lista-intents");
       const salvar = el("button", { className: "acao principal", type: "submit" }, "Ensinar ao bot");
       const cancelar = el("button", { className: "acao", type: "button" }, "Cancelar");
+      const sugestoes = el("div", { className: "sugestoes" }, el("small", {}, "Procurando intents parecidas…"));
+      const detalhe = el("div");
+      const mostrarDetalhe = () => {
+        detalhe.replaceChildren(detalheIntent(porNome(intent.value)));
+        sugestoes.querySelectorAll(".sugestao").forEach((b) => b.classList.toggle("escolhida", b.dataset.intent === intent.value));
+      };
+      intent.addEventListener("input", mostrarDetalhe);
       const form = el("form", { className: "form-ensinar" }, frase, intent, salvar, cancelar,
-        el("div", { className: "dica" }, "A frase entra como exemplo de treino na intent e o agente é retreinado. Troque <cpf>, <data> etc. por valores fictícios."));
+        el("div", { className: "ajuda" },
+          el("h4", {}, "Sugestões pela semelhança com as frases que o bot já entende"), sugestoes,
+          el("h4", {}, "Intent escolhida"), detalhe),
+        el("div", { className: "dica" }, "A sugestão é um ponto de partida: confira se a resposta da intent atende o que o paciente pediu. "
+          + "Se nenhuma serve, use Fora do escopo. A frase entra como exemplo de treino e o agente é retreinado. "
+          + "Troque <cpf>, <data> etc. por valores fictícios."));
       const editor = el("tr", { className: "editor" }, el("td", { colSpan: 6 }, form));
       cancelar.onclick = () => editor.remove();
       form.onsubmit = (e) => {
         e.preventDefault();
-        if (!intents.includes(intent.value)) {
+        if (!porNome(intent.value)) {
           aviso("Escolha uma intent da lista.", true);
           intent.focus();
           return;
@@ -286,7 +325,26 @@
       };
       tr.after(editor);
       (/<\w+>/.test(f.texto) ? frase : intent).focus();
-      carregarIntents();
+      carregarIntents().then(mostrarDetalhe);
+      api("sugestoes?texto=" + encodeURIComponent(f.texto)).then((lista) => {
+        if (!lista.length) {
+          sugestoes.replaceChildren(el("small", {}, "Nenhuma intent parecida. Se nenhuma da lista serve, marque Fora do escopo ou peça uma intent nova à equipe técnica."));
+          return;
+        }
+        sugestoes.replaceChildren(...lista.map((s) => {
+          const b = el("button", { type: "button", className: "sugestao", onclick: () => { intent.value = s.intent; mostrarDetalhe(); } },
+            el("div", { className: "topo" }, el("code", {}, s.intent), el("b", {}, s.semelhanca + "%")),
+            s.descricao ? el("span", {}, s.descricao) : null,
+            s.exemplo ? el("small", {}, "Parecida com: “" + s.exemplo + "”") : null,
+            s.momento ? el("span", { className: "momento" }, s.momento) : null);
+          b.dataset.intent = s.intent;
+          return b;
+        }));
+        if (!intent.value) {
+          intent.value = lista[0].intent;
+        }
+        mostrarDetalhe();
+      }).catch((e) => sugestoes.replaceChildren(el("small", {}, "Sem sugestões: " + e.message)));
     }
 
     async function decidir(tr, f, acao, intent, frase, botao) {
@@ -316,7 +374,7 @@
       if (intents.length) return;
       try {
         intents = await api("intents");
-        $("lista-intents").replaceChildren(...intents.map((i) => el("option", { value: i })));
+        $("lista-intents").replaceChildren(...intents.map((i) => el("option", { value: nomeIntent(i), label: i.descricao || "" })));
       } catch (e) {
         aviso(e.message, true);
       }

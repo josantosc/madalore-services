@@ -1,5 +1,7 @@
 package br.com.mandalore.agendamentoconversa.application.domain.service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -18,9 +20,13 @@ public class CuradoriaService implements CuradoriaUseCase {
     /** Limite do Dialogflow ES para uma frase de treino. */
     static final int LIMITE_FRASE = 768;
 
+    static final Duration VALIDADE = Duration.ofMinutes(5);
+
     private final CuradoriaPort curadoria;
     private final TreinamentoPort treinamento;
     private final double limiteConfianca;
+    private volatile List<Curadoria.IntentAgente> cache;
+    private volatile Instant lidasEm = Instant.MIN;
 
     public CuradoriaService(
             CuradoriaPort curadoria,
@@ -43,8 +49,24 @@ public class CuradoriaService implements CuradoriaUseCase {
     }
 
     @Override
-    public List<String> intents() {
-        return treinamento.intents();
+    public List<Curadoria.IntentInfo> intents() {
+        return GuiaIntents.catalogo(agente());
+    }
+
+    @Override
+    public List<Curadoria.Sugestao> sugestoes(String fala) {
+        return GuiaIntents.sugestoes(fala, agente());
+    }
+
+    /** As intents mudam só quando alguém publica o agente ou ensina frase; a lista fica em memória por um tempo. */
+    private List<Curadoria.IntentAgente> agente() {
+        List<Curadoria.IntentAgente> atuais = cache;
+        if (atuais == null || lidasEm.plus(VALIDADE).isBefore(Instant.now())) {
+            atuais = List.copyOf(treinamento.intents());
+            cache = atuais;
+            lidasEm = Instant.now();
+        }
+        return atuais;
     }
 
     @Override
@@ -64,7 +86,15 @@ public class CuradoriaService implements CuradoriaUseCase {
             if (frase.matches(".*<(cpf|data|telefone|email|numero)>.*")) {
                 throw new IllegalArgumentException("troque os marcadores <...> por um exemplo fictício antes de ensinar");
             }
-            nova = treinamento.ensinar(decisao.intent(), frase);
+            String nome = decisao.intent();
+            agente().stream().filter(i -> i.nome().equals(nome)).findFirst().ifPresent(i -> {
+                if (!i.ensinavel()) {
+                    throw new IllegalArgumentException(nome + " é disparada pelo sistema ou é o \"não entendi\"; "
+                            + "frase de treino nela não muda nada. Escolha outra intent.");
+                }
+            });
+            nova = treinamento.ensinar(nome, frase);
+            cache = null;
             decisao = new Curadoria.Decisao(decisao.texto(), decisao.acao(), decisao.intent(), frase, decisao.usuario());
         }
         curadoria.registrar(decisao);

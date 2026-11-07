@@ -68,6 +68,15 @@ public class CuradoriaController {
         }
     }
 
+    @GetMapping(value = "/curadoria/api/sugestoes", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> sugestoes(@RequestParam String texto) {
+        try {
+            return ResponseEntity.ok(curadoria.sugestoes(texto));
+        } catch (RuntimeException ex) {
+            return falhaDialogflow("sugerir intents", ex);
+        }
+    }
+
     @PostMapping(value = "/curadoria/api/decisao", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> decidir(
             @RequestBody DecisaoRequest request,

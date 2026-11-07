@@ -100,15 +100,118 @@ class MensagemChatwootServiceTest {
         MensagemEntrada pergunta = mensagem("incoming", "quanto custa?", "31", "pending", Canal.WHATSAPP);
         MensagemEntrada exames = mensagem("incoming", "hemograma e tsh", "32", "pending", Canal.WHATSAPP);
         when(dialogflow.detectar("cw-8-9", "quanto custa?"))
-                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_VALORES, "Mande a foto ou os exames."));
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_VALORES, "Mande a foto ou escreva os exames."));
         when(orcamento.orcarTexto(pergunta)).thenReturn(false);
         when(orcamento.orcarTexto(exames)).thenReturn(true);
 
         service.receber(pergunta);
         service.receber(exames);
 
-        verify(chatwoot).publicar("8", "9", "Mande a foto ou os exames.");
+        verify(chatwoot).publicar("8", "9", "Mande a foto ou escreva os exames.");
         verify(dialogflow, never()).detectar("cw-8-9", "hemograma e tsh");
+    }
+
+    @Test
+    void respostaDeValoresSemConviteGanhaADicaDeEscreverOsExames() {
+        when(orcamentos.getIfAvailable()).thenReturn(orcamento);
+        String faq = "Os valores dependem dos exames do pedido. Mande aqui uma foto do pedido médico.\n\n"
+                + PerguntasFrequentesService.FECHAMENTO;
+        when(dialogflow.detectar("cw-8-9", "quanto custa?"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_VALORES, faq));
+
+        service.receber(mensagem("incoming", "quanto custa?", "34", "pending", Canal.WHATSAPP));
+
+        verify(chatwoot).publicar("8", "9", "Os valores dependem dos exames do pedido. Mande aqui uma foto do pedido médico."
+                + "\n\n" + MensagemChatwootService.DICA_EXAMES + "\n\n" + PerguntasFrequentesService.FECHAMENTO);
+    }
+
+    @Test
+    void semPedidoOAssistentePedeOsNomesEContinuaEsperando() {
+        when(orcamentos.getIfAvailable()).thenReturn(orcamento);
+        MensagemEntrada semPedido = mensagem("incoming", "não tenho o pedido médico", "36", "pending", Canal.WHATSAPP);
+        MensagemEntrada exames = mensagem("incoming", "hemograma e glicose", "37", "pending", Canal.WHATSAPP);
+        when(dialogflow.detectar("cw-8-9", "quanto custa?"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_VALORES, "Escreva os exames."));
+        when(orcamento.orcarTexto(org.mockito.ArgumentMatchers.any())).thenReturn(false);
+        when(orcamento.orcarTexto(exames)).thenReturn(true);
+
+        service.receber(mensagem("incoming", "quanto custa?", "35", "pending", Canal.WHATSAPP));
+        service.receber(semPedido);
+        service.receber(exames);
+
+        verify(chatwoot).publicar("8", "9", MensagemChatwootService.SEM_PEDIDO);
+        verify(orcamento).orcarTexto(exames);
+        verify(dialogflow, never()).detectar("cw-8-9", "não tenho o pedido médico");
+    }
+
+    @Test
+    void exameForaDaTabelaDuranteAEsperaVaiParaOFaturamento() {
+        when(orcamentos.getIfAvailable()).thenReturn(orcamento);
+        when(dialogflow.detectar("cw-8-9", "quanto custa?"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_VALORES, "Escreva os exames."));
+        when(dialogflow.detectar("cw-8-9", "cintilografia"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_FALLBACK, "Não entendi."));
+
+        service.receber(mensagem("incoming", "quanto custa?", "38", "pending", Canal.WHATSAPP));
+        service.receber(mensagem("incoming", "cintilografia", "39", "pending", Canal.WHATSAPP));
+
+        verify(chatwoot).publicar("8", "9", MensagemChatwootService.EXAMES_NAO_ACHADOS);
+        verify(chatwoot, never()).publicar("8", "9", "Não entendi.");
+        verify(chatwoot).atribuirEquipe("8", "9", Setor.FATURAMENTO);
+        verify(chatwoot).abrirAtendente("8", "9");
+    }
+
+    @Test
+    void opcaoOrcamentoDoMenuEsperaOsExames() {
+        when(orcamentos.getIfAvailable()).thenReturn(orcamento);
+        MensagemEntrada exames = mensagem("incoming", "hemograma", "41", "pending", Canal.WHATSAPP);
+        when(dialogflow.detectar("cw-8-9", "4"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_MENU_ORCAMENTO + ".retomar",
+                        "Mande a foto ou escreva os exames."));
+        when(orcamento.orcarTexto(org.mockito.ArgumentMatchers.any())).thenReturn(false);
+        when(orcamento.orcarTexto(exames)).thenReturn(true);
+
+        service.receber(mensagem("incoming", "4", "40", "pending", Canal.WHATSAPP));
+        service.receber(exames);
+
+        verify(chatwoot).publicar("8", "9", "Mande a foto ou escreva os exames.");
+        verify(dialogflow, never()).detectar("cw-8-9", "hemograma");
+    }
+
+    @Test
+    void pacienteEncerraAConversaEOChatwootResolve() {
+        when(dialogflow.detectar("cw-8-9", "encerrar"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_ENCERRAR, "Atendimento encerrado."));
+        when(dialogflow.detectar("cw-8-9", "2"))
+                .thenReturn(new RespostaDialogflow(MensagemChatwootService.INTENT_ENCERRAR + ".pos_agendamento",
+                        "Atendimento encerrado."));
+
+        service.receber(mensagem("incoming", "encerrar", "42", "pending", Canal.WHATSAPP));
+        service.receber(mensagem("incoming", "2", "43", "pending", Canal.WHATSAPP));
+
+        verify(chatwoot, org.mockito.Mockito.times(2)).publicar("8", "9", "Atendimento encerrado.");
+        verify(chatwoot, org.mockito.Mockito.times(2)).resolverSePendente("8", "9");
+    }
+
+    @Test
+    void agradecimentoNaoEncerraAConversa() {
+        when(dialogflow.detectar("cw-8-9", "obrigado"))
+                .thenReturn(new RespostaDialogflow("texto.conversa.agradecimento", "Por nada!"));
+
+        service.receber(mensagem("incoming", "obrigado", "44", "pending", Canal.WHATSAPP));
+
+        verify(chatwoot).publicar("8", "9", "Por nada!");
+        verify(chatwoot, never()).resolverSePendente("8", "9");
+    }
+
+    @Test
+    void reconheceQuemDizQueNaoTemOPedido() {
+        assertThat(MensagemChatwootService.semPedido("não tenho o pedido")).isTrue();
+        assertThat(MensagemChatwootService.semPedido("nao tenho pedido medico")).isTrue();
+        assertThat(MensagemChatwootService.semPedido("Estou sem a guia")).isTrue();
+        assertThat(MensagemChatwootService.semPedido("o médico não deu receita")).isTrue();
+        assertThat(MensagemChatwootService.semPedido("hemograma e glicose")).isFalse();
+        assertThat(MensagemChatwootService.semPedido("mandei o pedido")).isFalse();
     }
 
     @Test

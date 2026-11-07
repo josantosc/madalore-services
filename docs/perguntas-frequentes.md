@@ -7,7 +7,11 @@ um atendente. O texto é de cada clínica e fica num arquivo de configuração, 
 
 1. O Dialogflow reconhece a pergunta numa intent `acao.faq.<tema>`.
 2. O webhook do Mandalore busca o texto do tema para a conta do Chatwoot da conversa.
-3. O bot responde o texto e acrescenta: "Posso ajudar em algo mais? Para marcar consulta ou exame, digite menu."
+3. O bot responde o texto e acrescenta: "Posso ajudar em algo mais? Para marcar consulta ou exame, digite menu.
+   Para encerrar, digite encerrar."
+4. "Obrigado" recebe "Por nada!" com as mesmas opções, sem encerrar. "Encerrar", "finalizar", "sair", "tchau" ou
+   "era só isso", em qualquer ponto da conversa, mandam a despedida e resolvem a conversa no Chatwoot (se ela
+   estiver pendente com o bot; com atendente, fica como está).
 
 A pergunta pode vir no meio de um agendamento. O Mandalore devolve os contextos como estavam, e o paciente
 continua do passo em que parou (por exemplo, escolhendo o convênio).

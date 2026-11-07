@@ -36,6 +36,24 @@ class DialogflowIntentsAdapterTest {
     }
 
     @Test
+    void converteFrasesContextosEIntentDisparadaPorEvento() throws Exception {
+        var agendar = DialogflowIntentsAdapter.converter(mapper.readTree("""
+                {"displayName":"acao.agenda.agendar",
+                 "inputContextNames":["projects/p/agent/sessions/-/contexts/paciente"],
+                 "trainingPhrases":[{"parts":[{"text":"pode "},{"text":"marcar"}]}]}
+                """));
+        var resultado = DialogflowIntentsAdapter.converter(mapper.readTree("""
+                {"displayName":"texto.resultado.sem_horario","events":["RESULTADO_SEM_HORARIO"]}
+                """));
+
+        assertThat(agendar.frases()).containsExactly("pode marcar");
+        assertThat(agendar.contextos()).containsExactly("paciente");
+        assertThat(agendar.ensinavel()).isTrue();
+        assertThat(resultado.porEvento()).isTrue();
+        assertThat(resultado.ensinavel()).isFalse();
+    }
+
+    @Test
     void criaListaQuandoAIntentNaoTemFrases() throws Exception {
         ObjectNode intent = (ObjectNode) mapper.readTree("{\"displayName\":\"nova\"}");
 

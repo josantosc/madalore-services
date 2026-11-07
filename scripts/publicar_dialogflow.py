@@ -240,9 +240,24 @@ def montar_intents(project: str) -> list:
         "Olá! Como posso ajudar?\n\n"
         "1. Marcar consulta\n"
         "2. Marcar exame\n"
-        "3. Ver, remarcar ou cancelar um agendamento\n\n"
+        "3. Ver, remarcar ou cancelar um agendamento\n"
+        "4. Orçamento de exames\n\n"
         "Responda com o número ou descreva o que você precisa."
     )
+    orcamento = (
+        "Mande aqui uma foto do pedido médico ou, se não tiver o pedido, escreva os nomes dos exames "
+        "(por exemplo: hemograma, glicose e TSH). A equipe do Faturamento te passa o orçamento."
+    )
+    frases_orcamento = [
+        exemplo("4"),
+        exemplo("opção 4"),
+        exemplo("opcao 4"),
+        exemplo("orçamento"),
+        exemplo("orcamento"),
+        exemplo("orçamento de exames"),
+        exemplo("quero um orçamento"),
+        exemplo("fazer orçamento"),
+    ]
     periodo = (
         "Qual período fica melhor?\n\n"
         "1. Manhã\n"
@@ -251,6 +266,10 @@ def montar_intents(project: str) -> list:
         "Responda com o número ou diga manhã, tarde ou qualquer período."
     )
     dia = "Para qual dia? Pode ser uma data, como 20/07/2026, ou esta semana."
+    encerramento = (
+        "Atendimento encerrado. Foi um prazer ajudar!\n\n"
+        "Quando precisar, é só enviar uma nova mensagem."
+    )
     return [
         intent(
             "texto.saudacao",
@@ -275,7 +294,8 @@ def montar_intents(project: str) -> list:
                 "Olá novamente, $nome! O que você gostaria de fazer agora?\n\n"
                 "1. Marcar uma consulta\n"
                 "2. Marcar um exame\n"
-                "3. Ver, remarcar ou cancelar um agendamento"
+                "3. Ver, remarcar ou cancelar um agendamento\n"
+                "4. Orçamento de exames"
             ],
             priority=940000,
             inputContextNames=[ctx(project, "paciente")],
@@ -309,7 +329,8 @@ def montar_intents(project: str) -> list:
                 "Pronto, vamos começar uma nova conversa.\n\n"
                 "1. Marcar consulta\n"
                 "2. Marcar exame\n"
-                "3. Ver, remarcar ou cancelar um agendamento\n\n"
+                "3. Ver, remarcar ou cancelar um agendamento\n"
+                "4. Orçamento de exames\n\n"
                 "Como posso ajudar?"
             ],
             priority=1000000,
@@ -340,6 +361,21 @@ def montar_intents(project: str) -> list:
                 exemplo("ver, remarcar ou cancelar"),
                 exemplo("ver, remarcar e cancelar"),
             ],
+        ),
+        intent(
+            "texto.menu.orcamento",
+            [orcamento],
+            priority=600000,
+            inputContextNames=[ctx(project, "menu")],
+            outputContexts=[saida(project, "menu", 0)],
+            trainingPhrases=frases_orcamento,
+        ),
+        intent(
+            "texto.menu.orcamento.retomar",
+            [orcamento],
+            priority=660000,
+            inputContextNames=paciente + [ctx(project, "apos_identificar")],
+            trainingPhrases=frases_orcamento,
         ),
         intent(
             "texto.exame.iniciar",
@@ -722,11 +758,8 @@ def montar_intents(project: str) -> list:
             ],
         ),
         intent(
-            "texto.conversa.encerrar",
-            [
-                "Atendimento encerrado. Foi um prazer ajudar!\n\n"
-                "Quando precisar, é só enviar uma nova mensagem."
-            ],
+            "texto.conversa.encerrar.pos_agendamento",
+            [encerramento],
             priority=990000,
             resetContexts=True,
             inputContextNames=[ctx(project, "pos_agendamento")],
@@ -736,6 +769,52 @@ def montar_intents(project: str) -> list:
                 exemplo("encerrar atendimento"),
                 exemplo("não preciso de mais nada"),
                 exemplo("nao preciso de mais nada"),
+            ],
+        ),
+        intent(
+            "texto.conversa.encerrar",
+            [encerramento],
+            priority=1000000,
+            resetContexts=True,
+            trainingPhrases=[
+                exemplo("encerrar"),
+                exemplo("encerrar atendimento"),
+                exemplo("encerrar conversa"),
+                exemplo("pode encerrar"),
+                exemplo("finalizar"),
+                exemplo("finalizar atendimento"),
+                exemplo("sair"),
+                exemplo("tchau"),
+                exemplo("até logo"),
+                exemplo("ate mais"),
+                exemplo("era só isso"),
+                exemplo("só isso"),
+                exemplo("não preciso de mais nada"),
+                exemplo("nao preciso de mais nada"),
+                exemplo("não quero mais"),
+                exemplo("fim"),
+            ],
+        ),
+        intent(
+            "texto.conversa.agradecimento",
+            [
+                "Por nada! Se precisar de mais alguma coisa, digite menu. "
+                "Para encerrar o atendimento, digite encerrar."
+            ],
+            priority=500000,
+            trainingPhrases=[
+                exemplo("obrigado"),
+                exemplo("obrigada"),
+                exemplo("brigado"),
+                exemplo("brigada"),
+                exemplo("muito obrigado"),
+                exemplo("muito obrigada"),
+                exemplo("obg"),
+                exemplo("valeu"),
+                exemplo("agradeço"),
+                exemplo("ok obrigado"),
+                exemplo("obrigado pela ajuda"),
+                exemplo("show, obrigado"),
             ],
         ),
         intent(

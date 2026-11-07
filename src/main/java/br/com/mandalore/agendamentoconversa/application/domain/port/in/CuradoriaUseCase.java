@@ -10,7 +10,11 @@ public interface CuradoriaUseCase {
 
     List<Curadoria.Frase> fila(int dias);
 
-    List<String> intents();
+    /** Intents em que faz sentido ensinar frase, com descrição, exemplos e o momento em que valem. */
+    List<Curadoria.IntentInfo> intents();
+
+    /** Até três intents parecidas com a fala, para a pessoa conferir antes de ensinar. */
+    List<Curadoria.Sugestao> sugestoes(String fala);
 
     /** Registra a decisão; em ENSINAR inclui a frase no Dialogflow. Devolve false se a frase já existia. */
     boolean decidir(Curadoria.Decisao decisao);

@@ -18,7 +18,8 @@ public class PerguntasFrequentesService {
 
     static final String PREFIXO = "acao.faq.";
     static final String EVENTO = "RESULTADO_FAQ";
-    static final String FECHAMENTO = "Posso ajudar em algo mais? Para marcar consulta ou exame, digite menu.";
+    static final String FECHAMENTO = "Posso ajudar em algo mais? Para marcar consulta ou exame, digite menu. "
+            + "Para encerrar, digite encerrar.";
     static final String SEM_RESPOSTA =
             "Essa informação eu não tenho por aqui. Se quiser, diga atendente para falar com alguém da equipe.";
 

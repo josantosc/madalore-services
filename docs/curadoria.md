@@ -24,6 +24,15 @@ Em `/curadoria` (ex.: `https://bs-api.jscinfor.com/curadoria`), com usuário e s
 - Fila: falas que caíram no fallback ou ficaram abaixo de `CURADORIA_LIMITE_CONFIANCA`, agrupadas.
   - **Ensinar**: edite a frase (troque `<cpf>`, `<data>` etc. por exemplos fictícios), escolha a intent e
     a frase entra como exemplo de treino no Dialogflow; o agente é retreinado.
+    - **Sugestões:** até 3 intents parecidas com a fala, pela semelhança com as frases que cada uma já
+      reconhece (palavras e pedaços de palavras, então "brigado" acha "obrigado"). Cada sugestão mostra a
+      porcentagem, a frase parecida e o que a intent faz. A primeira já vem escolhida; a pessoa confere.
+    - **Intent escolhida:** descrição em português, até 5 frases que ela já entende e o momento em que vale
+      (por exemplo, "Só vale logo depois de um agendamento"). Ensinar numa intent que depende do passo não faz
+      o bot entender a frase em outro ponto da conversa; a tela avisa.
+    - A lista não mostra as intents disparadas pelo sistema (`texto.resultado.*`) nem as de "não entendi":
+      frase de treino nelas não muda nada, e o backend recusa.
+    - As descrições ficam em `GuiaIntents.java`; intent nova sem descrição aparece com os exemplos.
   - **Fora do escopo** / **Ignorar**: só registra a decisão.
   - Decidida, a fala sai da fila (`observability.curadoria_decisao`, com quem decidiu).
 
