@@ -123,6 +123,10 @@ public class AgendaConsultaService {
         ctx.setPacienteId(pessoa.id());
         ctx.setNome(Textos.primeiroNome(pessoa.nomeCompleto()));
         List<AgendamentoAberto> futuros = agenda.agendamentosFuturos(pessoa.id());
+        ResultadoOperacao direto = seguirObjetivo(ctx, futuros);
+        if (direto != null) {
+            return direto;
+        }
         if (futuros.isEmpty()) {
             return evento("RESULTADO_SUCESSO_IDENTIFICAR", Map.of("nome", ctx.getNome()), ctx, CodigoNegocio.SUCESSO);
         }
@@ -134,6 +138,29 @@ public class AgendaConsultaService {
                 "quando", ctx.getQuandoProximo(),
                 "quantidade", String.valueOf(futuros.size())
         ), ctx, CodigoNegocio.JA_TEM_AGENDAMENTO);
+    }
+
+    /** Segue para a opção que o paciente já escolheu no menu, sem perguntar de novo depois do cadastro. */
+    private ResultadoOperacao seguirObjetivo(ContextoConversa ctx, List<AgendamentoAberto> futuros) {
+        boolean marcar = "consulta".equals(ctx.getObjetivo()) || ctx.isExame();
+        if (!marcar && !"agendamentos".equals(ctx.getObjetivo())) {
+            return null;
+        }
+        ctx.setLimparObjetivo(true);
+        String aviso = "Encontrei seu cadastro, " + ctx.getNome() + ".";
+        if (!marcar) {
+            if (futuros.isEmpty()) {
+                return evento("RESULTADO_SEM_AGENDAMENTO", Map.of("nome", ctx.getNome()), ctx, CodigoNegocio.SEM_AGENDAMENTO);
+            }
+            ctx.setAgendamentos(futuros);
+            return evento("RESULTADO_SUCESSO_LISTA", Map.of("lista", Formatador.agendamentos(aviso, futuros)), ctx, CodigoNegocio.SUCESSO);
+        }
+        if (!futuros.isEmpty()) {
+            aviso += " Você já tem um agendamento em " + Textos.dia(futuros.get(0).dataHora()) + ".";
+        }
+        PaginaLista pagina = Catalogo.primeira("convenio", agenda.convenios(ctx.getPacienteId()));
+        ctx.setLista(pagina);
+        return evento("RESULTADO_SUCESSO_LISTA", Map.of("lista", Formatador.convenios(aviso, pagina.exibidos())), ctx, CodigoNegocio.SUCESSO);
     }
 
     private ResultadoOperacao semCadastro(FulfillmentCommand command) {
@@ -296,6 +323,10 @@ public class AgendaConsultaService {
         if (ctx.getPeriodo() == null || ctx.getPeriodo().isBlank()) {
             return evento("RESULTADO_PERIODO", Map.of(), ctx, CodigoNegocio.SUCESSO);
         }
+        return buscarHorarios(ctx);
+    }
+
+    private ResultadoOperacao buscarHorarios(ContextoConversa ctx) {
         if (ctx.isExame()) {
             return disponibilidadeExame(ctx);
         }
@@ -413,7 +444,7 @@ public class AgendaConsultaService {
         ContextoConversa ctx = command.contexto();
         HorarioOferta horario = horarioEscolhido(command);
         if (horario == null) {
-            return evento("RESULTADO_HORARIO_FORA_DA_OFERTA", Map.of(), ctx, CodigoNegocio.HORARIO_FORA_DA_OFERTA);
+            return reofertar(ctx, "Não encontrei esse número na lista.");
         }
         preencherConfirmacao(ctx, horario, "agendar");
         String resumo = resumo(ctx, horario);
@@ -459,10 +490,7 @@ public class AgendaConsultaService {
         }
         String fala = falaConfirmacao(command);
         if (Textos.nao(fala)) {
-            limparConfirmacao(ctx);
-            return evento("RESULTADO_LISTA_HORARIOS", Map.of(
-                    "lista", Formatador.horarios(ctx.getEspecialidadeNome(), ctx.getPeriodo(), ctx.getOferta())
-            ), ctx, CodigoNegocio.SUCESSO);
+            return reofertar(ctx, null);
         }
         if (!Textos.sim(fala)) {
             return confirmacaoAusente(ctx, "agendar");
@@ -522,7 +550,7 @@ public class AgendaConsultaService {
         }
         AgendamentoAberto item = agendamentoEscolhido(command);
         if (item == null) {
-            return evento("RESULTADO_AGENDAMENTO_NAO_ENCONTRADO", Map.of(), ctx, CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO);
+            return listarDeNovo(ctx);
         }
         ctx.setConfirmacaoNr(item.nrSequencia());
         ctx.setConfirmacaoTipo(tipo);
@@ -530,9 +558,12 @@ public class AgendaConsultaService {
         ctx.setConfirmacaoEspecialidade(item.especialidade());
         ctx.setConfirmacaoMedico(item.medico());
         ctx.setLimparConfirmacao(false);
-        String pergunta = "cancelar".equals(tipo)
-                ? "Posso cancelar a consulta de " + Textos.dia(item.dataHora()) + "?"
-                : "Posso confirmar a consulta de " + Textos.dia(item.dataHora()) + "?";
+        String consulta = item.especialidade() == null || item.especialidade().isBlank()
+                ? "a consulta"
+                : "a consulta de " + item.especialidade();
+        String pergunta = ("cancelar".equals(tipo) ? "Posso cancelar " : "Posso confirmar ")
+                + consulta + " do dia " + Textos.dia(item.dataHora()) + ", às " + Textos.hora(item.dataHora())
+                + "? Responda sim ou não.";
         return evento("RESULTADO_CONFIRMACAO_AUSENTE", Map.of(
                 "resumo", Textos.dia(item.dataHora()),
                 "texto", pergunta,
@@ -548,7 +579,7 @@ public class AgendaConsultaService {
         if (!ctx.temConfirmacao() || !"agendar".equals(ctx.getConfirmacaoTipo()) && !"remarcar".equals(ctx.getConfirmacaoTipo())) {
             AgendamentoAberto atual = agendamentoEscolhido(command);
             if (atual == null && ctx.getAgendamentoAtualId() == null) {
-                return evento("RESULTADO_AGENDAMENTO_NAO_ENCONTRADO", Map.of(), ctx, CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO);
+                return listarDeNovo(ctx);
             }
             if (atual != null) {
                 ctx.setAgendamentoAtualId(atual.nrSequencia());
@@ -659,7 +690,7 @@ public class AgendaConsultaService {
 
     private ResultadoOperacao resultadoEscrita(ContextoConversa ctx, CodigoNegocio codigo, String acao) {
         if (codigo == CodigoNegocio.HORARIO_INDISPONIVEL) {
-            return evento("RESULTADO_HORARIO_INDISPONIVEL", Map.of(), ctx, codigo);
+            return horarioOcupado(ctx);
         }
         if (codigo == CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO) {
             return evento("RESULTADO_AGENDAMENTO_NAO_ENCONTRADO", Map.of(), ctx, codigo);
@@ -737,6 +768,50 @@ public class AgendaConsultaService {
                 : introducao + "\n\n" + resumo
                         + "\n\nPosso confirmar? Responda sim ou não.";
         return evento("RESULTADO_CONFIRMACAO_AUSENTE", Map.of("resumo", resumo, "texto", texto, "acao", acao), ctx, CodigoNegocio.CONFIRMACAO_AUSENTE);
+    }
+
+    private ResultadoOperacao horarioOcupado(ContextoConversa ctx) {
+        String ocupado = ctx.getConfirmacaoNr();
+        ResultadoOperacao nova = buscarHorarios(ctx);
+        if (!"RESULTADO_LISTA_HORARIOS".equals(nova.evento())) {
+            return evento("RESULTADO_HORARIO_INDISPONIVEL", Map.of(), ctx, CodigoNegocio.HORARIO_INDISPONIVEL);
+        }
+        List<HorarioOferta> livres = ctx.getOferta().stream()
+                .filter(item -> !item.nrSequencia().equals(ocupado))
+                .toList();
+        if (livres.isEmpty()) {
+            ctx.setOferta(List.of());
+            return evento("RESULTADO_HORARIO_INDISPONIVEL", Map.of(), ctx, CodigoNegocio.HORARIO_INDISPONIVEL);
+        }
+        ctx.setOferta(livres);
+        return oferta(ctx, "Esse horário acabou de ser ocupado. Escolha outro:", CodigoNegocio.HORARIO_INDISPONIVEL);
+    }
+
+    private ResultadoOperacao reofertar(ContextoConversa ctx, String aviso) {
+        if (ctx.getOferta() == null || ctx.getOferta().isEmpty()) {
+            return evento("RESULTADO_HORARIO_FORA_DA_OFERTA", Map.of(), ctx, CodigoNegocio.HORARIO_FORA_DA_OFERTA);
+        }
+        return oferta(ctx, aviso, CodigoNegocio.SUCESSO);
+    }
+
+    private ResultadoOperacao oferta(ContextoConversa ctx, String aviso, CodigoNegocio codigo) {
+        limparConfirmacao(ctx);
+        String busca = ctx.isExame() ? ctx.getExameNome() : ctx.getEspecialidadeNome();
+        return evento("RESULTADO_LISTA_HORARIOS", Map.of(
+                "lista", Formatador.horarios(aviso, busca, ctx.getPeriodo(), ctx.getOferta())
+        ), ctx, codigo);
+    }
+
+    private ResultadoOperacao listarDeNovo(ContextoConversa ctx) {
+        if (ctx.getAgendamentos().isEmpty()) {
+            return evento("RESULTADO_AGENDAMENTO_NAO_ENCONTRADO", Map.of(), ctx, CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO);
+        }
+        return evento(
+                "RESULTADO_SUCESSO_LISTA",
+                Map.of("lista", Formatador.agendamentos("Não encontrei esse número na lista.", ctx.getAgendamentos())),
+                ctx,
+                CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO
+        );
     }
 
     private ResultadoOperacao falarPagina(ContextoConversa ctx, PaginaLista pagina) {

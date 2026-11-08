@@ -6,7 +6,16 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClienteAtual;
+import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
+import br.com.mandalore.agendamentoconversa.application.domain.model.ContextoConversa;
 import br.com.mandalore.agendamentoconversa.application.domain.model.FulfillmentCommand;
 import br.com.mandalore.agendamentoconversa.application.domain.model.ResultadoOperacao;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowEvent;
@@ -29,24 +40,31 @@ import br.com.mandalore.agendamentoconversa.application.domain.service.Textos;
 @RestController
 public class WebhookController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(WebhookController.class);
+    private static final Set<String> ESCRITAS = Set.of("agendar", "confirmar", "cancelar", "remarcar");
+
     private final ExecutarFulfillmentUseCase fulfillment;
     private final ContextoCodec codec;
     private final FlowTelemetry telemetry;
     private final String usuario;
     private final String senha;
+    private final long prazoMs;
+    private final ExecutorService execucoes = Executors.newVirtualThreadPerTaskExecutor();
 
     public WebhookController(
             ExecutarFulfillmentUseCase fulfillment,
             ContextoCodec codec,
             FlowTelemetry telemetry,
             @Value("${dialogflow.webhook-user:}") String usuario,
-            @Value("${dialogflow.webhook-password:}") String senha
+            @Value("${dialogflow.webhook-password:}") String senha,
+            @Value("${dialogflow.webhook-prazo-ms:4000}") long prazoMs
     ) {
         this.fulfillment = fulfillment;
         this.codec = codec;
         this.telemetry = telemetry;
         this.usuario = usuario;
         this.senha = senha;
+        this.prazoMs = prazoMs;
     }
 
     @PostMapping("/webhook")
@@ -85,11 +103,7 @@ public class WebhookController {
                 .intent(intent, action)
                 .httpStatus(HttpStatus.OK.value())
                 .build());
-        ResultadoOperacao resultado = ClienteAtual.executar(
-                Textos.accountId(session),
-                Textos.accountId(session) == null ? null : Textos.conversationId(session),
-                () -> fulfillment.executar(command)
-        );
+        ResultadoOperacao resultado = executar(command, session, intent, action);
         telemetry.record(FlowEvent.builder("DIALOGFLOW", "fulfillment.response", "SUCCESS")
                 .correlation(conversationId, conversationId)
                 .intent(intent, action)
@@ -109,6 +123,46 @@ public class WebhookController {
         resposta.put("followupEventInput", evento);
         resposta.put("outputContexts", contextos);
         return ResponseEntity.ok(resposta);
+    }
+
+    /**
+     * O Dialogflow desiste do webhook em 5 s e o paciente recebe a fala padrão da intent. Leituras que passam do prazo
+     * viram RESULTADO_INDISPONIVEL; escritas não são cortadas, porque o Tasy pode gravar depois da resposta.
+     */
+    private ResultadoOperacao executar(FulfillmentCommand command, String session, String intent, String action) {
+        String conta = Textos.accountId(session);
+        String conversa = conta == null ? null : Textos.conversationId(session);
+        if (prazoMs <= 0 || ESCRITAS.contains(command.operacao())) {
+            return ClienteAtual.executar(conta, conversa, () -> fulfillment.executar(command));
+        }
+        Future<ResultadoOperacao> tarefa = execucoes.submit(
+                () -> ClienteAtual.executar(conta, conversa, () -> fulfillment.executar(command))
+        );
+        try {
+            return tarefa.get(prazoMs, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException ex) {
+            String conversationId = Textos.conversationId(session);
+            LOG.warn("conversation_id={} intent={} webhook_prazo_esgotado prazo_ms={}", conversationId, intent, prazoMs);
+            telemetry.record(FlowEvent.builder("MANDALORE", "fulfillment." + command.operacao(), "ERROR")
+                    .correlation(conversationId, conversationId)
+                    .intent(intent, action)
+                    .error("WEBHOOK_DEADLINE", "TimeoutException", "Fulfillment passou de " + prazoMs + " ms")
+                    .build());
+            return indisponivel();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            return indisponivel();
+        } catch (ExecutionException ex) {
+            if (ex.getCause() instanceof RuntimeException causa) {
+                throw causa;
+            }
+            throw new IllegalStateException(ex.getCause());
+        }
+    }
+
+    /** Contexto vazio: a consulta atrasada ainda pode mexer no original, e o Dialogflow mantém os contextos atuais. */
+    private static ResultadoOperacao indisponivel() {
+        return new ResultadoOperacao("RESULTADO_INDISPONIVEL", Map.of(), new ContextoConversa(), CodigoNegocio.INDISPONIVEL);
     }
 
     private void incluirPayloadContexto(

@@ -30,18 +30,9 @@
         "data_nascimento": "1988-10-19"
       },
       "espera": {
-        "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
-        "textoContem": ["Encontrei o cadastro de Maria"],
-        "contextos": ["paciente", "apos_identificar", "exame"]
-      }
-    },
-    {
-      "intent": "acao.consulta.convenios",
-      "texto": "continuar",
-      "espera": {
-        "evento": "RESULTADO_LISTA_CONVENIO",
-        "textoContem": ["Particular"],
-        "contextos": ["lista", "exame"]
+        "evento": "RESULTADO_SUCESSO_LISTA",
+        "textoContem": ["Encontrei seu cadastro, Maria", "Qual convênio", "Particular"],
+        "contextos": ["paciente", "lista", "exame"]
       }
     },
     {

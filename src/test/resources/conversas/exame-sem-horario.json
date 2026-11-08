@@ -30,16 +30,9 @@
         "data_nascimento": "1988-10-19"
       },
       "espera": {
-        "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
-        "contextos": ["paciente", "apos_identificar"]
-      }
-    },
-    {
-      "intent": "acao.consulta.convenios",
-      "texto": "continuar",
-      "espera": {
-        "evento": "RESULTADO_LISTA_CONVENIO",
-        "contextos": ["lista"]
+        "evento": "RESULTADO_SUCESSO_LISTA",
+        "textoContem": ["Qual convênio"],
+        "contextos": ["paciente", "lista"]
       }
     },
     {

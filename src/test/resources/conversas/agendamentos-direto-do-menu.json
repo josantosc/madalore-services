@@ -1,0 +1,78 @@
+{
+  "id": "agendamentos-direto-do-menu",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": true,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "texto.menu.agendamentos",
+      "texto": "3",
+      "espera": {
+        "textoContem": ["CPF"],
+        "contextos": ["menu", "intencao_agendamentos"],
+        "contextosAusentes": ["intencao_consulta"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_LISTA",
+        "textoContem": ["Encontrei seu cadastro, Maria", "Você tem estes agendamentos", "Cardiologia", "remarcar 1"],
+        "contextos": ["paciente", "agendamentos"],
+        "contextosAusentes": ["intencao_agendamentos"]
+      }
+    },
+    {
+      "intent": "acao.agenda.cancelar",
+      "texto": "cancelar 9",
+      "parametros": {
+        "escolha": 9
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_LISTA",
+        "textoContem": ["Não encontrei esse número na lista", "Você tem estes agendamentos"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.agenda.cancelar",
+      "texto": "cancelar 1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_CONFIRMACAO_AUSENTE",
+        "textoContem": ["Posso cancelar a consulta de Cardiologia do dia", "Responda sim ou não"],
+        "contextos": ["aguardando_confirmacao"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.agenda.agendar",
+      "texto": "sim",
+      "parametros": {
+        "confirmacao": "sim"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_ESCRITA",
+        "textoContem": ["Cancelei a consulta"],
+        "escritas": 1,
+        "ultimaEscrita": "cancelar"
+      }
+    }
+  ]
+}

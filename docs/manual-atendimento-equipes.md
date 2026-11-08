@@ -43,7 +43,10 @@ Basta escrever algo como "atendente", "quero falar com alguém" ou "falar com um
 
 O assistente responde:
 
-> Vou chamar alguém da equipe. O histórico desta conversa fica com a pessoa.
+> Certo, vou chamar alguém da equipe. A pessoa vê todo o histórico desta conversa, então você não precisa repetir
+> nada.
+>
+> Fique por aqui: a resposta chega nesta conversa, no horário de atendimento da clínica.
 
 Em seguida, a conversa:
 
@@ -64,9 +67,24 @@ ao **Faturamento/Convênios** (item 5).
 
 O assistente responde:
 
-> Não entendi. Pode reformular ou pedir um atendente?
+> Não entendi. Responda com o número de uma das opções da última mensagem, digite menu para recomeçar ou atendente
+> para falar com a equipe.
 
-Nesse caso a conversa **não** é passada sozinha. Ela só vai para uma pessoa se o paciente pedir.
+Se o assistente não entender **duas mensagens seguidas**, ele avisa o paciente e passa a conversa para a equipe
+sozinho, como no item 3.1:
+
+> Ainda não consegui entender. Vou chamar alguém da equipe para continuar com você. A pessoa vê esta conversa, então
+> não precisa repetir nada.
+
+### 3.4 O paciente descreve uma emergência
+
+Mensagens com sinais como "dor no peito", "falta de ar", "desmaio" ou "convulsão" não seguem no agendamento. O
+assistente responde na hora e passa a conversa para a **Recepção**:
+
+> Se for uma emergência, ligue agora para o SAMU (192) ou vá ao pronto-socorro mais próximo. Este canal é para
+> agendamentos e não acompanha urgências. Já avisei a equipe da clínica.
+
+Atenda essas conversas antes das demais.
 
 ---
 
@@ -156,7 +174,7 @@ Sem preço na tabela (verificar):
 ## 6. Tabela de preços (financeiro)
 
 Os valores do orçamento vêm da **tabela de preços particular**, que o financeiro mantém em
-`https://bs-api.jscinfor.com/precos`, dentro da **central de administração** (`https://bs-api.jscinfor.com/admin`).
+`https://api.biosaudelac.com/precos`, dentro da **central de administração** (`https://api.biosaudelac.com/admin`).
 O login do financeiro abre só a tabela de preços; o do administrador abre também a curadoria e o simulador.
 
 - **Entrar:** a tela de login é igual à do Chatwoot. Depois de 8 horas sem uso, ela pede a senha de novo.

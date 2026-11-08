@@ -1,0 +1,52 @@
+{
+  "id": "consulta-direto-do-menu",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": true,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "textoContem": ["assistente virtual", "atendente"],
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "texto.coleta.nascimento",
+      "texto": "1",
+      "espera": {
+        "textoContem": ["CPF", "só para localizar o cadastro"],
+        "contextos": ["menu", "intencao_consulta"],
+        "contextosAusentes": ["intencao_agendamentos", "exame"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_LISTA",
+        "textoContem": ["Encontrei seu cadastro, Maria", "Você já tem um agendamento", "Qual convênio", "Particular"],
+        "contextos": ["paciente", "lista"],
+        "contextosAusentes": ["intencao_consulta"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_TIPO_BUSCA",
+        "contextos": ["convenio", "tipo_busca"]
+      }
+    }
+  ]
+}

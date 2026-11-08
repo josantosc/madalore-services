@@ -4678,7 +4678,7 @@
         {
           "text": {
             "text": [
-              "Obrigado. Qual o CPF de quem vai ser atendido?"
+              "O CPF é o da pessoa que vai ser atendida. Se ela não tiver CPF, digite atendente."
             ]
           }
         }
@@ -4709,7 +4709,7 @@
         {
           "text": {
             "text": [
-              "Para qual dia? Pode ser uma data, como 20/07/2026, ou esta semana."
+              "Para qual dia? Pode ser amanhã, um dia da semana (como sexta) ou uma data (como 15/12). Se preferir, digite esta semana."
             ]
           }
         }
@@ -4736,14 +4736,6 @@
           "type": "EXAMPLE",
           "parts": [
             {
-              "text": "3"
-            }
-          ]
-        },
-        {
-          "type": "EXAMPLE",
-          "parts": [
-            {
               "text": "marcar consulta"
             }
           ]
@@ -4755,22 +4747,6 @@
               "text": "quero marcar uma consulta"
             }
           ]
-        },
-        {
-          "type": "EXAMPLE",
-          "parts": [
-            {
-              "text": "ver, remarcar ou cancelar"
-            }
-          ]
-        },
-        {
-          "type": "EXAMPLE",
-          "parts": [
-            {
-              "text": "ver, remarcar e cancelar"
-            }
-          ]
         }
       ],
       "inputContextNames": [
@@ -4780,6 +4756,14 @@
         {
           "name": "projects/regression-project/agent/sessions/-/contexts/exame",
           "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/intencao_consulta",
+          "lifespanCount": 5
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/intencao_agendamentos",
+          "lifespanCount": 0
         }
       ],
       "parameters": [],
@@ -4787,7 +4771,7 @@
         {
           "text": {
             "text": [
-              "Para achar o cadastro, qual o CPF de quem será atendido?"
+              "Para achar o cadastro, qual o CPF de quem será atendido?\n\nUsamos o CPF e a data de nascimento só para localizar o cadastro e fazer o agendamento."
             ]
           }
         }
@@ -4816,7 +4800,7 @@
         {
           "text": {
             "text": [
-              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou diga manhã, tarde ou qualquer período."
+              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou digite manhã, tarde ou qualquer período."
             ]
           }
         }
@@ -4865,7 +4849,7 @@
         {
           "text": {
             "text": [
-              "Certo. Diga continuar para eu ver os convênios."
+              "Certo. Digite 1 para marcar uma consulta ou 2 para marcar um exame."
             ]
           }
         }
@@ -4953,7 +4937,7 @@
         {
           "text": {
             "text": [
-              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou diga manhã, tarde ou qualquer período."
+              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou digite manhã, tarde ou qualquer período."
             ]
           }
         }
@@ -5451,6 +5435,14 @@
         {
           "name": "projects/regression-project/agent/sessions/-/contexts/exame",
           "lifespanCount": 20
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/intencao_consulta",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/intencao_agendamentos",
+          "lifespanCount": 0
         }
       ],
       "parameters": [],
@@ -5458,7 +5450,7 @@
         {
           "text": {
             "text": [
-              "Para achar o cadastro, qual o CPF de quem será atendido?"
+              "Para achar o cadastro, qual o CPF de quem será atendido?\n\nUsamos o CPF e a data de nascimento só para localizar o cadastro e fazer o agendamento."
             ]
           }
         }
@@ -5480,7 +5472,93 @@
         {
           "text": {
             "text": [
-              "Não entendi. Pode reformular ou pedir um atendente?"
+              "Não entendi. Responda com o número de uma das opções da última mensagem, digite menu para recomeçar ou atendente para falar com a equipe."
+            ]
+          }
+        }
+      ],
+      "resetContexts": false
+    },
+    {
+      "displayName": "texto.menu.agendamentos",
+      "priority": 600000,
+      "webhookState": "WEBHOOK_STATE_UNSPECIFIED",
+      "isFallback": false,
+      "mlDisabled": false,
+      "events": [],
+      "trainingPhrases": [
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "3"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver, remarcar ou cancelar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver, remarcar e cancelar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "ver meus agendamentos"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero cancelar"
+            }
+          ]
+        },
+        {
+          "type": "EXAMPLE",
+          "parts": [
+            {
+              "text": "quero remarcar"
+            }
+          ]
+        }
+      ],
+      "inputContextNames": [
+        "projects/regression-project/agent/sessions/-/contexts/menu"
+      ],
+      "outputContexts": [
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/exame",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/intencao_consulta",
+          "lifespanCount": 0
+        },
+        {
+          "name": "projects/regression-project/agent/sessions/-/contexts/intencao_agendamentos",
+          "lifespanCount": 5
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "text": {
+            "text": [
+              "Para achar o cadastro, qual o CPF de quem será atendido?\n\nUsamos o CPF e a data de nascimento só para localizar o cadastro e fazer o agendamento."
             ]
           }
         }
@@ -5742,7 +5820,7 @@
         {
           "text": {
             "text": [
-              "Certo, voltei um passo. Pode escolher de novo ou dizer o que quer fazer."
+              "Certo, voltei um passo. Responda de novo à pergunta anterior ou digite menu para ver as opções."
             ]
           }
         }
@@ -5872,7 +5950,7 @@
         {
           "text": {
             "text": [
-              "Não encontrei essa consulta."
+              "Não encontrei essa consulta. Digite menu para ver as opções ou atendente para falar com a equipe."
             ]
           }
         }
@@ -5979,7 +6057,7 @@
         {
           "text": {
             "text": [
-              "Escolha um dos horários que acabei de passar."
+              "Não encontrei esse horário. Digite menu para fazer uma nova busca ou atendente para falar com a equipe."
             ]
           }
         }
@@ -6003,7 +6081,7 @@
         {
           "text": {
             "text": [
-              "Esse horário não está mais livre."
+              "Esse horário acabou de ser ocupado e não sobrou outro livre nessa busca. Digite menu para fazer uma nova busca ou atendente para falar com a equipe."
             ]
           }
         }
@@ -6027,7 +6105,7 @@
         {
           "text": {
             "text": [
-              "Não consegui consultar agora. Pode tentar de novo ou pedir um atendente."
+              "Não consegui consultar a agenda agora. Envie a mensagem de novo em instantes ou digite atendente para falar com a equipe."
             ]
           }
         }
@@ -6082,7 +6160,7 @@
         {
           "text": {
             "text": [
-              "$nome, você já tem consulta em $quando. Posso marcar outra, ver, remarcar ou cancelar."
+              "$nome, você já tem consulta em $quando. O que você quer fazer?\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames"
             ]
           }
         }
@@ -6138,7 +6216,7 @@
         {
           "text": {
             "text": [
-              "Qual convênio você gostaria de usar?\n\n$lista\n\nResponda com o número ou o nome da opção. Para retornar, diga voltar."
+              "Qual convênio você gostaria de usar?\n\n$lista\n\nResponda com o número ou o nome da opção. Para voltar, digite voltar."
             ]
           }
         }
@@ -6201,7 +6279,7 @@
         {
           "text": {
             "text": [
-              "Qual especialidade você gostaria de consultar?\n\n$lista\n\nResponda com o número ou o nome da opção. Para retornar, diga voltar."
+              "Qual especialidade você gostaria de consultar?\n\n$lista\n\nResponda com o número ou o nome da opção. Para voltar, digite voltar."
             ]
           }
         }
@@ -6257,7 +6335,7 @@
         {
           "text": {
             "text": [
-              "Qual exame você precisa marcar?\n\n$lista\n\nResponda com o número ou o nome do exame. Para retornar, diga voltar."
+              "Qual exame você precisa marcar?\n\n$lista\n\nResponda com o número ou o nome do exame. Para voltar, digite voltar."
             ]
           }
         }
@@ -6369,7 +6447,7 @@
         {
           "text": {
             "text": [
-              "Você gostaria de marcar com algum destes profissionais?\n\n$lista\n\nResponda com o número ou o nome da opção."
+              "Você gostaria de marcar com algum destes profissionais?\n\n$lista\n\nResponda com o número ou o nome da opção. Para voltar, digite voltar."
             ]
           }
         }
@@ -6398,7 +6476,7 @@
         {
           "text": {
             "text": [
-              "Para seguir, preciso da data de nascimento e do CPF."
+              "Para seguir, preciso identificar quem será atendido. Qual o CPF dessa pessoa?"
             ]
           }
         }
@@ -6764,7 +6842,7 @@
         {
           "text": {
             "text": [
-              "Encontrei o cadastro de $nome.\n\nDiga continuar para marcar, ou ver, remarcar e cancelar."
+              "Encontrei seu cadastro, $nome. O que você quer fazer?\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames"
             ]
           }
         }
@@ -6861,7 +6939,7 @@
         {
           "text": {
             "text": [
-              "Certo, $nome. Vou reservar sem criar cadastro de pessoa física."
+              "Certo, $nome. Vou seguir com o agendamento mesmo sem cadastro."
             ]
           }
         }
@@ -7032,7 +7110,7 @@
         {
           "text": {
             "text": [
-              "Olá! Como posso ajudar?\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames\n\nResponda com o número ou descreva o que você precisa."
+              "Olá! Sou o assistente virtual da clínica. Como posso ajudar?\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames\n\nResponda com o número ou descreva o que você precisa. Para falar com uma pessoa, digite atendente."
             ]
           }
         }
@@ -7147,7 +7225,7 @@
         {
           "text": {
             "text": [
-              "Olá novamente, $nome! O que você gostaria de fazer agora?\n\n1. Marcar uma consulta\n2. Marcar um exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames"
+              "Olá novamente, $nome! O que você gostaria de fazer agora?\n\n1. Marcar consulta\n2. Marcar exame\n3. Ver, remarcar ou cancelar um agendamento\n4. Orçamento de exames"
             ]
           }
         }
@@ -7355,7 +7433,7 @@
         {
           "text": {
             "text": [
-              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou diga manhã, tarde ou qualquer período."
+              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou digite manhã, tarde ou qualquer período."
             ]
           }
         }
@@ -7465,7 +7543,7 @@
         {
           "text": {
             "text": [
-              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou diga manhã, tarde ou qualquer período."
+              "Qual período fica melhor?\n\n1. Manhã\n2. Tarde\n3. Qualquer período\n\nResponda com o número ou digite manhã, tarde ou qualquer período."
             ]
           }
         }
@@ -7576,7 +7654,7 @@
         {
           "text": {
             "text": [
-              "Vou chamar alguém da equipe."
+              "Certo, vou chamar alguém da equipe. A pessoa vê todo o histórico desta conversa, então você não precisa repetir nada.\n\nFique por aqui: a resposta chega nesta conversa, no horário de atendimento da clínica."
             ]
           }
         }
@@ -7630,7 +7708,7 @@
         {
           "text": {
             "text": [
-              "Entendi. Vou encaminhar você para alguém da equipe continuar o atendimento."
+              "Certo, vou chamar alguém da equipe. A pessoa vê todo o histórico desta conversa, então você não precisa repetir nada.\n\nFique por aqui: a resposta chega nesta conversa, no horário de atendimento da clínica."
             ]
           }
         }
@@ -7684,7 +7762,7 @@
         {
           "text": {
             "text": [
-              "Entendi. Vou encaminhar você para alguém da equipe continuar o atendimento."
+              "Certo, vou chamar alguém da equipe. A pessoa vê todo o histórico desta conversa, então você não precisa repetir nada.\n\nFique por aqui: a resposta chega nesta conversa, no horário de atendimento da clínica."
             ]
           }
         }

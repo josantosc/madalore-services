@@ -20,6 +20,8 @@ public final class Textos {
     private static final DateTimeFormatter DIA_CURTO = DateTimeFormatter.ofPattern("dd/MM");
     private static final DateTimeFormatter DIA_RESUMO =
             DateTimeFormatter.ofPattern("dd/MM (EEEE)", Locale.forLanguageTag("pt-BR"));
+    private static final DateTimeFormatter SEMANA_CURTA =
+            DateTimeFormatter.ofPattern("EEE", Locale.forLanguageTag("pt-BR"));
     private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
     private static final Pattern SESSAO = Pattern.compile("cw-(\\d+)-(\\d+)$");
 
@@ -186,6 +188,13 @@ public final class Textos {
 
     public static String diaCurto(LocalDateTime dataHora) {
         return dataHora == null ? "" : DIA_CURTO.format(dataHora);
+    }
+
+    public static String diaSemanaCurto(LocalDateTime dataHora) {
+        if (dataHora == null) {
+            return "";
+        }
+        return SEMANA_CURTA.format(dataHora).replace(".", "") + " " + DIA_CURTO.format(dataHora);
     }
 
     public static String diaResumo(LocalDateTime dataHora) {

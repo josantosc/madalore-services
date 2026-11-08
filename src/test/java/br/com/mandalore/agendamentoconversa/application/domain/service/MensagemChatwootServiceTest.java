@@ -283,6 +283,50 @@ class MensagemChatwootServiceTest {
     }
 
     @Test
+    void segundaRespostaNaoEntendidaSeguidaPassaParaAEquipe() {
+        when(dialogflow.detectar("cw-8-9", "xpto"))
+                .thenReturn(new RespostaDialogflow("texto.fallback", "Não entendi."));
+        when(dialogflow.detectar("cw-8-9", "abc"))
+                .thenReturn(new RespostaDialogflow("texto.sem_horario.fallback", "Escolha uma opção."));
+
+        service.receber(mensagem("incoming", "xpto", "50", "pending", Canal.WHATSAPP));
+        verify(chatwoot, never()).abrirAtendente("8", "9");
+
+        service.receber(mensagem("incoming", "abc", "51", "pending", Canal.WHATSAPP));
+
+        verify(chatwoot).publicar("8", "9", "Não entendi.");
+        verify(chatwoot, never()).publicar("8", "9", "Escolha uma opção.");
+        verify(chatwoot).publicar("8", "9", MensagemChatwootService.SEGUNDA_FALHA);
+        verify(chatwoot).atribuirEquipe("8", "9", Setor.RECEPCAO);
+        verify(chatwoot).abrirAtendente("8", "9");
+    }
+
+    @Test
+    void respostaEntendidaZeraAsFalhas() {
+        when(dialogflow.detectar("cw-8-9", "xpto"))
+                .thenReturn(new RespostaDialogflow("texto.fallback", "Não entendi."));
+        when(dialogflow.detectar("cw-8-9", "oi"))
+                .thenReturn(new RespostaDialogflow("texto.saudacao", "Olá!"));
+
+        service.receber(mensagem("incoming", "xpto", "52", "pending", Canal.WHATSAPP));
+        service.receber(mensagem("incoming", "oi", "53", "pending", Canal.WHATSAPP));
+        service.receber(mensagem("incoming", "xpto", "54", "pending", Canal.WHATSAPP));
+
+        verify(chatwoot, org.mockito.Mockito.times(2)).publicar("8", "9", "Não entendi.");
+        verify(chatwoot, never()).abrirAtendente("8", "9");
+    }
+
+    @Test
+    void sinalDeUrgenciaOrientaEmergenciaEPassaParaAEquipe() {
+        service.receber(mensagem("incoming", "Estou com DOR NO PEITO, preciso de consulta", "55", "pending", Canal.WHATSAPP));
+
+        verify(dialogflow, never()).detectar(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(chatwoot).publicar("8", "9", MensagemChatwootService.URGENCIA);
+        verify(chatwoot).atribuirEquipe("8", "9", Setor.RECEPCAO);
+        verify(chatwoot).abrirAtendente("8", "9");
+    }
+
+    @Test
     void falhaAoAtribuirEquipeAindaAbreConversa() {
         when(dialogflow.detectar("cw-8-9", "atendente"))
                 .thenReturn(new RespostaDialogflow("transbordo.atendente", "Vou chamar alguém da equipe."));

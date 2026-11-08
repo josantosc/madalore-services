@@ -23,7 +23,14 @@ public final class Formatador {
     }
 
     public static String horarios(String especialidade, String periodo, List<HorarioOferta> horarios) {
+        return horarios(null, especialidade, periodo, horarios);
+    }
+
+    public static String horarios(String aviso, String especialidade, String periodo, List<HorarioOferta> horarios) {
         StringBuilder texto = new StringBuilder();
+        if (aviso != null && !aviso.isBlank()) {
+            texto.append(aviso).append("\n\n");
+        }
         texto.append("Encontrei estes horários de ")
                 .append(especialidade == null || especialidade.isBlank() ? "consulta" : especialidade)
                 .append(", ")
@@ -32,12 +39,20 @@ public final class Formatador {
         for (int i = 0; i < horarios.size(); i++) {
             texto.append(linhaHorario(i + 1, horarios.get(i))).append('\n');
         }
-        texto.append("\nDigite o número ou voltar.");
+        texto.append("\nResponda com o número do horário. Para voltar, digite voltar.");
         return texto.toString().trim();
     }
 
     public static String agendamentos(List<AgendamentoAberto> itens) {
-        StringBuilder texto = new StringBuilder("Você tem estes agendamentos:\n\n");
+        return agendamentos(null, itens);
+    }
+
+    public static String agendamentos(String aviso, List<AgendamentoAberto> itens) {
+        StringBuilder texto = new StringBuilder();
+        if (aviso != null && !aviso.isBlank()) {
+            texto.append(aviso).append("\n\n");
+        }
+        texto.append("Você tem estes agendamentos:\n\n");
         for (int i = 0; i < itens.size(); i++) {
             AgendamentoAberto item = itens.get(i);
             texto.append(i + 1).append(". ").append(Textos.dia(item.dataHora()));
@@ -52,7 +67,7 @@ public final class Formatador {
             }
             texto.append('\n');
         }
-        texto.append("\nDigite o número para escolher, ou voltar.");
+        texto.append("\nPara continuar, digite confirmar, remarcar ou cancelar e o número. Por exemplo: remarcar 1.");
         return texto.toString().trim();
     }
 
@@ -122,13 +137,18 @@ public final class Formatador {
                 + "\n2. Encerrar atendimento";
     }
 
+    public static String convenios(String aviso, List<ItemCatalogo> itens) {
+        return aviso + "\n\nQual convênio você gostaria de usar?\n\n" + opcoes(itens)
+                + "\n\nResponda com o número ou o nome da opção. Para voltar, digite voltar.";
+    }
+
     public static String textoCancelado(String data, String hora) {
         return "Cancelei a consulta de " + data + ", " + hora + ".";
     }
 
     private static String linhaHorario(int indice, HorarioOferta horario) {
         StringBuilder texto = new StringBuilder();
-        texto.append(indice).append(". ").append(Textos.diaCurto(horario.dataHora())).append(", ").append(Textos.hora(horario.dataHora()));
+        texto.append(indice).append(". ").append(Textos.diaSemanaCurto(horario.dataHora())).append(", ").append(Textos.hora(horario.dataHora()));
         if (horario.medico() != null && !horario.medico().isBlank()) {
             texto.append(", com ").append(horario.medico());
         } else if (horario.local() != null && !horario.local().isBlank()) {

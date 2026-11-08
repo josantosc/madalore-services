@@ -40,6 +40,9 @@ public class ContextoConversa {
     private boolean exame;
     private String exameId;
     private String exameNome;
+    /** Opção escolhida no menu antes da identificação: "consulta" ou "agendamentos". */
+    private String objetivo;
+    private boolean limparObjetivo;
 
     public boolean temPaciente() {
         return pacienteId != null && !pacienteId.isBlank();
@@ -319,5 +322,21 @@ public class ContextoConversa {
 
     public void setExameNome(String exameNome) {
         this.exameNome = exameNome;
+    }
+
+    public String getObjetivo() {
+        return objetivo;
+    }
+
+    public void setObjetivo(String objetivo) {
+        this.objetivo = objetivo;
+    }
+
+    public boolean isLimparObjetivo() {
+        return limparObjetivo;
+    }
+
+    public void setLimparObjetivo(boolean limparObjetivo) {
+        this.limparObjetivo = limparObjetivo;
     }
 }

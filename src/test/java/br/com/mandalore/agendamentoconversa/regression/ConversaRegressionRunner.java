@@ -83,7 +83,8 @@ final class ConversaRegressionRunner {
                 new ContextoCodec(mapper),
                 telemetry,
                 USUARIO,
-                SENHA
+                SENHA,
+                4000
         );
         mvc = MockMvcBuilders.standaloneSetup(controller).build();
     }

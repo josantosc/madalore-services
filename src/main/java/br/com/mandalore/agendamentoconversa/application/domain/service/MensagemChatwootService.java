@@ -39,6 +39,12 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
             + "exemplo: hemograma, glicose e TSH.";
     static final String EXAMES_NAO_ACHADOS = "Não achei esses exames na nossa tabela. Passei sua mensagem para a "
             + "equipe do Faturamento, que te responde por aqui.";
+    static final String URGENCIA = "Se for uma emergência, ligue agora para o SAMU (192) ou vá ao pronto-socorro "
+            + "mais próximo. Este canal é para agendamentos e não acompanha urgências. Já avisei a equipe da clínica.";
+    static final String SEGUNDA_FALHA = "Ainda não consegui entender. Vou chamar alguém da equipe para continuar "
+            + "com você. A pessoa vê esta conversa, então não precisa repetir nada.";
+    /** Respostas não entendidas seguidas antes de passar a conversa para a equipe. */
+    static final int LIMITE_FALHAS = 2;
     private static final String ORCAMENTO_TEXTO = "orcamento.texto";
     /** Mensagens do paciente, depois da resposta de valores, em que o assistente ainda procura os exames. */
     static final int MENSAGENS_AGUARDANDO_EXAMES = 3;
@@ -55,6 +61,7 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
     private final Map<String, Setor> assuntos = new ConcurrentHashMap<>();
     /** Conversas em que o assistente respondeu sobre valores, com as mensagens que ainda podem trazer os exames. */
     private final Map<String, Integer> aguardandoExames = new ConcurrentHashMap<>();
+    private final Map<String, Integer> falhas = new ConcurrentHashMap<>();
     private final ObjectProvider<OrcarPedidoUseCase> orcamentos;
     private final FlowTelemetry telemetry;
 
@@ -99,6 +106,15 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
                 return;
             }
             String chave = mensagem.accountId() + ":" + mensagem.conversationId();
+            if (Urgencia.detectar(mensagem.content())) {
+                intent = "transbordo.urgencia";
+                falhas.remove(chave);
+                chatwoot.publicar(mensagem.accountId(), mensagem.conversationId(), URGENCIA);
+                atribuirEquipe(mensagem, Setor.RECEPCAO);
+                chatwoot.abrirAtendente(mensagem.accountId(), mensagem.conversationId());
+                registrar(mensagem, "urgencia", Setor.RECEPCAO);
+                return;
+            }
             boolean aguardando = orcamento != null && consumirEspera(chave);
             if (aguardando) {
                 if (orcamento.orcarTexto(mensagem)) {
@@ -126,6 +142,19 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
                 atribuirEquipe(mensagem, Setor.FATURAMENTO);
                 chatwoot.abrirAtendente(mensagem.accountId(), mensagem.conversationId());
                 registrar(mensagem, "transbordo", Setor.FATURAMENTO);
+                return;
+            }
+            if (!naoEntendeu(intent)) {
+                falhas.remove(chave);
+            } else if (contarFalha(chave) >= LIMITE_FALHAS) {
+                falhas.remove(chave);
+                intent = "transbordo.nao_entendido";
+                chatwoot.publicar(mensagem.accountId(), mensagem.conversationId(), SEGUNDA_FALHA);
+                Setor setor = Encaminhamento.assunto(mensagem.content())
+                        .orElseGet(() -> Optional.ofNullable(assuntos.remove(chave)).orElse(Setor.RECEPCAO));
+                atribuirEquipe(mensagem, setor);
+                chatwoot.abrirAtendente(mensagem.accountId(), mensagem.conversationId());
+                registrar(mensagem, "transbordo", setor);
                 return;
             }
             String textoValores = null;
@@ -210,6 +239,17 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
             return restantes > 1 ? restantes - 1 : null;
         });
         return esperava[0];
+    }
+
+    static boolean naoEntendeu(String intent) {
+        return intent.startsWith("texto.") && intent.endsWith("fallback");
+    }
+
+    private int contarFalha(String chave) {
+        if (falhas.size() >= LIMITE_ASSUNTOS) {
+            falhas.clear();
+        }
+        return falhas.merge(chave, 1, Integer::sum);
     }
 
     static boolean pedeOrcamento(String intent) {

@@ -96,6 +96,8 @@ public class ContextoCodec {
                     }
                     ctx.setQuandoProximo(texto(params, "quando"));
                 }
+                case "intencao_consulta" -> ctx.setObjetivo("consulta");
+                case "intencao_agendamentos" -> ctx.setObjetivo("agendamentos");
                 default -> {
                 }
             }
@@ -186,6 +188,10 @@ public class ContextoCodec {
                     "quantidade", String.valueOf(ctx.getQuantidadeFutura()),
                     "quando", ctx.getQuandoProximo()
             )));
+        }
+        if (ctx.isLimparObjetivo()) {
+            saida.add(contexto(session, "intencao_consulta", 0, Map.of()));
+            saida.add(contexto(session, "intencao_agendamentos", 0, Map.of()));
         }
         return saida;
     }

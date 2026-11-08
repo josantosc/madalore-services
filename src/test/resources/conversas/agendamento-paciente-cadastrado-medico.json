@@ -23,7 +23,7 @@
       },
       "espera": {
         "evento": "RESULTADO_SUCESSO_IDENTIFICAR",
-        "textoContem": ["Encontrei o cadastro de Maria"],
+        "textoContem": ["Encontrei seu cadastro, Maria"],
         "contextos": ["paciente", "apos_identificar"]
       }
     },

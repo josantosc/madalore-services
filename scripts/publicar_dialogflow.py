@@ -237,13 +237,30 @@ def montar_intents(project: str) -> list:
     webhook = "WEBHOOK_STATE_ENABLED"
     paciente_convenio_sem_horario_exame = paciente_convenio + [ctx(project, "sem_horario_exame")]
     saudacao = (
-        "Olá! Como posso ajudar?\n\n"
+        "Olá! Sou o assistente virtual da clínica. Como posso ajudar?\n\n"
         "1. Marcar consulta\n"
         "2. Marcar exame\n"
         "3. Ver, remarcar ou cancelar um agendamento\n"
         "4. Orçamento de exames\n\n"
-        "Responda com o número ou descreva o que você precisa."
+        "Responda com o número ou descreva o que você precisa. "
+        "Para falar com uma pessoa, digite atendente."
     )
+    menu_identificado = (
+        "1. Marcar consulta\n"
+        "2. Marcar exame\n"
+        "3. Ver, remarcar ou cancelar um agendamento\n"
+        "4. Orçamento de exames"
+    )
+    pedir_cpf = (
+        "Para achar o cadastro, qual o CPF de quem será atendido?\n\n"
+        "Usamos o CPF e a data de nascimento só para localizar o cadastro e fazer o agendamento."
+    )
+    transbordo = (
+        "Certo, vou chamar alguém da equipe. A pessoa vê todo o histórico desta conversa, "
+        "então você não precisa repetir nada.\n\n"
+        "Fique por aqui: a resposta chega nesta conversa, no horário de atendimento da clínica."
+    )
+    nova_busca = "Digite menu para fazer uma nova busca ou atendente para falar com a equipe."
     orcamento = (
         "Mande aqui uma foto do pedido médico ou, se não tiver o pedido, escreva os nomes dos exames "
         "(por exemplo: hemograma, glicose e TSH). A equipe do Faturamento te passa o orçamento."
@@ -263,9 +280,12 @@ def montar_intents(project: str) -> list:
         "1. Manhã\n"
         "2. Tarde\n"
         "3. Qualquer período\n\n"
-        "Responda com o número ou diga manhã, tarde ou qualquer período."
+        "Responda com o número ou digite manhã, tarde ou qualquer período."
     )
-    dia = "Para qual dia? Pode ser uma data, como 20/07/2026, ou esta semana."
+    dia = (
+        "Para qual dia? Pode ser amanhã, um dia da semana (como sexta) ou uma data (como 15/12). "
+        "Se preferir, digite esta semana."
+    )
     encerramento = (
         "Atendimento encerrado. Foi um prazer ajudar!\n\n"
         "Quando precisar, é só enviar uma nova mensagem."
@@ -290,13 +310,7 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "texto.saudacao.retomar",
-            [
-                "Olá novamente, $nome! O que você gostaria de fazer agora?\n\n"
-                "1. Marcar uma consulta\n"
-                "2. Marcar um exame\n"
-                "3. Ver, remarcar ou cancelar um agendamento\n"
-                "4. Orçamento de exames"
-            ],
+            ["Olá novamente, $nome! O que você gostaria de fazer agora?\n\n" + menu_identificado],
             priority=940000,
             inputContextNames=[ctx(project, "paciente")],
             outputContexts=[
@@ -319,7 +333,10 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "texto.fallback",
-            ["Não entendi. Pode reformular ou pedir um atendente?"],
+            [
+                "Não entendi. Responda com o número de uma das opções da última mensagem, "
+                "digite menu para recomeçar ou atendente para falar com a equipe."
+            ],
             isFallback=True,
             priority=500000,
         ),
@@ -349,17 +366,37 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "texto.coleta.nascimento",
-            ["Para achar o cadastro, qual o CPF de quem será atendido?"],
+            [pedir_cpf],
             priority=600000,
             inputContextNames=[ctx(project, "menu")],
-            outputContexts=[saida(project, "exame", 0)],
+            outputContexts=[
+                saida(project, "exame", 0),
+                saida(project, "intencao_consulta", 5),
+                saida(project, "intencao_agendamentos", 0),
+            ],
             trainingPhrases=[
                 exemplo("1"),
-                exemplo("3"),
                 exemplo("marcar consulta"),
                 exemplo("quero marcar uma consulta"),
+            ],
+        ),
+        intent(
+            "texto.menu.agendamentos",
+            [pedir_cpf],
+            priority=600000,
+            inputContextNames=[ctx(project, "menu")],
+            outputContexts=[
+                saida(project, "exame", 0),
+                saida(project, "intencao_consulta", 0),
+                saida(project, "intencao_agendamentos", 5),
+            ],
+            trainingPhrases=[
+                exemplo("3"),
                 exemplo("ver, remarcar ou cancelar"),
                 exemplo("ver, remarcar e cancelar"),
+                exemplo("ver meus agendamentos"),
+                exemplo("quero cancelar"),
+                exemplo("quero remarcar"),
             ],
         ),
         intent(
@@ -379,10 +416,14 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "texto.exame.iniciar",
-            ["Para achar o cadastro, qual o CPF de quem será atendido?"],
+            [pedir_cpf],
             priority=600000,
             inputContextNames=[ctx(project, "menu")],
-            outputContexts=[saida(project, "exame", 20)],
+            outputContexts=[
+                saida(project, "exame", 20),
+                saida(project, "intencao_consulta", 0),
+                saida(project, "intencao_agendamentos", 0),
+            ],
             trainingPhrases=[
                 exemplo("2"),
                 exemplo("exame"),
@@ -394,7 +435,7 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "texto.coleta.cpf",
-            ["Obrigado. Qual o CPF de quem vai ser atendido?"],
+            ["O CPF é o da pessoa que vai ser atendida. Se ela não tiver CPF, digite atendente."],
             priority=200000,
             mlDisabled=True,
             trainingPhrases=[
@@ -422,7 +463,7 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "texto.consulta.marcar_outro",
-            ["Certo. Diga continuar para eu ver os convênios."],
+            ["Certo. Digite 1 para marcar uma consulta ou 2 para marcar um exame."],
             priority=400000,
             inputContextNames=[ctx(project, "agendamento_futuro")],
             trainingPhrases=[
@@ -451,7 +492,7 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "texto.navegacao.voltar",
-            ["Certo, voltei um passo. Pode escolher de novo ou dizer o que quer fazer."],
+            ["Certo, voltei um passo. Responda de novo à pergunta anterior ou digite menu para ver as opções."],
             priority=1000000,
             parameters=[parametro("navegacao", "@navegacao")],
             outputContexts=[
@@ -468,7 +509,7 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "transbordo.atendente",
-            ["Vou chamar alguém da equipe."],
+            [transbordo],
             priority=950000,
             trainingPhrases=[
                 exemplo("atendente"),
@@ -533,7 +574,7 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "transbordo.sem_horario.atendente",
-            ["Entendi. Vou encaminhar você para alguém da equipe continuar o atendimento."],
+            [transbordo],
             priority=990000,
             inputContextNames=[ctx(project, "sem_horario")],
             outputContexts=[saida(project, "sem_horario", 0)],
@@ -727,7 +768,7 @@ def montar_intents(project: str) -> list:
         ),
         intent(
             "transbordo.sem_horario_exame.atendente",
-            ["Entendi. Vou encaminhar você para alguém da equipe continuar o atendimento."],
+            [transbordo],
             priority=990000,
             inputContextNames=[ctx(project, "sem_horario_exame")],
             outputContexts=[saida(project, "sem_horario_exame", 0)],
@@ -1008,7 +1049,7 @@ def montar_intents(project: str) -> list:
             saida(project, "menu", 0),
         ]),
         intent("texto.resultado.sucesso_sem_cadastro", [
-            "Certo, $nome. Vou reservar sem criar cadastro de pessoa física."
+            "Certo, $nome. Vou seguir com o agendamento mesmo sem cadastro."
         ], events=["RESULTADO_SUCESSO_SEM_CADASTRO"], mlDisabled=True, parameters=[
             parametro("nome", "@sys.any"),
         ], outputContexts=[
@@ -1016,12 +1057,12 @@ def montar_intents(project: str) -> list:
             saida(project, "menu", 0),
         ]),
         intent("texto.resultado.nao_identificado", [
-            "Para seguir, preciso da data de nascimento e do CPF."
+            "Para seguir, preciso identificar quem será atendido. Qual o CPF dessa pessoa?"
         ], events=["RESULTADO_NAO_IDENTIFICADO"], mlDisabled=True, outputContexts=[
             saida(project, "menu", 3),
         ]),
         intent("texto.resultado.sucesso_identificar", [
-            "Encontrei o cadastro de $nome.\n\nDiga continuar para marcar, ou ver, remarcar e cancelar."
+            "Encontrei seu cadastro, $nome. O que você quer fazer?\n\n" + menu_identificado
         ], events=["RESULTADO_SUCESSO_IDENTIFICAR"], mlDisabled=True, parameters=[
             parametro("nome", "@sys.any"),
         ], outputContexts=[
@@ -1029,7 +1070,7 @@ def montar_intents(project: str) -> list:
             saida(project, "menu", 0),
         ]),
         intent("texto.resultado.ja_tem_agendamento", [
-            "$nome, você já tem consulta em $quando. Posso marcar outra, ver, remarcar ou cancelar."
+            "$nome, você já tem consulta em $quando. O que você quer fazer?\n\n" + menu_identificado
         ], events=["RESULTADO_JA_TEM_AGENDAMENTO"], mlDisabled=True, parameters=[
             parametro("nome", "@sys.any"),
             parametro("quando", "@sys.any"),
@@ -1050,7 +1091,7 @@ def montar_intents(project: str) -> list:
         intent("texto.resultado.lista_convenio", [
             "Qual convênio você gostaria de usar?\n\n"
             "$lista\n\n"
-            "Responda com o número ou o nome da opção. Para retornar, diga voltar."
+            "Responda com o número ou o nome da opção. Para voltar, digite voltar."
         ], events=["RESULTADO_LISTA_CONVENIO"], mlDisabled=True, parameters=[
             parametro("lista", "@sys.any"),
             parametro("payload", "@sys.any"),
@@ -1063,7 +1104,7 @@ def montar_intents(project: str) -> list:
         intent("texto.resultado.lista_profissional", [
             "Você gostaria de marcar com algum destes profissionais?\n\n"
             "$lista\n\n"
-            "Responda com o número ou o nome da opção."
+            "Responda com o número ou o nome da opção. Para voltar, digite voltar."
         ], events=["RESULTADO_LISTA_PROFISSIONAL"], mlDisabled=True, parameters=[
             parametro("lista", "@sys.any"),
             parametro("payload", "@sys.any"),
@@ -1076,7 +1117,7 @@ def montar_intents(project: str) -> list:
         intent("texto.resultado.lista_exame", [
             "Qual exame você precisa marcar?\n\n"
             "$lista\n\n"
-            "Responda com o número ou o nome do exame. Para retornar, diga voltar."
+            "Responda com o número ou o nome do exame. Para voltar, digite voltar."
         ], events=["RESULTADO_LISTA_EXAME"], mlDisabled=True, parameters=[
             parametro("lista", "@sys.any"),
             parametro("payload", "@sys.any"),
@@ -1114,7 +1155,7 @@ def montar_intents(project: str) -> list:
         intent("texto.resultado.lista_especialidade", [
             "Qual especialidade você gostaria de consultar?\n\n"
             "$lista\n\n"
-            "Responda com o número ou o nome da opção. Para retornar, diga voltar."
+            "Responda com o número ou o nome da opção. Para voltar, digite voltar."
         ], events=["RESULTADO_LISTA_ESPECIALIDADE"], mlDisabled=True, parameters=[
             parametro("lista", "@sys.any"),
             parametro("medico", "@sys.any"),
@@ -1175,13 +1216,13 @@ def montar_intents(project: str) -> list:
             saida(project, "pedindo_horario", 0),
         ]),
         intent("texto.resultado.horario_fora_da_oferta", [
-            "Escolha um dos horários que acabei de passar."
+            "Não encontrei esse horário. " + nova_busca
         ], events=["RESULTADO_HORARIO_FORA_DA_OFERTA"], mlDisabled=True),
         intent("texto.resultado.horario_indisponivel", [
-            "Esse horário não está mais livre."
+            "Esse horário acabou de ser ocupado e não sobrou outro livre nessa busca. " + nova_busca
         ], events=["RESULTADO_HORARIO_INDISPONIVEL"], mlDisabled=True),
         intent("texto.resultado.agendamento_nao_encontrado", [
-            "Não encontrei essa consulta."
+            "Não encontrei essa consulta. Digite menu para ver as opções ou atendente para falar com a equipe."
         ], events=["RESULTADO_AGENDAMENTO_NAO_ENCONTRADO"], mlDisabled=True),
         intent("texto.resultado.sucesso_escrita", [
             "$texto",
@@ -1203,7 +1244,8 @@ def montar_intents(project: str) -> list:
             saida(project, "lista", 0),
         ]),
         intent("texto.resultado.indisponivel", [
-            "Não consegui consultar agora. Pode tentar de novo ou pedir um atendente."
+            "Não consegui consultar a agenda agora. Envie a mensagem de novo em instantes "
+            "ou digite atendente para falar com a equipe."
         ], events=["RESULTADO_INDISPONIVEL"], mlDisabled=True),
         intent("texto.resultado.faq", [
             "$texto"

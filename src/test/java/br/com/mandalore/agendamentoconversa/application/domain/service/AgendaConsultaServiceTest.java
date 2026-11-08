@@ -64,14 +64,106 @@ class AgendaConsultaServiceTest {
     }
 
     @Test
-    void escolherForaDaOfertaNaoGravaConfirmacao() {
+    void escolherForaDaOfertaMostraOsHorariosDeNovo() {
         ContextoConversa ctx = new ContextoConversa();
+        ctx.setEspecialidadeNome("Ortopedia");
         ctx.setOferta(List.of(horario("10")));
 
         ResultadoOperacao resultado = service.executar(comando("acao.agenda.escolher", Map.of("escolha", 9), ctx));
 
-        assertThat(resultado.evento()).isEqualTo("RESULTADO_HORARIO_FORA_DA_OFERTA");
+        assertThat(resultado.evento()).isEqualTo("RESULTADO_LISTA_HORARIOS");
+        assertThat(resultado.parametros().get("lista"))
+                .startsWith("Não encontrei esse número na lista.")
+                .contains("1. seg 20/07, 14:30, com Ana", "Responda com o número do horário");
         assertThat(ctx.temConfirmacao()).isFalse();
+    }
+
+    @Test
+    void escolherSemOfertaAvisaQueNaoAchouOHorario() {
+        ResultadoOperacao resultado = service.executar(comando("acao.agenda.escolher", Map.of("escolha", 1), new ContextoConversa()));
+
+        assertThat(resultado.evento()).isEqualTo("RESULTADO_HORARIO_FORA_DA_OFERTA");
+    }
+
+    @Test
+    void horarioOcupadoNaGravacaoOfereceOsQueSobraram() {
+        ContextoConversa ctx = confirmandoHorario("10");
+        when(escrita.agendar(org.mockito.ArgumentMatchers.any(PedidoAgendar.class)))
+                .thenReturn(new ResultadoEscrita(CodigoNegocio.HORARIO_INDISPONIVEL));
+        when(agenda.disponibilidade(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of(horario("10"), horario("12")));
+
+        ResultadoOperacao resultado = service.executar(comando("acao.agenda.agendar", Map.of("confirmacao", "sim"), ctx));
+
+        assertThat(resultado.evento()).isEqualTo("RESULTADO_LISTA_HORARIOS");
+        assertThat(resultado.codigo()).isEqualTo(CodigoNegocio.HORARIO_INDISPONIVEL);
+        assertThat(resultado.parametros().get("lista")).startsWith("Esse horário acabou de ser ocupado.");
+        assertThat(ctx.getOferta()).extracting(HorarioOferta::nrSequencia).containsExactly("12");
+        assertThat(ctx.temConfirmacao()).isFalse();
+    }
+
+    @Test
+    void horarioOcupadoSemOutroLivreAvisaENaoOfereceLista() {
+        ContextoConversa ctx = confirmandoHorario("10");
+        when(escrita.agendar(org.mockito.ArgumentMatchers.any(PedidoAgendar.class)))
+                .thenReturn(new ResultadoEscrita(CodigoNegocio.HORARIO_INDISPONIVEL));
+        when(agenda.disponibilidade(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(horario("10")));
+
+        ResultadoOperacao resultado = service.executar(comando("acao.agenda.agendar", Map.of("confirmacao", "sim"), ctx));
+
+        assertThat(resultado.evento()).isEqualTo("RESULTADO_HORARIO_INDISPONIVEL");
+        assertThat(ctx.getOferta()).isEmpty();
+    }
+
+    @Test
+    void numeroInexistenteNaListaDeAgendamentosMostraAListaDeNovo() {
+        ContextoConversa ctx = paciente();
+        ctx.setAgendamentos(List.of(new AgendamentoAberto(
+                "10", LocalDateTime.of(2026, 7, 18, 9, 0), "Ortopedia", "Ana", "Sala", "N"
+        )));
+
+        ResultadoOperacao resultado = service.executar(comando("acao.agenda.cancelar", Map.of("escolha", 5), ctx));
+
+        assertThat(resultado.evento()).isEqualTo("RESULTADO_SUCESSO_LISTA");
+        assertThat(resultado.parametros().get("lista"))
+                .startsWith("Não encontrei esse número na lista.")
+                .contains("18/07/2026, Ortopedia");
+    }
+
+    @Test
+    void perguntaDeCancelamentoTrazEspecialidadeDataEHora() {
+        ContextoConversa ctx = paciente();
+        ctx.setAgendamentos(List.of(new AgendamentoAberto(
+                "10", LocalDateTime.of(2026, 7, 18, 9, 0), "Ortopedia", "Ana", "Sala", "N"
+        )));
+
+        ResultadoOperacao resultado = service.executar(comando("acao.agenda.cancelar", Map.of("escolha", 1), ctx));
+
+        assertThat(resultado.parametros().get("texto"))
+                .isEqualTo("Posso cancelar a consulta de Ortopedia do dia 18/07/2026, às 09:00? Responda sim ou não.");
+    }
+
+    @Test
+    void identificarDepoisDeEscolherConsultaVaiDiretoAosConvenios() {
+        ContextoConversa ctx = new ContextoConversa();
+        ctx.setObjetivo("consulta");
+        when(agenda.identificar("12345678901", LocalDate.of(1988, 10, 19)))
+                .thenReturn(List.of(new br.com.mandalore.agendamentoconversa.application.domain.model.PacienteCadastro("1", "Maria da Silva")));
+        when(agenda.agendamentosFuturos("1")).thenReturn(List.of());
+        when(agenda.convenios("1")).thenReturn(List.of(ItemCatalogo.real("1", "Particular", false)));
+
+        ResultadoOperacao resultado = service.executar(comando(
+                "acao.paciente.identificar",
+                Map.of("cpf", "123.456.789-01", "data_nascimento", "1988-10-19"),
+                ctx
+        ));
+
+        assertThat(resultado.evento()).isEqualTo("RESULTADO_SUCESSO_LISTA");
+        assertThat(resultado.parametros().get("lista"))
+                .startsWith("Encontrei seu cadastro, Maria.")
+                .contains("Qual convênio", "1. Particular");
+        assertThat(ctx.getLista().tipo()).isEqualTo("convenio");
+        assertThat(ctx.isLimparObjetivo()).isTrue();
     }
 
     @Test
@@ -297,6 +389,22 @@ class AgendaConsultaServiceTest {
         ContextoConversa ctx = new ContextoConversa();
         ctx.setPacienteId("1");
         ctx.setNome("Maria");
+        return ctx;
+    }
+
+    private ContextoConversa confirmandoHorario(String nr) {
+        ContextoConversa ctx = paciente();
+        HorarioOferta horario = horario(nr);
+        ctx.setEspecialidadeId("5");
+        ctx.setEspecialidadeNome("Ortopedia");
+        ctx.setPeriodo("tarde");
+        ctx.setDia(LocalDate.of(2026, 7, 20));
+        ctx.setOferta(List.of(horario));
+        ctx.setConfirmacaoNr(nr);
+        ctx.setConfirmacaoTipo("agendar");
+        ctx.setConfirmacaoCdAgenda("99");
+        ctx.setConfirmacaoDataHora(horario.dataHora());
+        identidades.guardar("1", new IdentidadePaciente("12345678901", LocalDate.of(1988, 10, 19), "Maria Silva"));
         return ctx;
     }
 
