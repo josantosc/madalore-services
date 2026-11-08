@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS agenda.convenio (
     ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Horário de atendimento semanal. oferece_bot: o bot pode oferecer esses horários ("vagas do bot").
+-- Horário de atendimento. oferece_bot: o bot pode oferecer esses horários ("vagas do bot").
 -- dia_semana segue a ISO: 1 = segunda, 7 = domingo.
 CREATE TABLE IF NOT EXISTS agenda.grade (
     id BIGSERIAL PRIMARY KEY,
@@ -41,6 +41,16 @@ CREATE TABLE IF NOT EXISTS agenda.grade (
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     CHECK (fim > inicio)
 );
+
+-- Grade semanal (dia_semana, vigência opcional) ou só numa data (data). Grades antigas viram semanais sem vigência.
+ALTER TABLE agenda.grade ALTER COLUMN dia_semana DROP NOT NULL;
+ALTER TABLE agenda.grade ADD COLUMN IF NOT EXISTS data DATE;
+ALTER TABLE agenda.grade ADD COLUMN IF NOT EXISTS vigencia_inicio DATE;
+ALTER TABLE agenda.grade ADD COLUMN IF NOT EXISTS vigencia_fim DATE;
+ALTER TABLE agenda.grade DROP CONSTRAINT IF EXISTS grade_recorrencia_check;
+ALTER TABLE agenda.grade ADD CONSTRAINT grade_recorrencia_check
+    CHECK ((data IS NULL) <> (dia_semana IS NULL)
+        AND (vigencia_inicio IS NULL OR vigencia_fim IS NULL OR vigencia_fim >= vigencia_inicio));
 
 -- Período sem atendimento. Sem profissional: vale para a clínica inteira (feriado).
 CREATE TABLE IF NOT EXISTS agenda.bloqueio (

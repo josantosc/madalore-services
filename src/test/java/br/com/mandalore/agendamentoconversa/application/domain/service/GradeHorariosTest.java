@@ -15,8 +15,8 @@ class GradeHorariosTest {
 
     /** 10/11/2026 é uma terça-feira. */
     private static final LocalDate TERCA = LocalDate.of(2026, 11, 10);
-    private static final Agenda.Grade MANHA = new Agenda.Grade(1L, 7, 3, 2, LocalTime.of(8, 0), LocalTime.of(10, 0), 30, true, "Sala 1", true);
-    private static final Agenda.Grade TARDE_SO_RECEPCAO = new Agenda.Grade(2L, 7, 3, 2, LocalTime.of(14, 0), LocalTime.of(15, 0), 30, false, "", true);
+    private static final Agenda.Grade MANHA = new Agenda.Grade(1L, 7, 3, 2, null, null, null, LocalTime.of(8, 0), LocalTime.of(10, 0), 30, true, "Sala 1", true);
+    private static final Agenda.Grade TARDE_SO_RECEPCAO = new Agenda.Grade(2L, 7, 3, 2, null, null, null, LocalTime.of(14, 0), LocalTime.of(15, 0), 30, false, "", true);
 
     @Test
     void gradeViraHorariosDoTamanhoDaDuracaoSoNoDiaDaSemana() {
@@ -30,14 +30,33 @@ class GradeHorariosTest {
 
     @Test
     void sobraMenorQueADuracaoNaoViraHorario() {
-        Agenda.Grade quebrada = new Agenda.Grade(3L, 7, 3, 2, LocalTime.of(8, 0), LocalTime.of(9, 10), 30, true, "", true);
+        Agenda.Grade quebrada = new Agenda.Grade(3L, 7, 3, 2, null, null, null, LocalTime.of(8, 0), LocalTime.of(9, 10), 30, true, "", true);
 
         assertThat(GradeHorarios.gerar(List.of(quebrada), TERCA, TERCA.plusDays(1))).hasSize(2);
     }
 
     @Test
+    void gradeDeDataEspecificaSoGeraHorarioNaquelaData() {
+        Agenda.Grade avulsa = new Agenda.Grade(6L, 7, 3, null, TERCA, null, null, LocalTime.of(8, 0), LocalTime.of(9, 0), 30, true, "", true);
+
+        assertThat(GradeHorarios.gerar(List.of(avulsa), TERCA.minusWeeks(1), TERCA.plusWeeks(2)))
+                .extracting(Agenda.Horario::inicio)
+                .containsExactly(TERCA.atTime(8, 0), TERCA.atTime(8, 30));
+    }
+
+    @Test
+    void gradeSemanalSoValeDentroDaVigencia() {
+        Agenda.Grade cobertura = new Agenda.Grade(7L, 7, 3, 2, null, TERCA, TERCA.plusWeeks(1),
+                LocalTime.of(8, 0), LocalTime.of(8, 30), 30, true, "", true);
+
+        assertThat(GradeHorarios.gerar(List.of(cobertura), TERCA.minusWeeks(2), TERCA.plusWeeks(3)))
+                .extracting(h -> h.inicio().toLocalDate())
+                .containsExactly(TERCA, TERCA.plusWeeks(1));
+    }
+
+    @Test
     void gradeInativaNaoGeraHorario() {
-        Agenda.Grade inativa = new Agenda.Grade(4L, 7, 3, 2, LocalTime.of(8, 0), LocalTime.of(9, 0), 30, true, "", false);
+        Agenda.Grade inativa = new Agenda.Grade(4L, 7, 3, 2, null, null, null, LocalTime.of(8, 0), LocalTime.of(9, 0), 30, true, "", false);
 
         assertThat(GradeHorarios.gerar(List.of(inativa), TERCA, TERCA.plusDays(1))).isEmpty();
     }
@@ -56,7 +75,7 @@ class GradeHorariosTest {
 
     @Test
     void antecedenciaEPeriodoFiltramComoNoTasy() {
-        List<Agenda.Grade> grades = List.of(MANHA, new Agenda.Grade(5L, 7, 3, 2, LocalTime.of(13, 0), LocalTime.of(14, 0), 30, true, "", true));
+        List<Agenda.Grade> grades = List.of(MANHA, new Agenda.Grade(5L, 7, 3, 2, null, null, null, LocalTime.of(13, 0), LocalTime.of(14, 0), 30, true, "", true));
         LocalDateTime de = TERCA.atStartOfDay();
         LocalDateTime ate = TERCA.plusDays(1).atStartOfDay();
 

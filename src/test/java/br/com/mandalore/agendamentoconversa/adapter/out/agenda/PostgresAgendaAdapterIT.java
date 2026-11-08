@@ -70,7 +70,7 @@ class PostgresAgendaAdapterIT {
         profissional = agenda.salvarItem(conta, Agenda.Cadastro.PROFISSIONAL, new Agenda.Item(null, "Dra. Ana", true)).id();
         especialidade = agenda.salvarItem(conta, Agenda.Cadastro.ESPECIALIDADE, new Agenda.Item(null, "Cardiologia", true)).id();
         agenda.salvarItem(conta, Agenda.Cadastro.CONVENIO, new Agenda.Item(null, "Particular", true));
-        agenda.salvarGrade(conta, new Agenda.Grade(null, profissional, especialidade, 1, LocalTime.of(8, 0), LocalTime.of(12, 0), 30, true, "Sala 1", true));
+        agenda.salvarGrade(conta, new Agenda.Grade(null, profissional, especialidade, 1, null, null, null, LocalTime.of(8, 0), LocalTime.of(12, 0), 30, true, "Sala 1", true));
     }
 
     @AfterEach
@@ -196,9 +196,24 @@ class PostgresAgendaAdapterIT {
     }
 
     @Test
+    void gravaGradeDeDataEspecificaEVigencia() {
+        LocalDate dia = LocalDate.of(2026, 11, 12);
+        Agenda.Grade avulsa = agenda.salvarGrade(conta, new Agenda.Grade(null, profissional, especialidade, null, dia, null, null,
+                LocalTime.of(14, 0), LocalTime.of(16, 0), 30, true, "", true));
+        Agenda.Grade cobertura = agenda.salvarGrade(conta, new Agenda.Grade(null, profissional, especialidade, 3, null, dia, dia.plusMonths(1),
+                LocalTime.of(14, 0), LocalTime.of(16, 0), 30, true, "", true));
+
+        assertThat(avulsa.diaSemana()).isNull();
+        assertThat(avulsa.data()).isEqualTo(dia);
+        assertThat(cobertura.vigenciaInicio()).isEqualTo(dia);
+        assertThat(cobertura.vigenciaFim()).isEqualTo(dia.plusMonths(1));
+        assertThat(agenda.grades(conta)).extracting(Agenda.Grade::data).containsExactly(null, null, dia);
+    }
+
+    @Test
     void excluirSemConsultaApagaComOsHorariosEComConsultaSoDesativa() {
         long pediatria = agenda.salvarItem(conta, Agenda.Cadastro.ESPECIALIDADE, new Agenda.Item(null, "Pediatria", true)).id();
-        agenda.salvarGrade(conta, new Agenda.Grade(null, profissional, pediatria, 2, LocalTime.of(14, 0), LocalTime.of(16, 0), 30, true, "", true));
+        agenda.salvarGrade(conta, new Agenda.Grade(null, profissional, pediatria, 2, null, null, null, LocalTime.of(14, 0), LocalTime.of(16, 0), 30, true, "", true));
 
         assertThat(agenda.excluirItem(conta, Agenda.Cadastro.ESPECIALIDADE, pediatria)).isEqualTo(Agenda.Exclusao.EXCLUIDO);
         assertThat(agenda.itens(conta, Agenda.Cadastro.ESPECIALIDADE)).extracting(Agenda.Item::nome).containsExactly("Cardiologia");

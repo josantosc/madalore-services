@@ -75,12 +75,18 @@ public final class Agenda {
     public record Item(Long id, String nome, boolean ativo) {
     }
 
-    /** Horário de atendimento semanal. diaSemana segue a ISO (1 = segunda). */
+    /**
+     * Horário de atendimento: semanal (diaSemana na ISO, 1 = segunda, com vigência opcional) ou só numa data.
+     * Preenche diaSemana ou data, nunca os dois.
+     */
     public record Grade(
             Long id,
             long profissionalId,
             long especialidadeId,
-            int diaSemana,
+            Integer diaSemana,
+            LocalDate data,
+            LocalDate vigenciaInicio,
+            LocalDate vigenciaFim,
             LocalTime inicio,
             LocalTime fim,
             int duracaoMin,
@@ -88,6 +94,15 @@ public final class Agenda {
             String local,
             boolean ativo
     ) {
+
+        public boolean valeEm(LocalDate dia) {
+            if (data != null) {
+                return data.equals(dia);
+            }
+            return diaSemana != null && diaSemana == dia.getDayOfWeek().getValue()
+                    && (vigenciaInicio == null || !dia.isBefore(vigenciaInicio))
+                    && (vigenciaFim == null || !dia.isAfter(vigenciaFim));
+        }
     }
 
     /** Sem profissional, vale para a clínica inteira. */

@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -160,7 +161,7 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
 
     @Override
     public List<Agenda.Grade> grades(String conta) {
-        return jdbc.query("SELECT * FROM agenda.grade WHERE conta_id = :conta ORDER BY dia_semana, inicio, profissional_id",
+        return jdbc.query("SELECT * FROM agenda.grade WHERE conta_id = :conta ORDER BY data NULLS FIRST, dia_semana, inicio, profissional_id",
                 conta(conta), this::grade);
     }
 
@@ -176,7 +177,10 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
                 .addValue("id", grade.id())
                 .addValue("profissional", grade.profissionalId())
                 .addValue("especialidade", grade.especialidadeId())
-                .addValue("dia", grade.diaSemana())
+                .addValue("dia", grade.diaSemana(), Types.SMALLINT)
+                .addValue("data", grade.data(), Types.DATE)
+                .addValue("vigenciaInicio", grade.vigenciaInicio(), Types.DATE)
+                .addValue("vigenciaFim", grade.vigenciaFim(), Types.DATE)
                 .addValue("inicio", Time.valueOf(grade.inicio()))
                 .addValue("fim", Time.valueOf(grade.fim()))
                 .addValue("duracao", grade.duracaoMin())
@@ -188,14 +192,15 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
         Long id;
         if (grade.id() == null) {
             id = jdbc.queryForObject("""
-                    INSERT INTO agenda.grade (conta_id, profissional_id, especialidade_id, dia_semana, inicio, fim, duracao_min,
-                                              oferece_bot, local, ativo)
-                    VALUES (:conta, :profissional, :especialidade, :dia, :inicio, :fim, :duracao, :bot, :local, :ativo)
+                    INSERT INTO agenda.grade (conta_id, profissional_id, especialidade_id, dia_semana, data, vigencia_inicio,
+                                              vigencia_fim, inicio, fim, duracao_min, oferece_bot, local, ativo)
+                    VALUES (:conta, :profissional, :especialidade, :dia, :data, :vigenciaInicio, :vigenciaFim, :inicio, :fim,
+                            :duracao, :bot, :local, :ativo)
                     RETURNING id
                     """, params, Long.class);
         } else if (jdbc.update("""
                 UPDATE agenda.grade SET profissional_id = :profissional, especialidade_id = :especialidade, dia_semana = :dia,
-                       inicio = :inicio, fim = :fim, duracao_min = :duracao, oferece_bot = :bot, local = :local, ativo = :ativo
+                       data = :data, vigencia_inicio = :vigenciaInicio, vigencia_fim = :vigenciaFim, inicio = :inicio, fim = :fim, duracao_min = :duracao, oferece_bot = :bot, local = :local, ativo = :ativo
                 WHERE id = :id AND conta_id = :conta
                 """, params) == 1) {
             id = grade.id();
@@ -679,7 +684,10 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
                 rs.getLong("id"),
                 rs.getLong("profissional_id"),
                 rs.getLong("especialidade_id"),
-                rs.getInt("dia_semana"),
+                rs.getObject("dia_semana", Integer.class),
+                rs.getObject("data", LocalDate.class),
+                rs.getObject("vigencia_inicio", LocalDate.class),
+                rs.getObject("vigencia_fim", LocalDate.class),
                 rs.getTime("inicio").toLocalTime(),
                 rs.getTime("fim").toLocalTime(),
                 rs.getInt("duracao_min"),

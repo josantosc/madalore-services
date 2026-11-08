@@ -190,21 +190,30 @@
   <dialog id="dlgGrade">
     <form method="dialog" id="formGrade" novalidate>
       <h2 id="gTitulo"></h2>
-      <p class="sub">Escolha quem atende, o dia da semana e a faixa de horário. A faixa é dividida em consultas do tamanho da duração.</p>
+      <p class="sub">Escolha quem atende, quando e a faixa de horário. A faixa é dividida em consultas do tamanho da duração.</p>
       <div class="form">
         <div class="linha2">
           <label>Profissional<select class="campo" id="gProf"></select></label>
           <label>Especialidade<select class="campo" id="gEsp"></select></label>
         </div>
+        <div class="linha2">
+          <label>Repetir<select class="campo" id="gTipo">
+            <option value="semanal">Toda semana</option>
+            <option value="data">Só em uma data</option>
+          </select></label>
+          <label id="gDiaRotulo">Dia da semana<select class="campo" id="gDia"></select></label>
+          <label id="gDataRotulo" hidden>Data<input class="campo" type="date" id="gData"></label>
+        </div>
+        <div class="linha2" id="gVigencia">
+          <label>Vale a partir de <span class="dica">Opcional</span><input class="campo" type="date" id="gVigIni"></label>
+          <label>Vale até <span class="dica">Opcional. Em branco: sem data para acabar</span><input class="campo" type="date" id="gVigFim"></label>
+        </div>
         <div class="linha3">
-          <label>Dia da semana<select class="campo" id="gDia"></select></label>
           <label>Das<input class="campo" type="time" id="gInicio"></label>
           <label>Até<input class="campo" type="time" id="gFim"></label>
-        </div>
-        <div class="linha2">
           <label>Duração de cada consulta<select class="campo" id="gDur"></select></label>
-          <label>Local <span class="dica">Opcional. Ex.: Consultório 2</span><input class="campo" id="gLocal" maxlength="200"></label>
         </div>
+        <label>Local <span class="dica">Opcional. Ex.: Consultório 2</span><input class="campo" id="gLocal" maxlength="200"></label>
         <label class="check"><input type="checkbox" id="gBot">
           <span>O bot pode oferecer estes horários<span class="sub">Desmarcado: as vagas só aparecem para a recepção.</span></span></label>
         <label class="check"><input type="checkbox" id="gAtivo">
@@ -279,6 +288,26 @@
     const hhmm = (t) => (t || "").substring(0, 5);
     const gradesDe = (tipo, id) => COLUNA[tipo] ? estado.grades.filter((g) => g[COLUNA[tipo]] === id) : [];
     const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+    const ddmmaaaa = (iso) => iso ? iso.split("-").reverse().join("/") : "";
+    const diaDaData = (iso) => DIAS[(new Date(iso + "T12:00").getDay() + 6) % 7 + 1];
+    const hojeIso = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().substring(0, 10); };
+    const encerrada = (g) => (g.data || g.vigenciaFim || "9999") < hojeIso();
+
+    function quando(g) {
+      if (g.data) return diaDaData(g.data) + ", " + ddmmaaaa(g.data);
+      const vig = g.vigenciaInicio && g.vigenciaFim ? "de " + ddmmaaaa(g.vigenciaInicio) + " até " + ddmmaaaa(g.vigenciaFim)
+        : g.vigenciaInicio ? "a partir de " + ddmmaaaa(g.vigenciaInicio)
+        : g.vigenciaFim ? "até " + ddmmaaaa(g.vigenciaFim) : "";
+      return (g.diaSemana >= 6 ? "Todo " : "Toda ") + DIAS[g.diaSemana].toLowerCase() + (vig ? ", " + vig : "");
+    }
+
+    function celulaDia(g) {
+      const fim = encerrada(g) ? el("span", { className: "tag" }, "Encerrado") : null;
+      if (g.data) return el("td", {}, el("span", { className: "nome" }, ddmmaaaa(g.data)),
+        el("span", { className: "sub" }, diaDaData(g.data) + ", só nesta data"), fim);
+      const vig = quando(g).split(", ").slice(1).join(", ");
+      return el("td", {}, DIAS[g.diaSemana], vig ? el("span", { className: "sub" }, vig) : null, fim);
+    }
 
     async function carregar() {
       const ctx = await api("/agenda/cadastros/api/contexto");
@@ -450,7 +479,7 @@
         && (!estado.filtroEsp || g.especialidadeId === estado.filtroEsp));
       const corpo = $("linhasGrade");
       corpo.replaceChildren(...lista.map((g) => el("tr", { className: g.ativo ? "" : "inativo" },
-        el("td", {}, DIAS[g.diaSemana]),
+        celulaDia(g),
         el("td", { className: "hora" }, hhmm(g.inicio) + " às " + hhmm(g.fim), el("span", { className: "sub" }, "consultas de " + g.duracaoMin + " min")),
         el("td", {}, el("span", { className: "nome" }, nomeDe("PROFISSIONAL", g.profissionalId)), g.local ? el("span", { className: "sub" }, g.local) : null),
         el("td", { className: "col-opc" }, nomeDe("ESPECIALIDADE", g.especialidadeId)),
@@ -465,7 +494,7 @@
       }
       if (!lista.length) {
         corpo.append(el("tr", {}, el("td", { colSpan: 7, className: "vazio" }, el("strong", {}, "Nenhum horário de atendimento"),
-          "Crie um por profissional e dia da semana, por exemplo: Dra. Ana, segunda, das 08:00 às 12:00.")));
+          "Crie um por profissional e dia da semana (Dra. Ana, toda segunda, das 08:00 às 12:00) ou para uma data só.")));
       }
     }
 
@@ -481,6 +510,18 @@
       opcoes($("gProf"), profs.map((i) => [i.id, i.nome + (i.ativo ? "" : " (inativo)")]), g?.profissionalId ?? ($("filtroProf").value || undefined));
       opcoes($("gEsp"), esps.map((i) => [i.id, i.nome + (i.ativo ? "" : " (inativo)")]), g?.especialidadeId ?? estado.filtroEsp);
       opcoes($("gDia"), DIAS.slice(1).map((d, i) => [i + 1, d]), g?.diaSemana ?? 1);
+      $("gTipo").value = g?.data ? "data" : "semanal";
+      $("gData").value = g?.data || "";
+      $("gVigIni").value = g?.vigenciaInicio || "";
+      $("gVigFim").value = g?.vigenciaFim || "";
+      const tipo = () => {
+        const data = $("gTipo").value === "data";
+        $("gDiaRotulo").hidden = data;
+        $("gDataRotulo").hidden = !data;
+        $("gVigencia").hidden = data;
+      };
+      $("gTipo").onchange = tipo;
+      tipo();
       const durs = DURACOES.includes(g?.duracaoMin) || !g ? DURACOES : [...DURACOES, g.duracaoMin].sort((a, b) => a - b);
       opcoes($("gDur"), durs.map((d) => [d, d + " minutos"]), g?.duracaoMin ?? 30);
       $("gInicio").value = g ? hhmm(g.inicio) : "08:00";
@@ -496,10 +537,21 @@
           $("gErro").textContent = "O fim precisa ser depois do início.";
           return;
         }
+        const porData = $("gTipo").value === "data";
+        if (porData && !$("gData").value) {
+          $("gErro").textContent = "Informe a data do atendimento.";
+          return;
+        }
+        if (!porData && $("gVigIni").value && $("gVigFim").value && $("gVigFim").value < $("gVigIni").value) {
+          $("gErro").textContent = "O \"vale até\" precisa ser depois do \"vale a partir de\".";
+          return;
+        }
         $("gOk").disabled = true;
         try {
           await api("/agenda/cadastros/api/grades", json("PUT", { id: g?.id ?? null, profissionalId: Number($("gProf").value),
-            especialidadeId: Number($("gEsp").value), diaSemana: Number($("gDia").value), inicio: $("gInicio").value, fim: $("gFim").value,
+            especialidadeId: Number($("gEsp").value), diaSemana: porData ? null : Number($("gDia").value),
+            data: porData ? $("gData").value : null, vigenciaInicio: porData ? null : ($("gVigIni").value || null),
+            vigenciaFim: porData ? null : ($("gVigFim").value || null), inicio: $("gInicio").value, fim: $("gFim").value,
             duracaoMin: Number($("gDur").value), ofereceBot: $("gBot").checked, local: $("gLocal").value, ativo: $("gAtivo").checked }));
           $("dlgGrade").close();
           aviso(g ? "Horário alterado." : "Horário cadastrado.");
@@ -514,7 +566,7 @@
 
     function confirmarExclusaoGrade(g) {
       $("eTitulo").textContent = "Excluir horário de atendimento?";
-      $("eSub").textContent = nomeDe("PROFISSIONAL", g.profissionalId) + ", " + DIAS[g.diaSemana].toLowerCase() + " das "
+      $("eSub").textContent = nomeDe("PROFISSIONAL", g.profissionalId) + ", " + quando(g).toLowerCase() + ", das "
         + hhmm(g.inicio) + " às " + hhmm(g.fim) + ". As vagas deixam de existir; consultas já marcadas continuam.";
       $("eDetalhe").hidden = true;
       $("eErro").textContent = "";

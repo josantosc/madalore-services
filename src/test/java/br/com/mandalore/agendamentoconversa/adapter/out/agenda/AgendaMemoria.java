@@ -40,7 +40,7 @@ public class AgendaMemoria implements AgendaMandalorePort {
         agenda.item(Agenda.Cadastro.CONVENIO, "Particular");
         agenda.item(Agenda.Cadastro.CONVENIO, "Unimed");
         for (int dia = 1; dia <= 7; dia++) {
-            agenda.grades.add(new Agenda.Grade(agenda.sequencia++, ana.id(), cardio.id(), dia, LocalTime.of(8, 0), LocalTime.of(12, 0),
+            agenda.grades.add(new Agenda.Grade(agenda.sequencia++, ana.id(), cardio.id(), dia, null, null, null, LocalTime.of(8, 0), LocalTime.of(12, 0),
                     30, true, "Consultório 1", true));
         }
         return agenda;

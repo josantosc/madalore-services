@@ -179,8 +179,13 @@ public class AgendaService implements AgendaUseCase {
 
     @Override
     public Agenda.Grade salvarGrade(String conta, Agenda.Grade grade) {
-        if (grade.diaSemana() < 1 || grade.diaSemana() > 7) {
-            throw new IllegalArgumentException("Dia da semana inválido");
+        if (grade.data() != null) {
+            grade = new Agenda.Grade(grade.id(), grade.profissionalId(), grade.especialidadeId(), null, grade.data(), null, null,
+                    grade.inicio(), grade.fim(), grade.duracaoMin(), grade.ofereceBot(), grade.local(), grade.ativo());
+        } else if (grade.diaSemana() == null || grade.diaSemana() < 1 || grade.diaSemana() > 7) {
+            throw new IllegalArgumentException("Informe o dia da semana ou a data do atendimento");
+        } else if (grade.vigenciaInicio() != null && grade.vigenciaFim() != null && grade.vigenciaFim().isBefore(grade.vigenciaInicio())) {
+            throw new IllegalArgumentException("O fim da vigência precisa ser depois do início");
         }
         if (grade.inicio() == null || grade.fim() == null || !grade.inicio().isBefore(grade.fim())) {
             throw new IllegalArgumentException("O fim do atendimento precisa ser depois do início");

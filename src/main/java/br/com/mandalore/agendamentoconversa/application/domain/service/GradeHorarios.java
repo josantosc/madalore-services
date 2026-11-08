@@ -9,7 +9,7 @@ import java.util.List;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
 
-/** Horários que a grade semanal gera, sem tabela de horários pré-gerados. */
+/** Horários que a grade gera, sem tabela de horários pré-gerados. */
 public final class GradeHorarios {
 
     private GradeHorarios() {
@@ -19,9 +19,8 @@ public final class GradeHorarios {
     public static List<Agenda.Horario> gerar(List<Agenda.Grade> grades, LocalDate de, LocalDate ate) {
         List<Agenda.Horario> horarios = new ArrayList<>();
         for (LocalDate dia = de; dia.isBefore(ate); dia = dia.plusDays(1)) {
-            int diaSemana = dia.getDayOfWeek().getValue();
             for (Agenda.Grade grade : grades) {
-                if (!grade.ativo() || grade.diaSemana() != diaSemana || grade.id() == null) {
+                if (!grade.ativo() || !grade.valeEm(dia) || grade.id() == null) {
                     continue;
                 }
                 int fim = minutos(grade.fim());
