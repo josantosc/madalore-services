@@ -68,10 +68,10 @@ public class ContextoCodec {
                     ctx.setDia(Textos.data(texto(params, "data")));
                     ctx.setSemana("true".equals(texto(params, "semana")));
                 }
-                case "oferta" -> ctx.setOferta(lerLista(params, new TypeReference<List<HorarioOferta>>() {
+                case "oferta" -> ctx.setOferta(lerLista(params, "horarios", new TypeReference<List<HorarioOferta>>() {
                 }));
                 case "agendamentos" -> {
-                    ctx.setAgendamentos(lerLista(params, new TypeReference<List<AgendamentoAberto>>() {
+                    ctx.setAgendamentos(lerLista(params, "itens", new TypeReference<List<AgendamentoAberto>>() {
                     }));
                     ctx.setAgendamentoAtualId(texto(params, "atual"));
                 }
@@ -155,12 +155,13 @@ public class ContextoCodec {
                     "semana", Boolean.toString(ctx.isSemana())
             )));
         }
+        // O Dialogflow grava os parâmetros da intent em todos os contextos ativos: nenhuma chave daqui pode ter nome de parâmetro de intent.
         if (ctx.getOferta() != null && !ctx.getOferta().isEmpty()) {
-            saida.add(contexto(session, "oferta", 5, mapa("payload", json(ctx.getOferta()))));
+            saida.add(contexto(session, "oferta", 5, mapa("horarios", json(ctx.getOferta()))));
         }
         if ((ctx.getAgendamentos() != null && !ctx.getAgendamentos().isEmpty()) || ctx.getAgendamentoAtualId() != null) {
             Map<String, String> params = new LinkedHashMap<>();
-            params.put("payload", json(ctx.getAgendamentos()));
+            params.put("itens", json(ctx.getAgendamentos()));
             if (ctx.getAgendamentoAtualId() != null) {
                 params.put("atual", ctx.getAgendamentoAtualId());
             }
@@ -181,7 +182,7 @@ public class ContextoCodec {
             )));
         }
         if (ctx.getLista() != null) {
-            saida.add(contexto(session, "lista", 3, mapa("payload", json(ctx.getLista()))));
+            saida.add(contexto(session, "lista", 3, mapa("pagina", json(ctx.getLista()))));
         }
         if (ctx.getQuantidadeFutura() != null) {
             saida.add(contexto(session, "agendamento_futuro", 3, mapa(
@@ -197,7 +198,7 @@ public class ContextoCodec {
     }
 
     private PaginaLista lerPagina(JsonNode params) {
-        String payload = texto(params, "payload");
+        String payload = texto(params, "pagina");
         if (payload == null) {
             return null;
         }
@@ -208,8 +209,8 @@ public class ContextoCodec {
         }
     }
 
-    private <T> List<T> lerLista(JsonNode params, TypeReference<List<T>> tipo) {
-        String payload = texto(params, "payload");
+    private <T> List<T> lerLista(JsonNode params, String chave, TypeReference<List<T>> tipo) {
+        String payload = texto(params, chave);
         if (payload == null) {
             return new ArrayList<>();
         }

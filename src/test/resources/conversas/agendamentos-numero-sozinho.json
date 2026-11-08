@@ -1,0 +1,62 @@
+{
+  "id": "agendamentos-numero-sozinho",
+  "fixture": {
+    "pacienteCadastrado": true,
+    "possuiAgendamento": true,
+    "periodosSemHorario": []
+  },
+  "turnos": [
+    {
+      "intent": "texto.saudacao",
+      "texto": "oi",
+      "espera": {
+        "contextos": ["menu"]
+      }
+    },
+    {
+      "intent": "acao.paciente.identificar",
+      "texto": "52998224725 19/10/1988",
+      "parametros": {
+        "cpf": "52998224725",
+        "data_nascimento": "1988-10-19"
+      },
+      "espera": {
+        "evento": "RESULTADO_JA_TEM_AGENDAMENTO",
+        "contextos": ["paciente", "agendamentos"]
+      }
+    },
+    {
+      "intent": "acao.agenda.meus_agendamentos",
+      "texto": "ver agendamentos",
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_LISTA",
+        "textoContem": ["Você tem estes agendamentos", "remarcar 1"],
+        "contextos": ["agendamentos"]
+      }
+    },
+    {
+      "intent": "acao.consulta.escolher_lista",
+      "texto": "1",
+      "parametros": {
+        "escolha": "1"
+      },
+      "espera": {
+        "evento": "RESULTADO_SUCESSO_LISTA",
+        "textoContem": ["confirmar 1", "remarcar 1", "cancelar 1"],
+        "contextos": ["agendamentos"],
+        "escritas": 0
+      }
+    },
+    {
+      "intent": "acao.agenda.remarcar",
+      "texto": "remarcar 1",
+      "parametros": {
+        "escolha": 1
+      },
+      "espera": {
+        "evento": "RESULTADO_PERIODO",
+        "escritas": 0
+      }
+    }
+  ]
+}

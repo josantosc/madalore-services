@@ -232,6 +232,9 @@ public class AgendaConsultaService {
         ContextoConversa ctx = command.contexto();
         PaginaLista pagina = ctx.getLista();
         if (pagina == null || pagina.exibidos() == null || pagina.exibidos().isEmpty()) {
+            if (!ctx.getAgendamentos().isEmpty()) {
+                return acoesDoAgendamento(command);
+            }
             return indisponivel(ctx);
         }
         String fala = Textos.normalizar(command.queryText());
@@ -800,6 +803,16 @@ public class AgendaConsultaService {
         return evento("RESULTADO_LISTA_HORARIOS", Map.of(
                 "lista", Formatador.horarios(aviso, busca, ctx.getPeriodo(), ctx.getOferta())
         ), ctx, codigo);
+    }
+
+    private ResultadoOperacao acoesDoAgendamento(FulfillmentCommand command) {
+        ContextoConversa ctx = command.contexto();
+        AgendamentoAberto item = agendamentoEscolhido(command);
+        if (item == null) {
+            return listarDeNovo(ctx);
+        }
+        int numero = ctx.getAgendamentos().indexOf(item) + 1;
+        return evento("RESULTADO_SUCESSO_LISTA", Map.of("lista", Formatador.acoesAgendamento(numero, item)), ctx, CodigoNegocio.SUCESSO);
     }
 
     private ResultadoOperacao listarDeNovo(ContextoConversa ctx) {

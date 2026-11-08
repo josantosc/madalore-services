@@ -115,13 +115,10 @@ public class WebhookController {
         Map<String, Object> evento = new LinkedHashMap<>();
         evento.put("name", resultado.evento());
         evento.put("languageCode", "pt-BR");
-        List<Map<String, Object>> contextos = codec.escrever(session, resultado.contexto());
-        Map<String, Object> parametrosEvento = new LinkedHashMap<>(resultado.parametros());
-        incluirPayloadContexto(resultado.evento(), contextos, parametrosEvento);
-        evento.put("parameters", parametrosEvento);
+        evento.put("parameters", new LinkedHashMap<>(resultado.parametros()));
         Map<String, Object> resposta = new LinkedHashMap<>();
         resposta.put("followupEventInput", evento);
-        resposta.put("outputContexts", contextos);
+        resposta.put("outputContexts", codec.escrever(session, resultado.contexto()));
         return ResponseEntity.ok(resposta);
     }
 
@@ -163,25 +160,6 @@ public class WebhookController {
     /** Contexto vazio: a consulta atrasada ainda pode mexer no original, e o Dialogflow mantém os contextos atuais. */
     private static ResultadoOperacao indisponivel() {
         return new ResultadoOperacao("RESULTADO_INDISPONIVEL", Map.of(), new ContextoConversa(), CodigoNegocio.INDISPONIVEL);
-    }
-
-    private void incluirPayloadContexto(
-            String evento,
-            List<Map<String, Object>> contextos,
-            Map<String, Object> parametrosEvento
-    ) {
-        String contextoAlvo = "RESULTADO_LISTA_HORARIOS".equals(evento) ? "oferta" : "lista";
-        for (Map<String, Object> contexto : contextos) {
-            String nome = String.valueOf(contexto.get("name"));
-            if (!nome.endsWith("/contexts/" + contextoAlvo)) {
-                continue;
-            }
-            Object parametros = contexto.get("parameters");
-            if (parametros instanceof Map<?, ?> mapa && mapa.get("payload") != null) {
-                parametrosEvento.put("payload", mapa.get("payload"));
-                return;
-            }
-        }
     }
 
     private long elapsed(long startedAt) {

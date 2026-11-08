@@ -146,7 +146,7 @@ final class ConversaRegressionRunner {
         String evento = null;
         String texto;
         if ("WEBHOOK_STATE_ENABLED".equals(intent.path("webhookState").asText())) {
-            aplicarSaidas(intent.path("outputContexts"), parametros);
+            aplicarSaidas(intent, parametros);
             ObjectNode resposta = chamarWebhook(intent, turno, parametros);
             evento = resposta.path("followupEventInput").path("name").asText();
             JsonNode parametrosEvento = resposta.path("followupEventInput").path("parameters");
@@ -155,13 +155,13 @@ final class ConversaRegressionRunner {
             assertThat(destino).as("destino único para o evento " + evento).isNotNull();
             validarContextosEntrada(destino);
             texto = renderizar(destino, parametrosEvento);
-            aplicarSaidas(destino.path("outputContexts"), parametrosEvento);
+            aplicarSaidas(destino, parametrosEvento);
         } else {
             if (intent.path("resetContexts").asBoolean(false)) {
                 contextos.clear();
             }
             texto = renderizar(intent, parametros);
-            aplicarSaidas(intent.path("outputContexts"), parametros);
+            aplicarSaidas(intent, parametros);
         }
         registrar(turno, evento, texto);
         validarExpectativas(turno.path("espera"), evento, texto);
@@ -225,7 +225,12 @@ final class ConversaRegressionRunner {
         espera.path("payloadContem").fields().forEachRemaining(campo -> {
             ObjectNode contexto = contextos.get(campo.getKey());
             assertThat(contexto).as("contexto " + campo.getKey()).isNotNull();
-            assertThat(contexto.path("parameters").path("payload").asText())
+            String chave = switch (campo.getKey()) {
+                case "oferta" -> "horarios";
+                case "agendamentos" -> "itens";
+                default -> "pagina";
+            };
+            assertThat(contexto.path("parameters").path(chave).asText())
                     .as("payload do contexto " + campo.getKey())
                     .contains(campo.getValue().asText());
         });
@@ -274,8 +279,9 @@ final class ConversaRegressionRunner {
         }
     }
 
-    private void aplicarSaidas(JsonNode saidas, JsonNode parametros) {
-        for (JsonNode saida : saidas) {
+    /** Como o Dialogflow ES: mescla os parâmetros e grava cada parâmetro declarado da intent em todos os contextos ativos. */
+    private void aplicarSaidas(ObjectNode intent, JsonNode parametros) {
+        for (JsonNode saida : intent.path("outputContexts")) {
             String nome = nomeContexto(saida.path("name").asText());
             int lifespan = saida.path("lifespanCount").asInt();
             if (lifespan == 0) {
@@ -286,10 +292,22 @@ final class ConversaRegressionRunner {
             contexto.put("name", SESSION + "/contexts/" + nome);
             contexto.put("lifespanCount", lifespan);
             ObjectNode parametrosContexto = contexto.putObject("parameters");
-            if (parametros.isObject()) {
-                parametros.fields().forEachRemaining(campo -> parametrosContexto.set(campo.getKey(), campo.getValue()));
+            ObjectNode anterior = contextos.get(nome);
+            if (anterior != null && anterior.path("parameters").isObject()) {
+                parametrosContexto.setAll((ObjectNode) anterior.path("parameters"));
             }
             contextos.put(nome, contexto);
+        }
+        for (JsonNode declarado : intent.path("parameters")) {
+            String chave = declarado.path("displayName").asText();
+            JsonNode valor = parametros.path(chave);
+            JsonNode gravado = valor.isMissingNode() || valor.isNull() ? mapper.getNodeFactory().textNode("") : valor;
+            for (ObjectNode contexto : contextos.values()) {
+                ObjectNode parametrosContexto = contexto.has("parameters") && contexto.path("parameters").isObject()
+                        ? (ObjectNode) contexto.path("parameters")
+                        : contexto.putObject("parameters");
+                parametrosContexto.set(chave, gravado);
+            }
         }
     }
 

@@ -71,6 +71,20 @@ public final class Formatador {
         return texto.toString().trim();
     }
 
+    public static String acoesAgendamento(int numero, AgendamentoAberto item) {
+        StringBuilder texto = new StringBuilder("O que você quer fazer com a consulta");
+        if (item.especialidade() != null && !item.especialidade().isBlank()) {
+            texto.append(" de ").append(item.especialidade());
+        }
+        if (item.dataHora() != null) {
+            texto.append(" do dia ").append(Textos.dia(item.dataHora())).append(", às ").append(Textos.hora(item.dataHora()));
+        }
+        return texto.append("?\n\nDigite confirmar ").append(numero)
+                .append(", remarcar ").append(numero)
+                .append(" ou cancelar ").append(numero).append('.')
+                .toString();
+    }
+
     public static String resumoMarcacao(String especialidade, HorarioOferta horario, String convenio) {
         return resumoAgendamento(
                 especialidade == null || especialidade.isBlank() ? horario.especialidade() : especialidade,
