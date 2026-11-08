@@ -103,6 +103,12 @@ public final class Agenda {
                     && (vigenciaInicio == null || !dia.isBefore(vigenciaInicio))
                     && (vigenciaFim == null || !dia.isAfter(vigenciaFim));
         }
+
+        /** Ainda gera horários em {@code hoje} ou depois. */
+        public boolean vigenteDesde(LocalDate hoje) {
+            LocalDate ultimoDia = data != null ? data : vigenciaFim;
+            return ultimoDia == null || !ultimoDia.isBefore(hoje);
+        }
     }
 
     /** Sem profissional, vale para a clínica inteira. */

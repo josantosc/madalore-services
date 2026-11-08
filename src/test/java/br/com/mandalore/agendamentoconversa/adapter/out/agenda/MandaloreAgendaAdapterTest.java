@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
 import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
 import br.com.mandalore.agendamentoconversa.application.domain.model.FiltroDisponibilidade;
 import br.com.mandalore.agendamentoconversa.application.domain.model.HorarioOferta;
@@ -37,6 +39,25 @@ class MandaloreAgendaAdapterTest {
         assertThat(oferta.get(0).medico()).isEqualTo("Dra. Ana Mandalore");
         assertThat(oferta.get(0).especialidade()).isEqualTo("Cardiologia");
         assertThat(adaptador.disponibilidade(filtro("tarde"))).isEmpty();
+    }
+
+    @Test
+    void horarioEncerradoNaoLevaMedicoNemEspecialidadeAoBot() {
+        long romulo = memoria.item(Agenda.Cadastro.PROFISSIONAL, "Dr. Romulo").id();
+        long pediatria = memoria.item(Agenda.Cadastro.ESPECIALIDADE, "Pediatria").id();
+        memoria.salvarGrade("1", new Agenda.Grade(null, romulo, pediatria, null, AGORA.toLocalDate().minusDays(1), null, null,
+                LocalTime.of(8, 0), LocalTime.of(12, 0), 30, true, "", true));
+        memoria.salvarGrade("1", new Agenda.Grade(null, romulo, pediatria, 3, null, null, AGORA.toLocalDate().minusDays(1),
+                LocalTime.of(8, 0), LocalTime.of(12, 0), 30, true, "", true));
+
+        assertThat(adaptador.profissionais(null)).extracting(ItemCatalogo::nome).doesNotContain("Dr. Romulo");
+        assertThat(adaptador.especialidades(null)).extracting(ItemCatalogo::nome).doesNotContain("Pediatria");
+
+        memoria.salvarGrade("1", new Agenda.Grade(null, romulo, pediatria, null, AGORA.toLocalDate().plusDays(1), null, null,
+                LocalTime.of(8, 0), LocalTime.of(12, 0), 30, true, "", true));
+
+        assertThat(adaptador.profissionais(null)).extracting(ItemCatalogo::nome).contains("Dr. Romulo");
+        assertThat(adaptador.especialidades(String.valueOf(romulo))).extracting(ItemCatalogo::nome).containsExactly("Pediatria");
     }
 
     @Test

@@ -97,7 +97,11 @@ public class AgendaMemoria implements AgendaMandalorePort {
 
     @Override
     public Agenda.Grade salvarGrade(String conta, Agenda.Grade grade) {
-        throw new UnsupportedOperationException();
+        Agenda.Grade salva = new Agenda.Grade(sequencia++, grade.profissionalId(), grade.especialidadeId(), grade.diaSemana(),
+                grade.data(), grade.vigenciaInicio(), grade.vigenciaFim(), grade.inicio(), grade.fim(), grade.duracaoMin(),
+                grade.ofereceBot(), grade.local(), grade.ativo());
+        grades.add(salva);
+        return salva;
     }
 
     @Override

@@ -287,7 +287,8 @@ public class MandaloreAgendaAdapter implements AgendaConsultaPort, AgendamentoEs
     }
 
     private List<Agenda.Grade> gradesDoBot(String clinica) {
-        return agenda.grades(clinica).stream().filter(g -> g.ativo() && g.ofereceBot()).toList();
+        LocalDate hoje = LocalDate.now(relogio);
+        return agenda.grades(clinica).stream().filter(g -> g.ativo() && g.ofereceBot() && g.vigenteDesde(hoje)).toList();
     }
 
     private Map<Long, String> nomes(String clinica, Agenda.Cadastro cadastro) {
