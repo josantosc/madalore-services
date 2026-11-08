@@ -84,6 +84,7 @@ class PostgresAgendaAdapterIT {
         jdbc.update("DELETE FROM agenda.paciente WHERE conta_id = :conta", p);
         jdbc.update("DELETE FROM agenda.bloqueio WHERE conta_id = :conta", p);
         jdbc.update("DELETE FROM agenda.grade WHERE conta_id = :conta", p);
+        jdbc.update("DELETE FROM agenda.profissional_especialidade WHERE profissional_id IN (SELECT id FROM agenda.profissional WHERE conta_id = :conta)", p);
         for (String tabela : List.of("profissional", "especialidade", "convenio")) {
             jdbc.update("DELETE FROM agenda." + tabela + " WHERE conta_id = :conta", p);
         }
@@ -193,6 +194,21 @@ class PostgresAgendaAdapterIT {
         mvc.perform(get("/agenda/api/pendencias").param("conta", conta).header("Authorization", LOGIN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resumo.abertas").value(1));
+    }
+
+    @Test
+    void vinculaEspecialidadesDoProfissional() {
+        long pediatria = agenda.salvarItem(conta, Agenda.Cadastro.ESPECIALIDADE, new Agenda.Item(null, "Pediatria", true)).id();
+
+        agenda.vincularEspecialidades(conta, profissional, List.of(especialidade, pediatria));
+        assertThat(agenda.especialidadesDosProfissionais(conta).get(profissional)).containsExactly(especialidade, pediatria);
+
+        agenda.vincularEspecialidades(conta, profissional, List.of(especialidade));
+        assertThat(agenda.especialidadesDosProfissionais(conta).get(profissional)).containsExactly(especialidade);
+
+        agenda.vincularEspecialidades(conta, profissional, List.of(especialidade, pediatria));
+        assertThat(agenda.excluirItem(conta, Agenda.Cadastro.ESPECIALIDADE, pediatria)).isEqualTo(Agenda.Exclusao.EXCLUIDO);
+        assertThat(agenda.especialidadesDosProfissionais(conta).get(profissional)).containsExactly(especialidade);
     }
 
     @Test

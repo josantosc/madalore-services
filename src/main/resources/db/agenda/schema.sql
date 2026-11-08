@@ -25,6 +25,13 @@ CREATE TABLE IF NOT EXISTS agenda.convenio (
     ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+-- Especialidades que cada profissional atende. O horário de atendimento só aceita uma especialidade vinculada.
+CREATE TABLE IF NOT EXISTS agenda.profissional_especialidade (
+    profissional_id BIGINT NOT NULL REFERENCES agenda.profissional (id),
+    especialidade_id BIGINT NOT NULL REFERENCES agenda.especialidade (id),
+    PRIMARY KEY (profissional_id, especialidade_id)
+);
+
 -- Horário de atendimento. oferece_bot: o bot pode oferecer esses horários ("vagas do bot").
 -- dia_semana segue a ISO: 1 = segunda, 7 = domingo.
 CREATE TABLE IF NOT EXISTS agenda.grade (
@@ -51,6 +58,11 @@ ALTER TABLE agenda.grade DROP CONSTRAINT IF EXISTS grade_recorrencia_check;
 ALTER TABLE agenda.grade ADD CONSTRAINT grade_recorrencia_check
     CHECK ((data IS NULL) <> (dia_semana IS NULL)
         AND (vigencia_inicio IS NULL OR vigencia_fim IS NULL OR vigencia_fim >= vigencia_inicio));
+
+-- Todo horário já cadastrado vincula a especialidade ao profissional.
+INSERT INTO agenda.profissional_especialidade (profissional_id, especialidade_id)
+SELECT DISTINCT profissional_id, especialidade_id FROM agenda.grade
+ON CONFLICT DO NOTHING;
 
 -- Período sem atendimento. Sem profissional: vale para a clínica inteira (feriado).
 CREATE TABLE IF NOT EXISTS agenda.bloqueio (

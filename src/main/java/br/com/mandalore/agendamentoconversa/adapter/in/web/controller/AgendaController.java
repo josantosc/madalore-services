@@ -192,8 +192,17 @@ public class AgendaController {
         corpo.put("contas", contasVisiveis(login));
         corpo.put("cadastros", agenda.cadastros(escolhida));
         corpo.put("grades", agenda.grades(escolhida));
+        corpo.put("especialidadesDosProfissionais", agenda.especialidadesDosProfissionais(escolhida));
         corpo.put("agenda", login.modulos().contains(Modulo.AGENDA));
         return corpo;
+    }
+
+    @PutMapping(value = "/agenda/cadastros/api/profissional/{id}/especialidades", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> vincularEspecialidades(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                       @RequestBody List<Long> especialidades,
+                                                       @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        agenda.vincularEspecialidades(conta(conta, login), id, especialidades);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping(value = "/agenda/cadastros/api/grades", consumes = MediaType.APPLICATION_JSON_VALUE)

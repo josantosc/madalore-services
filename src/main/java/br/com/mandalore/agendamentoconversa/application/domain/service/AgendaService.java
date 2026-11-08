@@ -173,6 +173,30 @@ public class AgendaService implements AgendaUseCase {
     }
 
     @Override
+    public Map<Long, List<Long>> especialidadesDosProfissionais(String conta) {
+        return agenda.especialidadesDosProfissionais(conta);
+    }
+
+    @Override
+    public void vincularEspecialidades(String conta, long profissionalId, List<Long> especialidades) {
+        List<Long> novas = especialidades == null ? List.of() : especialidades.stream().distinct().toList();
+        Map<Long, Long> horariosSemVinculo = agenda.grades(conta).stream()
+                .filter(g -> g.profissionalId() == profissionalId && !novas.contains(g.especialidadeId()))
+                .collect(Collectors.groupingBy(Agenda.Grade::especialidadeId, Collectors.counting()));
+        if (!horariosSemVinculo.isEmpty()) {
+            Map<Long, String> nomes = agenda.itens(conta, Agenda.Cadastro.ESPECIALIDADE).stream()
+                    .collect(Collectors.toMap(Agenda.Item::id, Agenda.Item::nome));
+            String detalhe = horariosSemVinculo.entrySet().stream()
+                    .map(e -> nomes.getOrDefault(e.getKey(), "especialidade excluída") + " ("
+                            + e.getValue() + (e.getValue() == 1 ? " horário)" : " horários)"))
+                    .collect(Collectors.joining(", "));
+            throw new IllegalArgumentException("Este profissional tem horários de atendimento em " + detalhe
+                    + ". Exclua ou troque esses horários antes de desvincular.");
+        }
+        agenda.vincularEspecialidades(conta, profissionalId, novas);
+    }
+
+    @Override
     public List<Agenda.Grade> grades(String conta) {
         return agenda.grades(conta);
     }
@@ -191,6 +215,9 @@ public class AgendaService implements AgendaUseCase {
             throw new IllegalArgumentException("O fim do atendimento precisa ser depois do início");
         }
         duracao(grade.duracaoMin());
+        if (!agenda.especialidadesDosProfissionais(conta).getOrDefault(grade.profissionalId(), List.of()).contains(grade.especialidadeId())) {
+            throw new IllegalArgumentException("Esta especialidade não está vinculada ao profissional. Vincule no cadastro do profissional.");
+        }
         return agenda.salvarGrade(conta, grade);
     }
 

@@ -13,7 +13,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.sql.DataSource;
@@ -150,12 +152,43 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
             }
             if (comGrade) {
                 jdbc.update("DELETE FROM agenda.grade WHERE " + coluna + " = :id AND conta_id = :conta", params);
+                jdbc.update("DELETE FROM agenda.profissional_especialidade WHERE " + coluna + " = :id", params);
             }
             if (cadastro == Agenda.Cadastro.PROFISSIONAL) {
                 jdbc.update("DELETE FROM agenda.bloqueio WHERE profissional_id = :id AND conta_id = :conta", params);
             }
             jdbc.update("DELETE FROM " + tabela + " WHERE id = :id AND conta_id = :conta", params);
             return Agenda.Exclusao.EXCLUIDO;
+        });
+    }
+
+    @Override
+    public Map<Long, List<Long>> especialidadesDosProfissionais(String conta) {
+        Map<Long, List<Long>> vinculos = new LinkedHashMap<>();
+        jdbc.query("""
+                SELECT pe.profissional_id, pe.especialidade_id
+                FROM agenda.profissional_especialidade pe
+                JOIN agenda.profissional p ON p.id = pe.profissional_id
+                JOIN agenda.especialidade e ON e.id = pe.especialidade_id
+                WHERE p.conta_id = :conta
+                ORDER BY pe.profissional_id, e.nome
+                """, conta(conta), rs -> {
+            vinculos.computeIfAbsent(rs.getLong("profissional_id"), p -> new ArrayList<>()).add(rs.getLong("especialidade_id"));
+        });
+        return vinculos;
+    }
+
+    @Override
+    public void vincularEspecialidades(String conta, long profissionalId, List<Long> especialidades) {
+        exigirDaConta(conta, "agenda.profissional", profissionalId);
+        especialidades.forEach(e -> exigirDaConta(conta, "agenda.especialidade", e));
+        transacao.executeWithoutResult(status -> {
+            MapSqlParameterSource params = new MapSqlParameterSource("profissional", profissionalId);
+            jdbc.update("DELETE FROM agenda.profissional_especialidade WHERE profissional_id = :profissional", params);
+            for (Long especialidade : especialidades) {
+                jdbc.update("INSERT INTO agenda.profissional_especialidade (profissional_id, especialidade_id) VALUES (:profissional, :especialidade)",
+                        new MapSqlParameterSource(params.getValues()).addValue("especialidade", especialidade));
+            }
         });
     }
 

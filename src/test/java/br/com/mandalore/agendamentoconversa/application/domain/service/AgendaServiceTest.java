@@ -51,6 +51,35 @@ class AgendaServiceTest {
     }
 
     @Test
+    void horarioSoAceitaEspecialidadeVinculadaAoProfissional() {
+        when(port.especialidadesDosProfissionais("1")).thenReturn(java.util.Map.of(7L, List.of(3L)));
+        Agenda.Grade cardio = grade(3);
+        when(port.salvarGrade("1", cardio)).thenReturn(cardio);
+
+        assertThat(service.salvarGrade("1", cardio)).isEqualTo(cardio);
+        assertThatThrownBy(() -> service.salvarGrade("1", grade(4))).hasMessageContaining("não está vinculada");
+        verify(port, never()).salvarGrade("1", grade(4));
+    }
+
+    @Test
+    void naoDesvinculaEspecialidadeQueTemHorario() {
+        when(port.grades("1")).thenReturn(List.of(grade(3), grade(3)));
+        when(port.itens("1", Agenda.Cadastro.ESPECIALIDADE)).thenReturn(List.of(new Agenda.Item(3L, "Cardiologia", true)));
+
+        assertThatThrownBy(() -> service.vincularEspecialidades("1", 7, List.of(4L)))
+                .hasMessageContaining("Cardiologia (2 horários)");
+        verify(port, never()).vincularEspecialidades(any(), anyLong(), any());
+
+        service.vincularEspecialidades("1", 7, List.of(3L, 4L, 4L));
+        verify(port).vincularEspecialidades("1", 7, List.of(3L, 4L));
+    }
+
+    private static Agenda.Grade grade(long especialidade) {
+        return new Agenda.Grade(null, 7, especialidade, 2, null, null, null, java.time.LocalTime.of(8, 0), java.time.LocalTime.of(12, 0),
+                30, true, "", true);
+    }
+
+    @Test
     void marcarSemCpfOuNomeNaoChegaAoBanco() {
         assertThatThrownBy(() -> service.marcar("1", consulta("123", "Maria", ""), "ana")).hasMessageContaining("CPF");
         assertThatThrownBy(() -> service.marcar("1", consulta("52998224725", " ", ""), "ana")).hasMessageContaining("nome");

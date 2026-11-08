@@ -86,6 +86,23 @@ public class AgendaMemoria implements AgendaMandalorePort {
     }
 
     @Override
+    public Map<Long, List<Long>> especialidadesDosProfissionais(String conta) {
+        Map<Long, List<Long>> vinculos = new HashMap<>();
+        grades.forEach(g -> {
+            List<Long> doProfissional = vinculos.computeIfAbsent(g.profissionalId(), p -> new ArrayList<>());
+            if (!doProfissional.contains(g.especialidadeId())) {
+                doProfissional.add(g.especialidadeId());
+            }
+        });
+        return vinculos;
+    }
+
+    @Override
+    public void vincularEspecialidades(String conta, long profissionalId, List<Long> especialidades) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<Agenda.Grade> grades(String conta) {
         return List.copyOf(grades);
     }

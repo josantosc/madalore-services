@@ -87,6 +87,9 @@
     .form label.check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
     .form label.check input { margin-top: 4px; }
     .form .dica { font-weight: 400; color: var(--texto-3); font-size: 12px; }
+    .form .bloco { display: grid; gap: 6px; font-weight: 500; }
+    .lista-check { display: flex; flex-wrap: wrap; gap: 6px 16px; font-weight: 400; }
+    .form .lista-check label { display: flex; gap: 6px; align-items: center; font-weight: 400; }
     .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 13px; }
     .caixa { border-radius: 8px; padding: 10px 12px; font-size: 13px; }
     .caixa.ambar { background: var(--ambar-suave); color: var(--ambar-texto); }
@@ -176,6 +179,9 @@
           <input class="campo" id="iNome" maxlength="200" autocomplete="off">
           <span class="dica">Igual ao sistema da clínica, para facilitar o lançamento das consultas.</span></label>
         <div class="caixa ambar" id="iRepetido" hidden></div>
+        <div class="bloco" id="iEspBloco" hidden>Especialidades que atende
+          <div class="lista-check" id="iEsps"></div>
+          <span class="dica">Só estas aparecem no cadastro de horário deste profissional.</span></div>
         <label class="check"><input type="checkbox" id="iAtivo">
           <span>Ativo<span class="sub" id="iAtivoDica"></span></span></label>
         <span class="msg-erro" id="iErro"></span>
@@ -196,6 +202,8 @@
           <label>Profissional<select class="campo" id="gProf"></select></label>
           <label>Especialidade<select class="campo" id="gEsp"></select></label>
         </div>
+        <div class="caixa ambar" id="gSemEsp" hidden>Este profissional não tem especialidade vinculada.
+          <button class="btn cinza mini" type="button" id="gVincular">Vincular especialidades</button></div>
         <div class="linha2">
           <label>Repetir<select class="campo" id="gTipo">
             <option value="semanal">Toda semana</option>
@@ -254,7 +262,7 @@
     };
     const COLUNA = { PROFISSIONAL: "profissionalId", ESPECIALIDADE: "especialidadeId" };
 
-    const estado = { conta: null, cadastros: {}, grades: [], aba: "PROFISSIONAL" };
+    const estado = { conta: null, cadastros: {}, grades: [], vinculos: {}, aba: "PROFISSIONAL" };
     const params = new URLSearchParams(location.search);
 
     function el(tag, attrs, ...filhos) {
@@ -287,6 +295,7 @@
     const nomeDe = (tipo, id) => itens(tipo).find((i) => i.id === id)?.nome || "(excluído)";
     const hhmm = (t) => (t || "").substring(0, 5);
     const gradesDe = (tipo, id) => COLUNA[tipo] ? estado.grades.filter((g) => g[COLUNA[tipo]] === id) : [];
+    const especialidadesDe = (profissionalId) => estado.vinculos[profissionalId] || [];
     const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
     const ddmmaaaa = (iso) => iso ? iso.split("-").reverse().join("/") : "";
     const diaDaData = (iso) => DIAS[(new Date(iso + "T12:00").getDay() + 6) % 7 + 1];
@@ -314,6 +323,7 @@
       estado.conta = ctx.conta;
       estado.cadastros = ctx.cadastros;
       estado.grades = ctx.grades;
+      estado.vinculos = ctx.especialidadesDosProfissionais || {};
       const sel = $("conta");
       sel.hidden = ctx.contas.length < 2;
       sel.replaceChildren(...ctx.contas.map((c) => el("option", { value: c }, "Clínica (conta " + c + ")")));
@@ -359,6 +369,9 @@
         const grades = gradesDe(tipo, i.id);
         return el("tr", { className: i.ativo ? "" : "inativo" },
           el("td", {}, el("span", { className: "nome" }, i.nome),
+            tipo === "PROFISSIONAL" ? el("span", { className: "sub" }, especialidadesDe(i.id).length
+              ? el("span", { className: "tags" }, especialidadesDe(i.id).map((e) => el("span", { className: "tag" }, nomeDe("ESPECIALIDADE", e))))
+              : el("span", { className: "tag ambar" }, "Sem especialidade vinculada")) : null,
             contagem[normal(i.nome)] > 1 ? el("span", { className: "sub" }, el("span", { className: "tag ambar" }, "Nome repetido: exclua ou renomeie um deles")) : null),
           el("td", {}, el("span", { className: "tag " + (i.ativo ? "verde" : "") }, i.ativo ? "Ativo" : "Inativo")),
           COLUNA[tipo] ? el("td", { className: "col-opc" }, grades.length
@@ -396,9 +409,20 @@
       $("iOk").textContent = item ? "Salvar alterações" : "Cadastrar " + t.um;
       $("iErro").textContent = "";
       $("iOk").disabled = false;
+      const profissional = tipo === "PROFISSIONAL";
+      $("iEspBloco").hidden = !profissional;
+      if (profissional) {
+        const marcadas = especialidadesDe(item?.id);
+        const opcoesEsp = itens("ESPECIALIDADE").filter((e) => e.ativo || marcadas.includes(e.id));
+        $("iEsps").replaceChildren(...(opcoesEsp.length
+          ? opcoesEsp.map((e) => el("label", {}, el("input", { type: "checkbox", value: e.id, checked: marcadas.includes(e.id) }),
+              e.nome + (e.ativo ? "" : " (inativa)")))
+          : [el("span", { className: "dica" }, "Nenhuma especialidade cadastrada ainda.")]));
+      }
+      let salvo = item;
       const conferir = () => {
         const nome = normal($("iNome").value);
-        const igual = nome && itens(tipo).find((o) => o.id !== item?.id && normal(o.nome) === nome);
+        const igual = nome && itens(tipo).find((o) => o.id !== salvo?.id && normal(o.nome) === nome);
         $("iRepetido").hidden = !igual;
         if (igual) $("iRepetido").textContent = "Já existe " + (t.artigo === "a" ? "uma " : "um ") + t.um + " \"" + igual.nome + "\""
           + (igual.ativo ? "" : " (inativo: reative em vez de criar outro)") + ".";
@@ -412,7 +436,12 @@
         if (!$("iNome").value.trim()) { $("iErro").textContent = "Informe o nome."; return; }
         $("iOk").disabled = true;
         try {
-          await api("/agenda/cadastros/api/" + tipo.toLowerCase(), json("PUT", { id: item?.id ?? null, nome: $("iNome").value, ativo: $("iAtivo").checked }));
+          salvo = await api("/agenda/cadastros/api/" + tipo.toLowerCase(), json("PUT", { id: salvo?.id ?? null, nome: $("iNome").value, ativo: $("iAtivo").checked }));
+          if (profissional) {
+            const ids = [...$("iEsps").querySelectorAll("input:checked")].map((c) => Number(c.value));
+            await api("/agenda/cadastros/api/profissional/" + salvo.id + "/especialidades", json("PUT", ids))
+              .catch(async (e) => { await carregar(); throw e; });
+          }
           $("dlgItem").close();
           aviso(item ? "Alterações salvas." : t.um.charAt(0).toUpperCase() + t.um.slice(1) + " cadastrad" + t.artigo + ".");
           await carregar();
@@ -508,7 +537,21 @@
       $("gTitulo").textContent = g ? "Editar horário de atendimento" : "Novo horário de atendimento";
       $("gOk").textContent = g ? "Salvar alterações" : "Cadastrar horário";
       opcoes($("gProf"), profs.map((i) => [i.id, i.nome + (i.ativo ? "" : " (inativo)")]), g?.profissionalId ?? ($("filtroProf").value || undefined));
-      opcoes($("gEsp"), esps.map((i) => [i.id, i.nome + (i.ativo ? "" : " (inativo)")]), g?.especialidadeId ?? estado.filtroEsp);
+      const especialidadesDoProf = (desejada) => {
+        const prof = Number($("gProf").value);
+        const lista = esps.filter((e) => especialidadesDe(prof).includes(e.id));
+        opcoes($("gEsp"), lista.map((i) => [i.id, i.nome + (i.ativo ? "" : " (inativo)")]),
+          lista.some((e) => e.id === desejada) ? desejada : lista[0]?.id);
+        $("gEsp").disabled = !lista.length;
+        $("gSemEsp").hidden = !!lista.length;
+        $("gOk").disabled = !lista.length;
+      };
+      $("gProf").onchange = () => especialidadesDoProf(Number($("gEsp").value));
+      $("gVincular").onclick = () => {
+        const prof = itens("PROFISSIONAL").find((i) => i.id === Number($("gProf").value));
+        $("dlgGrade").close();
+        editarItem("PROFISSIONAL", prof);
+      };
       opcoes($("gDia"), DIAS.slice(1).map((d, i) => [i + 1, d]), g?.diaSemana ?? 1);
       $("gTipo").value = g?.data ? "data" : "semanal";
       $("gData").value = g?.data || "";
@@ -531,6 +574,7 @@
       $("gAtivo").checked = g ? g.ativo : true;
       $("gErro").textContent = "";
       $("gOk").disabled = false;
+      especialidadesDoProf(g?.especialidadeId ?? estado.filtroEsp);
       $("formGrade").onsubmit = async (ev) => {
         ev.preventDefault();
         if (!$("gInicio").value || !$("gFim").value || $("gFim").value <= $("gInicio").value) {

@@ -68,8 +68,14 @@ public interface AgendaUseCase {
 
     Agenda.Exclusao excluirItem(String conta, Agenda.Cadastro cadastro, long id);
 
+    Map<Long, List<Long>> especialidadesDosProfissionais(String conta);
+
+    /** Recusa desvincular especialidade que ainda tem horário de atendimento do profissional. */
+    void vincularEspecialidades(String conta, long profissionalId, List<Long> especialidades);
+
     List<Agenda.Grade> grades(String conta);
 
+    /** Recusa especialidade que não está vinculada ao profissional. */
     Agenda.Grade salvarGrade(String conta, Agenda.Grade grade);
 
     boolean removerGrade(String conta, long gradeId);

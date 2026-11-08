@@ -3,6 +3,7 @@ package br.com.mandalore.agendamentoconversa.application.domain.port.out;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Agenda;
@@ -24,6 +25,12 @@ public interface AgendaMandalorePort {
      * cadastro e os horários.
      */
     Agenda.Exclusao excluirItem(String conta, Agenda.Cadastro cadastro, long id);
+
+    /** Especialidades vinculadas, por profissional. */
+    Map<Long, List<Long>> especialidadesDosProfissionais(String conta);
+
+    /** Troca todas as especialidades vinculadas ao profissional pelas informadas. */
+    void vincularEspecialidades(String conta, long profissionalId, List<Long> especialidades);
 
     List<Agenda.Grade> grades(String conta);
 
