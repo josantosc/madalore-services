@@ -75,7 +75,16 @@
     .vazio { text-align: center; color: var(--texto-2); padding: 48px 0; }
     .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
 
-    .bloco { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--borda); }
+    .barra { margin-top: 20px; border-bottom: 1px solid var(--borda); }
+    .abas { display: flex; gap: 20px; flex-wrap: wrap; }
+    .aba { background: none; border: 0; padding: 8px 0 10px; font: inherit; font-size: 14px; color: var(--texto-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
+    .aba:hover { color: var(--texto); }
+    .aba.ativa { color: var(--marca); border-color: var(--marca); font-weight: 500; }
+    .contador { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+    .contador.ambar { background: var(--ambar-suave); color: var(--ambar-texto); }
+    .contador.verde { background: var(--verde-suave); color: var(--verde-texto); }
+    .aba.ativa .contador:not(.ambar):not(.verde) { background: var(--marca-suave); color: var(--marca-texto); }
+    .bloco { padding-top: 20px; }
     .topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
     .lista { display: grid; gap: 8px; margin-bottom: 12px; }
     .cartao { background: var(--alpha-1); outline: 1px solid var(--borda); border-radius: 10px; padding: 12px; display: grid; gap: 6px; }
@@ -166,7 +175,17 @@
       <p class="sub" id="pAvisoFim" hidden>Atendimento finalizado. Os registros não podem mais ser alterados.</p>
       <p class="sub" id="pDica">Libere a anamnese ou uma evolução antes de finalizar. Rascunho aberto impede a alta.</p>
 
-      <section class="bloco">
+      <div class="barra">
+        <div class="abas">
+          <button class="aba ativa" type="button" data-aba="anamnese">Anamnese <span class="contador" id="cAnamnese">—</span></button>
+          <button class="aba" type="button" data-aba="evolucao">Evolução <span class="contador" id="cEvolucao">0</span></button>
+          <button class="aba" type="button" data-aba="cid">Diagnóstico (CID) <span class="contador" id="cCid">0</span></button>
+          <button class="aba" type="button" data-aba="receita">Receita <span class="contador" id="cReceita">0</span></button>
+          <button class="aba" type="button" data-aba="alta" id="abaAlta" hidden>Alta</button>
+        </div>
+      </div>
+
+      <section class="bloco" data-aba="anamnese">
         <div class="topo">
           <h2>Anamnese</h2>
           <span class="tag" id="aEstado">Sem anamnese</span>
@@ -188,7 +207,7 @@
         </div>
       </section>
 
-      <section class="bloco">
+      <section class="bloco" data-aba="evolucao" hidden>
         <div class="topo"><h2>Evolução</h2></div>
         <div class="lista" id="listaEvolucoes"></div>
         <form id="formEvolucao" novalidate>
@@ -209,7 +228,7 @@
         </form>
       </section>
 
-      <section class="bloco">
+      <section class="bloco" data-aba="cid" hidden>
         <div class="topo"><h2>Diagnóstico (CID)</h2></div>
         <div class="lista" id="listaCid"></div>
         <form id="formCid" novalidate>
@@ -232,7 +251,7 @@
         </form>
       </section>
 
-      <section class="bloco">
+      <section class="bloco" data-aba="receita" hidden>
         <div class="topo"><h2>Receita</h2></div>
         <div class="lista" id="listaReceitas"></div>
         <form id="formReceita" novalidate>
@@ -258,7 +277,7 @@
         </form>
       </section>
 
-      <section class="bloco" id="blocoAlta" hidden>
+      <section class="bloco" data-aba="alta" hidden>
         <div class="topo"><h2>Alta</h2></div>
         <p id="altaResumo"></p>
         <p class="texto" id="altaOrientacao"></p>
@@ -335,7 +354,7 @@
     const ESPERA_ALERTA_MIN = 15;
     const ESPERA_ATRASO_MIN = 30;
 
-    const estado = { conta: null, fila: [], atendimentoId: null, prontuario: null, evolucaoId: null, receitaId: null };
+    const estado = { conta: null, fila: [], atendimentoId: null, prontuario: null, evolucaoId: null, receitaId: null, aba: "anamnese" };
     const params = new URLSearchParams(location.search);
     let ocupado = false;
     let caminhoJustificativa = null;
@@ -476,6 +495,7 @@
 
     // ---------- Prontuário ----------
     async function abrir(id) {
+      if (estado.atendimentoId !== id) estado.aba = "anamnese";
       estado.atendimentoId = id;
       if (!await carregarProntuario()) {
         if ($("telaProntuario").hidden) await carregarFila();
@@ -518,6 +538,31 @@
       renderDiagnosticos(p);
       renderReceitas(p);
       renderAlta(p);
+      renderAbas(p);
+    }
+
+    function contador(id, texto, classe) {
+      $(id).textContent = texto;
+      $(id).className = "contador" + (classe ? " " + classe : "");
+    }
+
+    function renderAbas(p) {
+      const a = p.anamnese;
+      contador("cAnamnese", !a ? "—" : a.dtLiberacao ? "Liberada" : "Rascunho", !a ? "" : a.dtLiberacao ? "verde" : "ambar");
+      const evolucoes = p.evolucoes || [];
+      const receitas = p.receitas || [];
+      contador("cEvolucao", evolucoes.length, evolucoes.some((e) => !e.dtLiberacao) ? "ambar" : "");
+      contador("cCid", (p.diagnosticos || []).length);
+      contador("cReceita", receitas.length, receitas.some((r) => !r.dtLiberacao) ? "ambar" : "");
+      $("abaAlta").hidden = p.atendimento.status !== "FINALIZADO";
+      if (estado.aba === "alta" && $("abaAlta").hidden) estado.aba = "anamnese";
+      abrirAba(estado.aba);
+    }
+
+    function abrirAba(nome) {
+      estado.aba = nome;
+      document.querySelectorAll(".aba").forEach((b) => b.classList.toggle("ativa", b.dataset.aba === nome));
+      document.querySelectorAll("section.bloco[data-aba]").forEach((s) => s.hidden = s.dataset.aba !== nome);
     }
 
     function renderCabecalho(p) {
@@ -789,9 +834,7 @@
     }
 
     function renderAlta(p) {
-      const fim = p.atendimento.status === "FINALIZADO";
-      $("blocoAlta").hidden = !fim;
-      if (!fim) return;
+      if (p.atendimento.status !== "FINALIZADO") return;
       const alta = p.alta;
       const partes = ["Motivo: " + (MOTIVO[p.atendimento.motivoAlta] || p.atendimento.motivoAlta || "—")];
       if (alta && alta.desfecho) partes.push("Desfecho: " + (DESFECHO[alta.desfecho] || alta.desfecho));
@@ -909,6 +952,7 @@
       }
     });
 
+    document.querySelectorAll(".aba").forEach((b) => b.onclick = () => abrirAba(b.dataset.aba));
     $("btnVoltar").onclick = voltar;
     $("btnFinalizar").onclick = abrirFinalizar;
     $("data").addEventListener("change", carregarFila);
