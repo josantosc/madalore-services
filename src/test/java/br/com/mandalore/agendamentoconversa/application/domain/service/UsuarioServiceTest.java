@@ -40,7 +40,7 @@ class UsuarioServiceTest {
         Usuario.Cadastro ana = service.autenticar("ana@clinica.com", senha).orElseThrow();
         assertThat(ana.email()).isEqualTo("ana@clinica.com");
         assertThat(ana.trocarSenha()).isTrue();
-        assertThat(ana.telas()).containsExactlyInAnyOrder("AGENDA", "FUNIL");
+        assertThat(ana.telas()).containsExactlyInAnyOrder("AGENDA", "FUNIL", "ATENDIMENTO");
         assertThat(port.eventos).extracting(e -> e.tipo()).containsExactly(TipoEvento.USUARIO_CRIADO);
         assertThat(service.autenticar("ana@clinica.com", "errada12345")).isEmpty();
         assertThat(service.autenticar("outro@clinica.com", senha)).isEmpty();
@@ -152,7 +152,7 @@ class UsuarioServiceTest {
         Usuario.Dados dados = new Usuario.Dados("Ana", "ana@c.com", Perfil.RECEPCAO, Set.of("1"), Set.of("PRECOS"), Set.of("FUNIL"));
         service.criar(ADMIN, dados, null);
 
-        assertThat(port.porEmail("ana@c.com").orElseThrow().cadastro().telas()).containsExactlyInAnyOrder("AGENDA", "PRECOS");
+        assertThat(port.porEmail("ana@c.com").orElseThrow().cadastro().telas()).containsExactlyInAnyOrder("AGENDA", "PRECOS", "ATENDIMENTO");
         assertThatThrownBy(() -> service.criar(ADMIN,
                 new Usuario.Dados("B", "b@c.com", Perfil.RECEPCAO, Set.of("1"), Set.of("INEXISTENTE"), Set.of()), null))
                 .hasMessage("Tela desconhecida");

@@ -35,10 +35,21 @@ public final class Agenda {
     }
 
     public enum Status {
-        MARCADO, CONFIRMADO, CANCELADO, REMARCADO;
+        MARCADO, CONFIRMADO, CANCELADO, REMARCADO, AGUARDANDO, EM_CONSULTA, EXECUTADO;
 
+        /** Ainda dá para confirmar, cancelar ou remarcar: o paciente não chegou. */
         public boolean ativo() {
             return this == MARCADO || this == CONFIRMADO;
+        }
+
+        /** O horário do profissional está tomado: da marcação até a consulta executada. */
+        public boolean ocupaHorario() {
+            return ativo() || emAtendimento();
+        }
+
+        /** O paciente já chegou: aguardando, em consulta ou consulta executada. */
+        public boolean emAtendimento() {
+            return this == AGUARDANDO || this == EM_CONSULTA || this == EXECUTADO;
         }
     }
 
@@ -73,6 +84,15 @@ public final class Agenda {
     }
 
     public record Item(Long id, String nome, boolean ativo) {
+    }
+
+    /** Vínculo do profissional com o usuário médico e registro no conselho (CRM etc.). Tudo opcional. */
+    public record Credencial(Long usuarioId, String conselhoNumero, String conselhoUf) {
+        public static final Credencial VAZIA = new Credencial(null, null, null);
+    }
+
+    /** Usuário ativo da clínica que pode ser vinculado a um profissional. */
+    public record UsuarioVinculavel(long id, String nome, String email, String perfil) {
     }
 
     /**

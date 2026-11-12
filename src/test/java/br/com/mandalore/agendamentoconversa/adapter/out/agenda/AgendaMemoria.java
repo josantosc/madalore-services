@@ -103,6 +103,21 @@ public class AgendaMemoria implements AgendaMandalorePort {
     }
 
     @Override
+    public Map<Long, Agenda.Credencial> credenciais(String conta) {
+        return Map.of();
+    }
+
+    @Override
+    public void salvarCredencial(String conta, long profissionalId, Agenda.Credencial credencial) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Agenda.UsuarioVinculavel> usuariosDaConta(String conta) {
+        return List.of();
+    }
+
+    @Override
     public List<Agenda.Grade> grades(String conta) {
         return List.copyOf(grades);
     }

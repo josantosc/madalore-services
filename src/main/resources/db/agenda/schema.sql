@@ -88,7 +88,8 @@ CREATE TABLE IF NOT EXISTS agenda.paciente (
     UNIQUE (conta_id, cpf, nascimento)
 );
 
--- status: MARCADO, CONFIRMADO, CANCELADO, REMARCADO. origem: BOT ou RECEPCAO.
+-- status: MARCADO, CONFIRMADO, CANCELADO, REMARCADO e, do atendimento clínico, AGUARDANDO (paciente chegou),
+-- EM_CONSULTA e EXECUTADO. origem: BOT ou RECEPCAO.
 -- codigo_externo: número do agendamento no sistema da clínica, informado ao concluir a pendência.
 CREATE TABLE IF NOT EXISTS agenda.agendamento (
     id BIGSERIAL PRIMARY KEY,
@@ -100,7 +101,8 @@ CREATE TABLE IF NOT EXISTS agenda.agendamento (
     inicio TIMESTAMP NOT NULL,
     fim TIMESTAMP NOT NULL,
     local VARCHAR(200) NOT NULL DEFAULT '',
-    status VARCHAR(20) NOT NULL CHECK (status IN ('MARCADO', 'CONFIRMADO', 'CANCELADO', 'REMARCADO')),
+    status VARCHAR(20) NOT NULL
+        CHECK (status IN ('MARCADO', 'CONFIRMADO', 'CANCELADO', 'REMARCADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO')),
     origem VARCHAR(20) NOT NULL CHECK (origem IN ('BOT', 'RECEPCAO')),
     codigo_externo VARCHAR(100),
     conversa_id VARCHAR(40),
@@ -109,10 +111,17 @@ CREATE TABLE IF NOT EXISTS agenda.agendamento (
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Dois agendamentos ativos no mesmo horário do mesmo profissional são impossíveis.
-CREATE UNIQUE INDEX IF NOT EXISTS uk_agendamento_ativo
+-- Bancos criados antes do atendimento clínico têm a constraint só com os 4 status originais.
+ALTER TABLE agenda.agendamento DROP CONSTRAINT IF EXISTS agendamento_status_check;
+ALTER TABLE agenda.agendamento ADD CONSTRAINT agendamento_status_check
+    CHECK (status IN ('MARCADO', 'CONFIRMADO', 'CANCELADO', 'REMARCADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO'));
+
+-- Dois agendamentos no mesmo horário do mesmo profissional são impossíveis, em todo o ciclo até a consulta executada.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_agendamento_ocupa_horario
     ON agenda.agendamento (conta_id, profissional_id, inicio)
-    WHERE status IN ('MARCADO', 'CONFIRMADO');
+    WHERE status IN ('MARCADO', 'CONFIRMADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO');
+-- Índice antigo, que cobria só MARCADO e CONFIRMADO.
+DROP INDEX IF EXISTS agenda.uk_agendamento_ativo;
 CREATE INDEX IF NOT EXISTS idx_agendamento_periodo ON agenda.agendamento (conta_id, inicio);
 CREATE INDEX IF NOT EXISTS idx_agendamento_paciente ON agenda.agendamento (paciente_id, inicio);
 

@@ -70,6 +70,17 @@ public interface AgendaUseCase {
 
     Map<Long, List<Long>> especialidadesDosProfissionais(String conta);
 
+    Map<Long, Agenda.Credencial> credenciais(String conta);
+
+    /** Usuários ativos da clínica, para vincular ao profissional. */
+    List<Agenda.UsuarioVinculavel> usuariosVinculaveis(String conta);
+
+    /**
+     * Valida e grava usuário e conselho: UF com 2 letras, número até 30 caracteres, usuário ativo da mesma clínica
+     * e um só profissional por usuário.
+     */
+    Agenda.Credencial salvarCredencial(String conta, long profissionalId, Agenda.Credencial credencial);
+
     /** Recusa desvincular especialidade que ainda tem horário de atendimento do profissional. */
     void vincularEspecialidades(String conta, long profissionalId, List<Long> especialidades);
 

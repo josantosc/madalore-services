@@ -182,6 +182,16 @@
         <div class="bloco" id="iEspBloco" hidden>Especialidades que atende
           <div class="lista-check" id="iEsps"></div>
           <span class="dica">Só estas aparecem no cadastro de horário deste profissional.</span></div>
+        <div id="iCredBloco" hidden>
+          <label>Usuário do sistema <span class="dica">Opcional. Quem entra no consultório como este profissional (um usuário por profissional).</span>
+            <select class="campo" id="iUsuario"></select></label>
+          <div class="linha2" style="margin-top:14px">
+            <label>Número no conselho <span class="dica">CRM, COREN... até 30 caracteres</span>
+              <input class="campo" id="iConselhoNumero" maxlength="30" autocomplete="off"></label>
+            <label>UF do conselho <span class="dica">2 letras</span>
+              <input class="campo" id="iConselhoUf" maxlength="2" autocomplete="off" style="text-transform:uppercase"></label>
+          </div>
+        </div>
         <label class="check"><input type="checkbox" id="iAtivo">
           <span>Ativo<span class="sub" id="iAtivoDica"></span></span></label>
         <span class="msg-erro" id="iErro"></span>
@@ -262,7 +272,7 @@
     };
     const COLUNA = { PROFISSIONAL: "profissionalId", ESPECIALIDADE: "especialidadeId" };
 
-    const estado = { conta: null, cadastros: {}, grades: [], vinculos: {}, aba: "PROFISSIONAL" };
+    const estado = { conta: null, cadastros: {}, grades: [], vinculos: {}, credenciais: {}, usuarios: [], aba: "PROFISSIONAL" };
     const params = new URLSearchParams(location.search);
 
     function el(tag, attrs, ...filhos) {
@@ -324,6 +334,8 @@
       estado.cadastros = ctx.cadastros;
       estado.grades = ctx.grades;
       estado.vinculos = ctx.especialidadesDosProfissionais || {};
+      estado.credenciais = ctx.credenciais || {};
+      estado.usuarios = ctx.usuarios || [];
       const sel = $("conta");
       sel.hidden = ctx.contas.length < 2;
       sel.replaceChildren(...ctx.contas.map((c) => el("option", { value: c }, "Clínica (conta " + c + ")")));
@@ -372,6 +384,7 @@
             tipo === "PROFISSIONAL" ? el("span", { className: "sub" }, especialidadesDe(i.id).length
               ? el("span", { className: "tags" }, especialidadesDe(i.id).map((e) => el("span", { className: "tag" }, nomeDe("ESPECIALIDADE", e))))
               : el("span", { className: "tag ambar" }, "Sem especialidade vinculada")) : null,
+            tipo === "PROFISSIONAL" ? credencialTags(i.id) : null,
             contagem[normal(i.nome)] > 1 ? el("span", { className: "sub" }, el("span", { className: "tag ambar" }, "Nome repetido: exclua ou renomeie um deles")) : null),
           el("td", {}, el("span", { className: "tag " + (i.ativo ? "verde" : "") }, i.ativo ? "Ativo" : "Inativo")),
           COLUNA[tipo] ? el("td", { className: "col-opc" }, grades.length
@@ -389,6 +402,16 @@
             : [el("strong", {}, tipo === "ESPECIALIDADE" ? "Nenhuma especialidade cadastrada" : "Nenhum " + t.um + " cadastrado"),
                "Clique em \"+ " + t.novo + "\" para começar."])));
       }
+    }
+
+    function credencialTags(profissionalId) {
+      const c = estado.credenciais[profissionalId];
+      if (!c) return null;
+      const usuario = estado.usuarios.find((u) => u.id === c.usuarioId);
+      const conselho = [c.conselhoNumero, (c.conselhoUf || "").trim()].filter(Boolean).join("/");
+      return el("span", { className: "sub tags" },
+        conselho ? el("span", { className: "tag marca" }, "Conselho " + conselho) : null,
+        c.usuarioId ? el("span", { className: "tag marca" }, "Usuário: " + (usuario ? usuario.nome : "inativo")) : null);
     }
 
     function verHorarios(tipo, item) {
@@ -411,7 +434,18 @@
       $("iOk").disabled = false;
       const profissional = tipo === "PROFISSIONAL";
       $("iEspBloco").hidden = !profissional;
+      $("iCredBloco").hidden = !profissional;
       if (profissional) {
+        const cred = estado.credenciais[item?.id] || {};
+        const usuarios = estado.usuarios.slice();
+        if (cred.usuarioId && !usuarios.some((u) => u.id === cred.usuarioId)) {
+          usuarios.push({ id: cred.usuarioId, nome: "(usuário inativo ou de outra clínica)", perfil: "" });
+        }
+        opcoes($("iUsuario"), [["", "Sem usuário vinculado"],
+          ...usuarios.map((u) => [u.id, u.nome + (u.email ? " (" + u.email + ")" : "") + (u.perfil === "MEDICO" ? " - médico" : "")])],
+          cred.usuarioId ?? "");
+        $("iConselhoNumero").value = cred.conselhoNumero || "";
+        $("iConselhoUf").value = (cred.conselhoUf || "").trim();
         const marcadas = especialidadesDe(item?.id);
         const opcoesEsp = itens("ESPECIALIDADE").filter((e) => e.ativo || marcadas.includes(e.id));
         $("iEsps").replaceChildren(...(opcoesEsp.length
@@ -441,6 +475,11 @@
             const ids = [...$("iEsps").querySelectorAll("input:checked")].map((c) => Number(c.value));
             await api("/agenda/cadastros/api/profissional/" + salvo.id + "/especialidades", json("PUT", ids))
               .catch(async (e) => { await carregar(); throw e; });
+            await api("/agenda/cadastros/api/profissional/" + salvo.id + "/credencial", json("PUT", {
+              usuarioId: $("iUsuario").value ? Number($("iUsuario").value) : null,
+              conselhoNumero: $("iConselhoNumero").value,
+              conselhoUf: $("iConselhoUf").value
+            })).catch(async (e) => { await carregar(); throw e; });
           }
           $("dlgItem").close();
           aviso(item ? "Alterações salvas." : t.um.charAt(0).toUpperCase() + t.um.slice(1) + " cadastrad" + t.artigo + ".");

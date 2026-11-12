@@ -300,6 +300,8 @@ public class AdminAcesso {
         ativos.put(Modulo.AGENDA_CADASTROS, ativos.get(Modulo.AGENDA));
         ativos.put(Modulo.FUNIL, postgres && env.getProperty("funil.enabled", Boolean.class, false));
         ativos.put(Modulo.USUARIOS, postgres);
+        ativos.put(Modulo.ATENDIMENTO, postgres && env.getProperty("atendimento.enabled", Boolean.class, false));
+        ativos.put(Modulo.CONSULTORIO, ativos.get(Modulo.ATENDIMENTO));
         return ativos;
     }
 

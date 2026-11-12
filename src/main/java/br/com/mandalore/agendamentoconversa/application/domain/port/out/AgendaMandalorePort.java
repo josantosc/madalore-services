@@ -26,6 +26,15 @@ public interface AgendaMandalorePort {
      */
     Agenda.Exclusao excluirItem(String conta, Agenda.Cadastro cadastro, long id);
 
+    /** Usuário e conselho de cada profissional que tem algum dado preenchido. */
+    Map<Long, Agenda.Credencial> credenciais(String conta);
+
+    /** Grava usuário e conselho. Recusa usuário já vinculado a outro profissional. */
+    void salvarCredencial(String conta, long profissionalId, Agenda.Credencial credencial);
+
+    /** Usuários ativos com acesso à clínica. */
+    List<Agenda.UsuarioVinculavel> usuariosDaConta(String conta);
+
     /** Especialidades vinculadas, por profissional. */
     Map<Long, List<Long>> especialidadesDosProfissionais(String conta);
 

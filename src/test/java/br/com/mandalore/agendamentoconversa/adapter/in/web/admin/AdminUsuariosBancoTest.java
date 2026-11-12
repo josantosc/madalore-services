@@ -64,7 +64,7 @@ class AdminUsuariosBancoTest {
         AdminAcesso.Login login = acesso.autenticar(" ana@clinica.com ", "segredo1234").orElseThrow();
 
         assertThat(login.usuario()).isEqualTo("ana@clinica.com");
-        assertThat(login.modulos()).containsExactlyInAnyOrder(Modulo.AGENDA, Modulo.FUNIL);
+        assertThat(login.modulos()).containsExactlyInAnyOrder(Modulo.AGENDA, Modulo.FUNIL, Modulo.ATENDIMENTO);
         assertThat(login.contas()).containsExactly("1");
         assertThat(login.id()).isEqualTo(7L);
         assertThat(login.versao()).isEqualTo(3);
@@ -154,6 +154,44 @@ class AdminUsuariosBancoTest {
         assertThat(executar(logado("GET", "/curadoria/api/falas", gestor), new MockFilterChain()).getStatus()).isEqualTo(403);
         assertThat(gestor.ator().geral()).isFalse();
         assertThat(gestor.ator().telas()).contains("USUARIOS");
+    }
+
+    private AdminAcesso.Login login(Usuario.Perfil perfil, Set<String> extras, Set<String> retiradas) {
+        when(usuarios.vigente(20, 1)).thenReturn(true);
+        return AdminAcesso.Login.de(new Usuario.Cadastro(20, "Teste", "teste@clinica.com", perfil, true, false,
+                Set.of("1"), extras, retiradas, 1, "admin", null, null));
+    }
+
+    private int status(String caminho, AdminAcesso.Login login) throws Exception {
+        MockFilterChain chain = new MockFilterChain();
+        MockHttpServletResponse response = executar(logado("GET", caminho, login), chain);
+        return chain.getRequest() != null ? 200 : response.getStatus();
+    }
+
+    @Test
+    void recepcaoTem403NoConsultorioEAcessaOAtendimento() throws Exception {
+        AdminAcesso.Login recepcao = login(Usuario.Perfil.RECEPCAO, Set.of(), Set.of());
+
+        assertThat(status("/consultorio/api/fila", recepcao)).isEqualTo(403);
+        assertThat(status("/atendimento/api/fila", recepcao)).isEqualTo(200);
+    }
+
+    @Test
+    void medicoAcessaConsultorioEAtendimentoMasNaoAAgenda() throws Exception {
+        AdminAcesso.Login medico = login(Usuario.Perfil.MEDICO, Set.of(), Set.of());
+
+        assertThat(status("/consultorio/api/fila", medico)).isEqualTo(200);
+        assertThat(status("/atendimento/api/fila", medico)).isEqualTo(200);
+        assertThat(status("/agenda/api/dia", medico)).isEqualTo(403);
+    }
+
+    @Test
+    void telasExtrasConcedemEtelasRetiradasRemovemOConsultorio() throws Exception {
+        assertThat(status("/consultorio/api/fila", login(Usuario.Perfil.GESTOR, Set.of(), Set.of()))).isEqualTo(403);
+        assertThat(status("/consultorio/api/fila", login(Usuario.Perfil.GESTOR, Set.of("CONSULTORIO"), Set.of())))
+                .isEqualTo(200);
+        assertThat(status("/consultorio/api/fila", login(Usuario.Perfil.MEDICO, Set.of(), Set.of("CONSULTORIO"))))
+                .isEqualTo(403);
     }
 
     private MockHttpServletResponse executar(MockHttpServletRequest request, MockFilterChain chain) throws Exception {

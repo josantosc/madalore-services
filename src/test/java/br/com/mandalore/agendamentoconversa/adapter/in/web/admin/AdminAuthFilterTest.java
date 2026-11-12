@@ -90,6 +90,28 @@ class AdminAuthFilterTest {
     }
 
     @Test
+    void atendimentoEConsultorioSaoProtegidosEExigemOModuloProprio() throws Exception {
+        assertThat(AdminAuthFilter.CAMINHOS).contains(
+                "/atendimento", "/atendimento/*", "/consultorio", "/consultorio/*");
+
+        MockFilterChain chain = new MockFilterChain();
+        MockHttpServletResponse response = executar(new MockHttpServletRequest("GET", "/consultorio/api/fila"), chain);
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(chain.getRequest()).isNull();
+
+        response = executar(logado("GET", "/consultorio/api/fila", EnumSet.of(Modulo.ATENDIMENTO)), new MockFilterChain());
+        assertThat(response.getStatus()).isEqualTo(403);
+        response = executar(logado("POST", "/atendimento/api/chegada", EnumSet.of(Modulo.CONSULTORIO)), new MockFilterChain());
+        assertThat(response.getStatus()).isEqualTo(403);
+        response = executar(logado("GET", "/consultorio", EnumSet.of(Modulo.ATENDIMENTO)), new MockFilterChain());
+        assertThat(response.getRedirectedUrl()).isEqualTo("/admin");
+
+        chain = new MockFilterChain();
+        executar(logado("GET", "/consultorio/api/fila", EnumSet.of(Modulo.CONSULTORIO)), chain);
+        assertThat(chain.getRequest()).isNotNull();
+    }
+
+    @Test
     void basicAuthServeParaScriptsEContaFalhas() throws Exception {
         MockFilterChain chain = new MockFilterChain();
         MockHttpServletRequest ok = new MockHttpServletRequest("GET", "/precos/api/itens");

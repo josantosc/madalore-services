@@ -193,6 +193,8 @@ public class AgendaController {
         corpo.put("cadastros", agenda.cadastros(escolhida));
         corpo.put("grades", agenda.grades(escolhida));
         corpo.put("especialidadesDosProfissionais", agenda.especialidadesDosProfissionais(escolhida));
+        corpo.put("credenciais", agenda.credenciais(escolhida));
+        corpo.put("usuarios", agenda.usuariosVinculaveis(escolhida));
         corpo.put("agenda", login.modulos().contains(Modulo.AGENDA));
         return corpo;
     }
@@ -203,6 +205,13 @@ public class AgendaController {
                                                        @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
         agenda.vincularEspecialidades(conta(conta, login), id, especialidades);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping(value = "/agenda/cadastros/api/profissional/{id}/credencial", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Agenda.Credencial salvarCredencial(@PathVariable long id, @RequestParam(required = false) String conta,
+                                              @RequestBody Agenda.Credencial credencial,
+                                              @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return agenda.salvarCredencial(conta(conta, login), id, credencial);
     }
 
     @PutMapping(value = "/agenda/cadastros/api/grades", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -335,6 +344,7 @@ public class AgendaController {
         corpo.put("erro", switch (operacao.codigo()) {
             case HORARIO_INDISPONIVEL -> "Esse profissional já tem consulta nesse horário.";
             case AGENDAMENTO_NAO_ENCONTRADO -> "Consulta não encontrada ou já cancelada. Atualize a tela.";
+            case AGENDAMENTO_EM_ATENDIMENTO -> "O paciente já chegou: não dá para confirmar, cancelar nem remarcar. Atualize a tela.";
             default -> "Não foi possível gravar (" + operacao.codigo().name() + ").";
         });
         return ResponseEntity.status(HttpStatus.CONFLICT).body(corpo);

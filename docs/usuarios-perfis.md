@@ -99,13 +99,20 @@ Perfil é um conjunto de telas. Os perfis são fixos no código, iguais para tod
 |---|---|---|
 | Administrador geral | todas, todas as clínicas, inclusive `/usuarios` | fornecedor do Mandalore |
 | Gestor da clínica | todas as telas da clínica, inclusive `/usuarios` da clínica | gestor ou encarregado da clínica |
-| Recepção | agenda e funil (sem os cadastros da agenda) | recepção |
+| Recepção | agenda, funil e atendimento (fila e chegada; sem os cadastros da agenda) | recepção |
+| Médico | atendimento e consultório (prontuário só do profissional vinculado ao usuário) | médico da clínica |
 | Cadastros da agenda | cadastros da agenda: profissionais, especialidades, convênios e horários | quem mantém a agenda que o bot oferece |
 | Faturamento | funil e tabela de preços | faturamento e financeiro |
 | Curadoria | curadoria e simulador | quem treina o assistente |
 
 A recepção que também mantém os cadastros ganha a tela "Cadastros da agenda" como tela extra. Os logins por variável
 de ambiente (`agenda.user` e a recepção de cada clínica em `clientes.properties`) continuam com agenda e cadastros.
+
+Telas do [atendimento clínico](atendimento-clinico.md): módulo `ATENDIMENTO` (`/atendimento`: fila, chegada e
+desfazer chegada, sem conteúdo clínico) e módulo `CONSULTORIO` (`/consultorio`: prontuário, receita e alta). O
+perfil `MEDICO` tem os dois; `RECEPCAO` e `GESTOR` ganham `ATENDIMENTO`, mas não `CONSULTORIO`. O médico precisa
+estar vinculado a um profissional da agenda (cadastro do profissional). `CONSULTORIO` só vai para outro perfil
+como tela extra.
 
 O usuário pode ganhar ou perder uma tela além do perfil (tabela `acesso.usuario_modulo`, com `concedido`
 verdadeiro ou falso). Mais que isso, como perfis configuráveis pela clínica, fica fora do escopo.

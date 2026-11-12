@@ -1,0 +1,74 @@
+package br.com.mandalore.agendamentoconversa.application.domain.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
+import br.com.mandalore.agendamentoconversa.application.domain.exception.AtendimentoDesabilitadoException;
+import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.AtendimentoPort;
+
+class AtendimentoServiceTest {
+
+    private static final ZoneId SP = ZoneId.of("America/Sao_Paulo");
+    private static final LocalDateTime AGORA = LocalDateTime.of(2026, 11, 10, 7, 0);
+
+    private final AtendimentoPort port = mock(AtendimentoPort.class);
+    private final HabilitacaoAtendimento habilitacao = mock(HabilitacaoAtendimento.class);
+    private final AtendimentoService service =
+            new AtendimentoService(port, habilitacao, Clock.fixed(AGORA.atZone(SP).toInstant(), SP));
+
+    @Test
+    void filaSemDataUsaHojeEDelegaAoPort() {
+        List<Atendimento.FilaItem> fila = List.of();
+        when(port.fila("1", LocalDate.of(2026, 11, 10))).thenReturn(fila);
+
+        assertThat(service.fila("1", null)).isSameAs(fila);
+
+        verify(habilitacao).exigir("1");
+        verify(port).fila("1", LocalDate.of(2026, 11, 10));
+    }
+
+    @Test
+    void chegadaDelegaAoPort() {
+        Atendimento.Operacao ok = Atendimento.Operacao.sucesso(5L);
+        when(port.registrarChegada("1", 9L, "ana")).thenReturn(ok);
+
+        assertThat(service.registrarChegada("1", 9L, "ana")).isSameAs(ok);
+
+        verify(port).registrarChegada("1", 9L, "ana");
+    }
+
+    @Test
+    void desfazerChegadaSemMotivoELancaIllegalArgument() {
+        assertThatThrownBy(() -> service.desfazerChegada("1", 5L, "   ", "ana"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(port, org.mockito.Mockito.never()).desfazerChegada(anyString(), anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void contaNaoHabilitadaLancaDesabilitadoENuncaChamaOPort() {
+        doThrow(new AtendimentoDesabilitadoException()).when(habilitacao).exigir("2");
+
+        assertThatThrownBy(() -> service.fila("2", null)).isInstanceOf(AtendimentoDesabilitadoException.class);
+        assertThatThrownBy(() -> service.registrarChegada("2", 1L, "ana"))
+                .isInstanceOf(AtendimentoDesabilitadoException.class);
+
+        verifyNoInteractions(port);
+    }
+}

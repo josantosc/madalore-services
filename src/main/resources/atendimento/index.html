@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Recepção: chegada de pacientes</title>
+  <link rel="stylesheet" href="/admin/assets/nav.css">
+  <script src="/admin/assets/nav.js"></script>
+  <style>
+    :root {
+      --fundo: #fdfdfd; --solido: #ffffff; --alpha-1: rgba(0, 0, 51, .03); --alpha-2: rgba(0, 0, 59, .055);
+      --borda: #e8e8ec; --borda-forte: #d9d9e0;
+      --texto: #1c2024; --texto-2: #60646c; --texto-3: #8b8d98;
+      --marca: #0b5c7a; --marca-hover: #0a536e; --marca-suave: #e7eff2; --marca-texto: #094b64;
+      --rubi: #e54666; --rubi-hover: #dc3b5d; --rubi-suave: #feeaed; --rubi-texto: #ca244d;
+      --ambar-suave: #fff7c2; --ambar-texto: #ab6400;
+      --verde-suave: #e6f6eb; --verde-texto: #218358;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; background: var(--fundo); color: var(--texto);
+      font: 14px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; }
+
+    main { flex: 1; min-width: 0; overflow-y: auto; }
+    .conteudo { max-width: 1120px; margin: 0 auto; padding: 32px 32px 48px; }
+    .cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
+    .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 640px; }
+    .botoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px;
+      border: 0; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .12s; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.solido { background: var(--marca); color: #fff; }
+    .btn.solido:hover:not(:disabled) { background: var(--marca-hover); }
+    .btn.cinza { background: var(--alpha-2); color: var(--texto); }
+    .btn.cinza:hover:not(:disabled) { background: rgba(0, 0, 59, .09); }
+    .btn.perigo { background: var(--rubi); color: #fff; }
+    .btn.perigo:hover:not(:disabled) { background: var(--rubi-hover); }
+    .btn.mini { height: 26px; padding: 0 8px; font-size: 13px; border-radius: 6px; }
+
+    .resumo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 24px; }
+    .indicador { border-radius: 10px; background: var(--alpha-1); outline: 1px solid var(--borda); padding: 10px 12px; }
+    .indicador b { display: block; font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .indicador small { color: var(--texto-2); font-size: 12px; }
+    .indicador.atraso { background: var(--rubi-suave); outline-color: var(--rubi-suave); color: var(--rubi-texto); }
+    .indicador.atraso small { color: var(--rubi-texto); }
+
+    .ferramentas { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 20px 0 8px; }
+    input.campo, select.campo, textarea.campo { height: 36px; width: 100%; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1);
+      outline: 1px solid var(--borda); font: inherit; font-size: 14px; color: var(--texto); }
+    textarea.campo { height: 72px; padding: 8px 12px; resize: vertical; }
+    .ferramentas .campo { width: auto; }
+    input.campo:focus, select.campo:focus, textarea.campo:focus { outline: 1px solid var(--marca); background: var(--solido); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th { text-align: left; font-weight: 500; color: var(--texto-2); padding: 12px 16px 12px 0; font-size: 13px; }
+    td { padding: 10px 16px 10px 0; border-top: 1px solid var(--borda); vertical-align: top; }
+    tr.encerrado td { color: var(--texto-3); }
+    .hora { font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .nome { font-weight: 500; color: var(--texto); }
+    tr.encerrado .nome { color: var(--texto-2); }
+    .sub { color: var(--texto-3); font-size: 12px; display: block; }
+    .tag { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 20px; white-space: nowrap; display: inline-block; }
+    .tag.ambar { background: var(--ambar-suave); color: var(--ambar-texto); }
+    .tag.verde { background: var(--verde-suave); color: var(--verde-texto); }
+    .tag.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
+    .tag.marca { background: var(--marca-suave); color: var(--marca-texto); }
+    .espera { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .espera.ambar { color: var(--ambar-texto); }
+    .espera.rubi { color: var(--rubi-texto); }
+    .acoes { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+    .vazio { text-align: center; color: var(--texto-2); padding: 48px 0; }
+    .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
+
+    dialog { border: 0; padding: 24px; border-radius: 12px; width: min(560px, calc(100vw - 32px)); color: var(--texto);
+      box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
+    dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
+    dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
+    dialog p.sub { color: var(--texto-2); margin: 4px 0 0; font-size: 14px; }
+    [hidden] { display: none !important; }
+    .form { display: grid; gap: 14px; margin-top: 18px; }
+    .form label { display: grid; gap: 6px; font-weight: 500; }
+    .form .dica { font-weight: 400; color: var(--texto-3); font-size: 12px; }
+    .form .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 13px; }
+    .rodape { display: flex; gap: 12px; margin-top: 22px; }
+    .rodape .btn { flex: 1; height: 36px; }
+
+    #aviso { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px); background: var(--texto); color: #fff;
+      padding: 10px 16px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); opacity: 0; pointer-events: none;
+      transition: opacity .15s, transform .15s; max-width: calc(100vw - 32px); display: flex; gap: 8px; align-items: center; z-index: 10; }
+    #aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+    #aviso.erro::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rubi); flex: none; }
+
+    @media (max-width: 860px) {
+      .conteudo { padding: 20px 16px 40px; }
+      .resumo { grid-template-columns: repeat(2, 1fr); }
+      .col-opc { display: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="/admin/assets/tema.css">
+</head>
+<body>
+  <main>
+    <div class="conteudo">
+      <div class="cabecalho">
+        <div>
+          <h1>Chegada de pacientes</h1>
+          <p class="descricao">Consultas do dia. Registre a chegada quando o paciente estiver na recepção: ele entra na fila do médico
+            e o tempo de espera começa a contar.</p>
+        </div>
+        <div class="botoes">
+          <a class="btn cinza mini" href="/agenda" id="irAgenda">Abrir agenda</a>
+        </div>
+      </div>
+
+      <div class="resumo">
+        <div class="indicador"><b id="nPrevistos">0</b><small>Ainda não chegaram</small></div>
+        <div class="indicador" id="cardAguardando"><b id="nAguardando">0</b><small id="txtAguardando">Aguardando</small></div>
+        <div class="indicador"><b id="nConsulta">0</b><small>Em consulta</small></div>
+        <div class="indicador"><b id="nAtendidos">0</b><small>Atendidos</small></div>
+      </div>
+
+      <div class="ferramentas">
+        <button class="btn cinza" type="button" id="diaAnterior" title="Dia anterior">&larr;</button>
+        <input class="campo" type="date" id="data">
+        <button class="btn cinza" type="button" id="diaSeguinte" title="Dia seguinte">&rarr;</button>
+        <button class="btn cinza" type="button" id="hoje">Hoje</button>
+        <select class="campo" id="filtroProf"><option value="">Todos os profissionais</option></select>
+        <select class="campo" id="filtroStatus">
+          <option value="">Todas as situações</option>
+          <option value="PREVISTO">Ainda não chegaram</option>
+          <option value="AGUARDANDO">Aguardando</option>
+          <option value="EM_CONSULTA">Em consulta</option>
+          <option value="EXECUTADO">Atendidos</option>
+        </select>
+        <span style="flex:1"></span>
+        <span class="sub" id="atualizado"></span>
+        <button class="btn cinza" type="button" id="atualizar">Atualizar</button>
+      </div>
+
+      <table>
+        <thead><tr><th>Hora</th><th>Paciente</th><th class="col-opc">Profissional</th><th>Situação</th><th>Espera</th><th></th></tr></thead>
+        <tbody id="linhas"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <dialog id="dlgDesfazer">
+    <form method="dialog" id="formDesfazer" novalidate>
+      <h2>Desfazer chegada</h2>
+      <p class="sub" id="dTexto"></p>
+      <div class="form">
+        <label>Motivo <span class="dica">Ex.: chegada registrada no paciente errado; paciente foi embora antes de ser chamado.</span>
+          <textarea class="campo" id="dMotivo" maxlength="500"></textarea></label>
+        <span class="msg-erro" id="dErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn perigo" type="submit" id="dOk">Desfazer chegada</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="aviso" role="status"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const fmtHora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const STATUS = {
+      MARCADO: ["Marcada", "tag"], CONFIRMADO: ["Confirmada", "tag marca"], AGUARDANDO: ["Aguardando", "tag ambar"],
+      EM_CONSULTA: ["Em consulta", "tag verde"], EXECUTADO: ["Atendido", "tag"]
+    };
+    const ESPERA_ALERTA_MIN = 15;
+    const ESPERA_ATRASO_MIN = 30;
+
+    const estado = { conta: null, fila: [] };
+    const params = new URLSearchParams(location.search);
+
+    function el(tag, attrs, ...filhos) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => node[k] = v);
+      filhos.flat().forEach((f) => f !== null && f !== undefined && f !== false && node.append(f));
+      return node;
+    }
+
+    function aviso(texto, erro) {
+      const a = $("aviso");
+      a.textContent = texto;
+      a.className = "ver" + (erro ? " erro" : "");
+      clearTimeout(aviso.t);
+      aviso.t = setTimeout(() => a.className = erro ? "erro" : "", erro ? 6000 : 3500);
+    }
+
+    function url(caminho, extra) {
+      const q = new URLSearchParams(extra || {});
+      if (estado.conta) q.set("conta", estado.conta);
+      return caminho + "?" + q.toString();
+    }
+
+    async function api(caminho, opcoes, extra) {
+      const resp = await fetch(url(caminho, extra), opcoes);
+      if (resp.status === 204) return null;
+      const corpo = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(corpo.erro || ("Erro " + resp.status));
+      return corpo;
+    }
+
+    const json = (metodo, corpo) => ({ method: metodo, headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    const hora = (iso) => iso ? String(iso).substring(11, 16) : "";
+    const dataIso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    const deIso = (iso) => { const [a, m, d] = iso.substring(0, 10).split("-").map(Number); return new Date(a, m - 1, d); };
+    const somaDias = (iso, n) => { const d = deIso(iso); d.setDate(d.getDate() + n); return dataIso(d); };
+    const hoje = () => dataIso(new Date());
+    const previsto = (s) => s === "MARCADO" || s === "CONFIRMADO";
+    const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+
+    function duracao(min) {
+      if (min < 60) return plural(min, "min", "min");
+      return Math.floor(min / 60) + "h" + String(min % 60).padStart(2, "0");
+    }
+
+    // ---------- Fila do dia ----------
+    async function carregarFila() {
+      const data = $("data").value || hoje();
+      $("data").value = data;
+      try {
+        estado.fila = await api("/atendimento/api/fila", null, { data });
+        $("atualizado").textContent = "Atualizado às " + fmtHora.format(new Date());
+        desenhar();
+      } catch (e) {
+        aviso("Não foi possível carregar a fila. " + e.message, true);
+      }
+    }
+
+    function desenhar() {
+      const fila = estado.fila;
+      const profs = [...new Set(fila.map((f) => f.profissional))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      const profSel = $("filtroProf").value;
+      $("filtroProf").replaceChildren(el("option", { value: "" }, "Todos os profissionais"), ...profs.map((p) => el("option", { value: p }, p)));
+      $("filtroProf").value = profs.includes(profSel) ? profSel : "";
+
+      const aguardando = fila.filter((f) => f.status === "AGUARDANDO");
+      const maiorEspera = Math.max(0, ...aguardando.map((f) => f.esperaMin || 0));
+      $("nPrevistos").textContent = fila.filter((f) => previsto(f.status)).length;
+      $("nAguardando").textContent = aguardando.length;
+      $("txtAguardando").textContent = aguardando.length ? "Aguardando · maior espera " + duracao(maiorEspera) : "Aguardando";
+      $("cardAguardando").className = "indicador" + (maiorEspera >= ESPERA_ATRASO_MIN ? " atraso" : "");
+      $("nConsulta").textContent = fila.filter((f) => f.status === "EM_CONSULTA").length;
+      $("nAtendidos").textContent = fila.filter((f) => f.status === "EXECUTADO").length;
+
+      const prof = $("filtroProf").value;
+      const status = $("filtroStatus").value;
+      const linhas = fila.filter((f) => (!prof || f.profissional === prof)
+        && (!status || (status === "PREVISTO" ? previsto(f.status) : f.status === status)));
+      const corpo = $("linhas");
+      corpo.replaceChildren(...linhas.map(linha));
+      if (!linhas.length) {
+        corpo.append(el("tr", {}, el("td", { colSpan: 6, className: "vazio" },
+          el("strong", {}, fila.length ? "Nenhuma consulta com este filtro" : "Nenhuma consulta neste dia"),
+          fila.length ? "Troque o profissional ou a situação." : "As consultas marcadas na agenda aparecem aqui.")));
+      }
+    }
+
+    function linha(f) {
+      const [rotulo, classe] = STATUS[f.status] || [f.status, "tag"];
+      const ehHoje = $("data").value === hoje();
+      let espera = null;
+      if (f.status === "AGUARDANDO" && f.esperaMin !== null && f.esperaMin !== undefined) {
+        const cor = f.esperaMin >= ESPERA_ATRASO_MIN ? " rubi" : f.esperaMin >= ESPERA_ALERTA_MIN ? " ambar" : "";
+        espera = el("span", { className: "espera" + cor }, duracao(f.esperaMin));
+      }
+      const acoes = [];
+      if (previsto(f.status) && ehHoje) {
+        acoes.push(el("button", { className: "btn solido mini", type: "button", onclick: (ev) => chegada(f, ev.currentTarget) }, "Registrar chegada"));
+      }
+      if (f.status === "AGUARDANDO" && f.atendimentoId) {
+        acoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: () => abrirDesfazer(f) }, "Desfazer chegada"));
+      }
+      return el("tr", { className: f.status === "EXECUTADO" ? "encerrado" : "" },
+        el("td", { className: "hora" }, hora(f.horario)),
+        el("td", {}, el("span", { className: "nome" }, f.paciente || ""),
+          el("span", { className: "sub" }, f.especialidade || "")),
+        el("td", { className: "col-opc" }, f.profissional || ""),
+        el("td", {}, el("span", { className: classe }, rotulo),
+          f.chegadaEm ? el("span", { className: "sub" }, "Chegou às " + hora(f.chegadaEm)) : null),
+        el("td", {}, espera || el("span", { className: "sub" }, "—")),
+        el("td", {}, el("div", { className: "acoes" }, acoes)));
+    }
+
+    async function chegada(f, botao) {
+      botao.disabled = true;
+      try {
+        await api("/atendimento/api/agendamentos/" + f.agendamentoId + "/chegada", { method: "POST" });
+        aviso("Chegada de " + f.paciente + " registrada. Já está na fila do médico.");
+      } catch (e) {
+        aviso(e.message, true);
+      }
+      await carregarFila();
+    }
+
+    let desfazendo = null;
+    function abrirDesfazer(f) {
+      desfazendo = f;
+      $("dTexto").textContent = f.paciente + ", consulta às " + hora(f.horario) + " com " + f.profissional
+        + ". O paciente sai da fila do médico e a consulta volta a ficar marcada.";
+      $("dMotivo").value = "";
+      $("dErro").textContent = "";
+      $("dOk").disabled = false;
+      $("dlgDesfazer").showModal();
+      $("dMotivo").focus();
+    }
+
+    $("formDesfazer").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const motivo = $("dMotivo").value.trim();
+      if (!motivo) return $("dErro").textContent = "Informe o motivo.";
+      $("dOk").disabled = true;
+      try {
+        await api("/atendimento/api/atendimentos/" + desfazendo.atendimentoId + "/desfazer-chegada", json("POST", { motivo }));
+        $("dlgDesfazer").close();
+        aviso("Chegada desfeita.");
+        await carregarFila();
+      } catch (e) {
+        $("dErro").textContent = e.message;
+        $("dOk").disabled = false;
+      }
+    });
+
+    // ---------- Navegação ----------
+    document.querySelectorAll("[data-fechar]").forEach((b) => b.onclick = () => b.closest("dialog").close());
+    document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (ev) => {
+      const r = d.getBoundingClientRect();
+      const fora = ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom;
+      if (ev.target === d && fora) d.close();
+    }));
+    $("data").addEventListener("change", carregarFila);
+    $("diaAnterior").onclick = () => { $("data").value = somaDias($("data").value || hoje(), -1); carregarFila(); };
+    $("diaSeguinte").onclick = () => { $("data").value = somaDias($("data").value || hoje(), 1); carregarFila(); };
+    $("hoje").onclick = () => { $("data").value = hoje(); carregarFila(); };
+    $("atualizar").onclick = carregarFila;
+    $("filtroProf").addEventListener("change", desenhar);
+    $("filtroStatus").addEventListener("change", desenhar);
+
+    setInterval(() => {
+      const dialogoAberto = document.querySelector("dialog[open]");
+      if (!document.hidden && !dialogoAberto && $("data").value === hoje()) carregarFila();
+    }, 60000);
+
+    (() => {
+      if (params.get("conta")) {
+        estado.conta = params.get("conta");
+        $("irAgenda").href = "/agenda?conta=" + encodeURIComponent(estado.conta);
+      }
+      $("data").value = params.get("data") || hoje();
+      carregarFila();
+    })();
+  </script>
+</body>
+</html>

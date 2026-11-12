@@ -110,6 +110,29 @@ class GradeHorariosTest {
         assertThat(linhas.get(0).profissional()).isEqualTo("Dra. Ana");
     }
 
+    @Test
+    void pacienteQueJaChegouContinuaOcupandoOHorario() {
+        Agenda.Agendamento aguardando = agendamento(TERCA.atTime(8, 0), Agenda.Status.AGUARDANDO);
+        Agenda.Agendamento emConsulta = agendamento(TERCA.atTime(8, 30), Agenda.Status.EM_CONSULTA);
+        Agenda.Agendamento executado = agendamento(TERCA.atTime(9, 0), Agenda.Status.EXECUTADO);
+
+        List<Agenda.Horario> vagas = GradeHorarios.vagasBot(List.of(MANHA), List.of(aguardando, emConsulta, executado), List.of(),
+                TERCA.atStartOfDay(), TERCA.plusDays(1).atStartOfDay(), TERCA.atTime(7, 0), "tanto_faz");
+
+        assertThat(vagas).extracting(h -> h.inicio().toLocalTime().toString()).containsExactly("09:30");
+    }
+
+    @Test
+    void soMarcadoEConfirmadoPodemSerAlteradosPelaAgenda() {
+        assertThat(Agenda.Status.values()).filteredOn(Agenda.Status::ativo)
+                .containsExactly(Agenda.Status.MARCADO, Agenda.Status.CONFIRMADO);
+        assertThat(Agenda.Status.values()).filteredOn(Agenda.Status::ocupaHorario)
+                .containsExactly(Agenda.Status.MARCADO, Agenda.Status.CONFIRMADO, Agenda.Status.AGUARDANDO,
+                        Agenda.Status.EM_CONSULTA, Agenda.Status.EXECUTADO);
+        assertThat(Agenda.Status.values()).filteredOn(Agenda.Status::emAtendimento)
+                .containsExactly(Agenda.Status.AGUARDANDO, Agenda.Status.EM_CONSULTA, Agenda.Status.EXECUTADO);
+    }
+
     static Agenda.Agendamento agendamento(LocalDateTime inicio, Agenda.Status status) {
         return new Agenda.Agendamento(inicio.getMinute() + inicio.getHour() * 100L, 7, "Dra. Ana", 3, "Cardiologia", null, null,
                 new Agenda.Paciente(1L, "52998224725", LocalDate.of(1988, 10, 19), "Maria", ""), inicio, inicio.plusMinutes(30), "",

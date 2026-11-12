@@ -25,6 +25,7 @@ public class AgendaService implements AgendaUseCase {
 
     static final ZoneId ZONA = ZoneId.of("America/Sao_Paulo");
     static final String OCUPADO_NO_SISTEMA = "Ocupado no sistema da clínica";
+    static final String USUARIO_JA_VINCULADO = "Este usuário já está vinculado a outro profissional";
 
     private final AgendaMandalorePort agenda;
     private final AvisoPendencia aviso;
@@ -175,6 +176,43 @@ public class AgendaService implements AgendaUseCase {
     @Override
     public Map<Long, List<Long>> especialidadesDosProfissionais(String conta) {
         return agenda.especialidadesDosProfissionais(conta);
+    }
+
+    @Override
+    public Map<Long, Agenda.Credencial> credenciais(String conta) {
+        return agenda.credenciais(conta);
+    }
+
+    @Override
+    public List<Agenda.UsuarioVinculavel> usuariosVinculaveis(String conta) {
+        return agenda.usuariosDaConta(conta);
+    }
+
+    @Override
+    public Agenda.Credencial salvarCredencial(String conta, long profissionalId, Agenda.Credencial credencial) {
+        Agenda.Credencial pedido = credencial == null ? Agenda.Credencial.VAZIA : credencial;
+        String numero = pedido.conselhoNumero() == null ? "" : pedido.conselhoNumero().trim();
+        String uf = pedido.conselhoUf() == null ? "" : pedido.conselhoUf().trim().toUpperCase(java.util.Locale.ROOT);
+        if (numero.length() > 30) {
+            throw new IllegalArgumentException("O número do conselho aceita até 30 caracteres");
+        }
+        if (!uf.isEmpty() && !uf.matches("[A-Z]{2}")) {
+            throw new IllegalArgumentException("A UF do conselho precisa ter 2 letras (ex.: SP)");
+        }
+        Long usuarioId = pedido.usuarioId();
+        if (usuarioId != null) {
+            if (agenda.usuariosDaConta(conta).stream().noneMatch(u -> u.id() == usuarioId)) {
+                throw new IllegalArgumentException("O usuário precisa estar ativo e ter acesso a esta clínica");
+            }
+            boolean emOutro = agenda.credenciais(conta).entrySet().stream()
+                    .anyMatch(e -> e.getKey() != profissionalId && usuarioId.equals(e.getValue().usuarioId()));
+            if (emOutro) {
+                throw new IllegalArgumentException(USUARIO_JA_VINCULADO);
+            }
+        }
+        Agenda.Credencial valida = new Agenda.Credencial(usuarioId, numero.isEmpty() ? null : numero, uf.isEmpty() ? null : uf);
+        agenda.salvarCredencial(conta, profissionalId, valida);
+        return valida;
     }
 
     @Override

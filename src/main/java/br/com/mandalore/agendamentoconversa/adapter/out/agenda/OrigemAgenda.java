@@ -8,11 +8,12 @@ import org.springframework.stereotype.Component;
 
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClienteAtual;
 import br.com.mandalore.agendamentoconversa.adapter.cliente.ClientesProperties;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.OrigemAgendaPort;
 
 /** Qual agenda o bot usa na conta da conversa: mandalore.clientes.&lt;id&gt;.agenda e, sem ela, agenda.origem. */
 @Component
 @ConditionalOnProperty(name = "agenda.enabled", havingValue = "true")
-public class OrigemAgenda {
+public class OrigemAgenda implements OrigemAgendaPort {
 
     public static final String MANDALORE = "mandalore";
 
@@ -28,6 +29,7 @@ public class OrigemAgenda {
         return mandalore(ClienteAtual.accountId());
     }
 
+    @Override
     public boolean mandalore(String accountId) {
         String daConta = clientes.cliente(accountId)
                 .map(ClientesProperties.Cliente::agenda)

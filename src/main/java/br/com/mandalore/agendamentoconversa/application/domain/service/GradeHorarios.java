@@ -41,7 +41,7 @@ public final class GradeHorarios {
 
     public static Agenda.Agendamento ocupante(Agenda.Horario horario, List<Agenda.Agendamento> ativos) {
         return ativos.stream()
-                .filter(a -> a.status().ativo() && a.profissionalId() == horario.profissionalId()
+                .filter(a -> a.status().ocupaHorario() && a.profissionalId() == horario.profissionalId()
                         && a.inicio().isBefore(horario.fim()) && horario.inicio().isBefore(a.fim()))
                 .findFirst()
                 .orElse(null);

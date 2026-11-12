@@ -60,7 +60,8 @@ public class PostgresObservabilityConfig {
                 new ClassPathResource("db/orcamento/schema.sql"),
                 new ClassPathResource("db/agenda/schema.sql"),
                 new ClassPathResource("db/funil/schema.sql"),
-                new ClassPathResource("db/acesso/schema.sql")
+                new ClassPathResource("db/acesso/schema.sql"),
+                new ClassPathResource("db/atendimento/schema.sql")
         );
         DataSourceInitializer initializer = new DataSourceInitializer();
         initializer.setDataSource(dataSource);

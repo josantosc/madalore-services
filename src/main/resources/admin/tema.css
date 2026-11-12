@@ -19,6 +19,7 @@
   --rubi: #e5484d; --rubi-hover: #f05b60; --rubi-suave: rgba(229, 72, 77, .16); --rubi-texto: #ff9fa2;
   --ambar-suave: rgba(245, 184, 92, .14); --ambar-texto: #f6c67c;
   --verde-suave: rgba(48, 164, 108, .16); --verde-texto: #74dca3;
+  --violeta-suave: rgba(142, 120, 230, .16); --violeta-texto: #c4b5fd;
 
   --adm-fundo: transparent; --adm-solido: var(--bs-vidro); --adm-alpha-1: var(--alpha-1); --adm-alpha-2: var(--alpha-2);
   --adm-borda: var(--bs-linha); --adm-texto: var(--bs-texto); --adm-texto-2: var(--bs-texto-2); --adm-texto-3: var(--bs-texto-3);

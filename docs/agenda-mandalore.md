@@ -74,6 +74,22 @@ Toda alteração fica no histórico do agendamento, com quem fez e quando.
 - A mesma operação repetida pelo bot (mensagem reenviada, nova tentativa) não grava em dobro.
 - Dois agendamentos do mesmo profissional no mesmo horário são recusados, mesmo com bot e recepção ao mesmo tempo.
 
+## Status do atendimento clínico
+
+Com o [atendimento clínico](atendimento-clinico.md) ligado, o agendamento ganha três status depois de
+`MARCADO`/`CONFIRMADO`:
+
+| Status | Rótulo na tela | Quando |
+|---|---|---|
+| `AGUARDANDO` | Aguardando | A recepção registrou a chegada |
+| `EM_CONSULTA` | Em consulta | O médico iniciou a consulta |
+| `EXECUTADO` | Atendida | O médico finalizou o atendimento |
+
+Os três **ocupam o horário** do profissional, como `MARCADO` e `CONFIRMADO`: o bot não oferece o horário e não
+trata o agendamento como consulta em aberto do paciente. Eles **não podem ser confirmados, cancelados nem
+remarcados** pela agenda; a tela esconde essas ações e a API recusa com o código `AGENDAMENTO_EM_ATENDIMENTO`.
+Chegada e consulta não geram pendência. A conferência e as pendências continuam iguais para os outros status.
+
 ## Checklist para ligar numa clínica
 
 1. PostgreSQL da trilha ligado (`OBSERVABILITY_POSTGRES_ENABLED=true`). O schema `agenda` é criado na subida.

@@ -282,6 +282,13 @@ Antes da segunda clínica, porque com mais de uma o login compartilhado impede s
    variáveis. Detalhes em [`usuarios-perfis.md`](usuarios-perfis.md).
 2. **Relatórios por clínica** (Fase 3, item 2).
 
+### Atendimento clínico
+
+**Entregue** para as clínicas com a agenda do Mandalore (`agenda=mandalore`): chegada e fila na recepção,
+consultório do médico com anamnese, evolução, CID, receita para impressão e alta, perfil Médico e auditoria de
+acesso ao prontuário. Liga por clínica com `atendimento.enabled`. Falta validar com a clínica piloto a guarda do
+prontuário e a receita sem assinatura digital. Detalhes em [`atendimento-clinico.md`](atendimento-clinico.md).
+
 ### Módulos comerciais
 
 | Módulo | Fases | O que resolve para a clínica |

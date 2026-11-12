@@ -20,7 +20,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * Login único da central (/admin) e das telas /curadoria, /precos e /simulador: sessão aberta em /admin/login
+ * Login único da central (/admin) e das telas /curadoria, /precos, /simulador, /agenda, /funil, /usuarios,
+ * /atendimento e /consultorio: sessão aberta em /admin/login
  * ou, para scripts, Basic Auth. Cada tela exige a permissão do seu {@link Modulo}.
  * O usuário autenticado fica no atributo {@link #USUARIO} da requisição.
  */
@@ -32,7 +33,8 @@ public class AdminAuthFilter extends OncePerRequestFilter {
     public static final String SESSAO = "admin.login";
     static final String[] CAMINHOS = {
             "/admin", "/admin/*", "/curadoria", "/curadoria/*", "/precos", "/precos/*", "/simulador", "/simulador/*",
-            "/agenda", "/agenda/*", "/funil", "/funil/*", "/usuarios", "/usuarios/*"};
+            "/agenda", "/agenda/*", "/funil", "/funil/*", "/usuarios", "/usuarios/*",
+            "/atendimento", "/atendimento/*", "/consultorio", "/consultorio/*"};
     /** Com senha provisória, só estes caminhos abrem até a troca. */
     static final Set<String> LIVRES_NA_TROCA = Set.of("/admin/senha", "/admin/api/senha", "/admin/api/eu");
 

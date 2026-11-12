@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -41,6 +43,8 @@ import br.com.mandalore.agendamentoconversa.application.domain.service.TextoPend
 public class PostgresAgendaAdapter implements AgendaMandalorePort {
 
     static final ZoneId ZONA = ZoneId.of("America/Sao_Paulo");
+
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(PostgresAgendaAdapter.class);
 
     private static final String AGENDAMENTOS = """
             SELECT a.id, a.profissional_id, p.nome AS profissional, a.especialidade_id, e.nome AS especialidade,
@@ -67,7 +71,11 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
             WHERE pe.conta_id = :conta
             """;
 
+    /** Agendamento que ainda pode ser confirmado, cancelado ou remarcado: o paciente não chegou. */
     private static final String ATIVO = "status IN ('MARCADO', 'CONFIRMADO')";
+
+    /** Horário tomado: da marcação até a consulta executada. Deve bater com o índice uk_agendamento_ocupa_horario. */
+    private static final String OCUPA_HORARIO = "status IN ('MARCADO', 'CONFIRMADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO')";
 
     private final NamedParameterJdbcTemplate jdbc;
     private final TransactionTemplate transacao;
@@ -160,6 +168,56 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
             jdbc.update("DELETE FROM " + tabela + " WHERE id = :id AND conta_id = :conta", params);
             return Agenda.Exclusao.EXCLUIDO;
         });
+    }
+
+    /**
+     * As colunas usuario_id, conselho_numero e conselho_uf nascem em db/atendimento/schema.sql, que roda junto dos demais
+     * scripts (mesmo initialize-schema, depois de acesso). Se o banco ainda não recebeu esse script, a listagem fica
+     * vazia em vez de derrubar a tela de cadastros; a gravação de dados do conselho então falha com mensagem clara.
+     */
+    @Override
+    public Map<Long, Agenda.Credencial> credenciais(String conta) {
+        Map<Long, Agenda.Credencial> credenciais = new LinkedHashMap<>();
+        try {
+            jdbc.query("""
+                    SELECT id, usuario_id, conselho_numero, conselho_uf FROM agenda.profissional
+                    WHERE conta_id = :conta AND (usuario_id IS NOT NULL OR conselho_numero IS NOT NULL OR conselho_uf IS NOT NULL)
+                    """, conta(conta), rs -> {
+                long usuario = rs.getLong("usuario_id");
+                credenciais.put(rs.getLong("id"), new Agenda.Credencial(rs.wasNull() ? null : usuario,
+                        rs.getString("conselho_numero"), rs.getString("conselho_uf")));
+            });
+        } catch (BadSqlGrammarException ex) {
+            LOG.warn("colunas do conselho ausentes em agenda.profissional; aplique db/atendimento/schema.sql");
+        }
+        return credenciais;
+    }
+
+    @Override
+    public void salvarCredencial(String conta, long profissionalId, Agenda.Credencial credencial) {
+        exigirDaConta(conta, "agenda.profissional", profissionalId);
+        try {
+            jdbc.update("""
+                    UPDATE agenda.profissional SET usuario_id = :usuario, conselho_numero = :numero, conselho_uf = :uf
+                    WHERE id = :id AND conta_id = :conta
+                    """, conta(conta).addValue("id", profissionalId).addValue("usuario", credencial.usuarioId(), Types.BIGINT)
+                    .addValue("numero", credencial.conselhoNumero()).addValue("uf", credencial.conselhoUf()));
+        } catch (DuplicateKeyException ex) {
+            throw new IllegalArgumentException("Este usuário já está vinculado a outro profissional");
+        } catch (BadSqlGrammarException ex) {
+            throw new IllegalStateException("Banco sem as colunas do conselho: aplique db/atendimento/schema.sql", ex);
+        }
+    }
+
+    @Override
+    public List<Agenda.UsuarioVinculavel> usuariosDaConta(String conta) {
+        return jdbc.query("""
+                SELECT u.id, u.nome, u.email, u.perfil FROM acesso.usuario u
+                JOIN acesso.usuario_conta uc ON uc.usuario_id = u.id
+                WHERE uc.conta_id = :conta AND u.ativo
+                ORDER BY (u.perfil = 'MEDICO') DESC, u.nome
+                """, conta(conta), (rs, i) -> new Agenda.UsuarioVinculavel(rs.getLong("id"), rs.getString("nome"),
+                rs.getString("email"), rs.getString("perfil")));
     }
 
     @Override
@@ -302,7 +360,7 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
 
     @Override
     public List<Agenda.Agendamento> agendamentos(String conta, LocalDateTime de, LocalDateTime ate, boolean ativos) {
-        return jdbc.query(AGENDAMENTOS + " AND a.inicio >= :de AND a.inicio < :ate" + (ativos ? " AND a." + ATIVO : "")
+        return jdbc.query(AGENDAMENTOS + " AND a.inicio >= :de AND a.inicio < :ate" + (ativos ? " AND a." + OCUPA_HORARIO : "")
                         + " ORDER BY a.inicio, p.nome",
                 conta(conta).addValue("de", Timestamp.valueOf(de)).addValue("ate", Timestamp.valueOf(ate)), this::agendamento);
     }
@@ -367,7 +425,7 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
                      AND (CAST(:paciente AS BIGINT) IS NULL OR paciente_id = CAST(:paciente AS BIGINT))
                     """, alvo(conta, agendamentoId, alteracao));
             if (alterados != 1) {
-                return registrar(alteracao.chave(), Agenda.Operacao.falha(CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO));
+                return registrar(alteracao.chave(), Agenda.Operacao.falha(motivoSemAlteracao(conta, agendamentoId, alteracao)));
             }
             evento(agendamentoId, "CONFIRMADO", alteracao.usuario(), origem(alteracao.origem()));
             List<Agenda.Pendencia> pendencias = new ArrayList<>();
@@ -393,7 +451,7 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
                      AND (CAST(:paciente AS BIGINT) IS NULL OR paciente_id = CAST(:paciente AS BIGINT))
                     """, alvo(conta, agendamentoId, alteracao));
             if (alterados != 1 || atual.isEmpty()) {
-                return registrar(alteracao.chave(), Agenda.Operacao.falha(CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO));
+                return registrar(alteracao.chave(), Agenda.Operacao.falha(motivoSemAlteracao(conta, agendamentoId, alteracao)));
             }
             evento(agendamentoId, "CANCELADO", alteracao.usuario(), origem(alteracao.origem()));
             List<String> descartadas = descartar(agendamentoId, alteracao.usuario(), "Agendamento cancelado antes do lançamento");
@@ -417,7 +475,7 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
                     .filter(a -> a.status().ativo())
                     .filter(a -> alteracao.pacienteId() == null || alteracao.pacienteId().equals(a.paciente().id()));
             if (encontrado.isEmpty()) {
-                return registrar(alteracao.chave(), Agenda.Operacao.falha(CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO));
+                return registrar(alteracao.chave(), Agenda.Operacao.falha(motivoSemAlteracao(conta, agendamentoId, alteracao)));
             }
             Agenda.Agendamento atual = encontrado.get();
             travarProfissional(conta, nova.profissionalId());
@@ -587,10 +645,22 @@ public class PostgresAgendaAdapter implements AgendaMandalorePort {
                 (ResultSetExtractor<Void>) rs -> null);
     }
 
+    /**
+     * Por que a alteração não aconteceu. Só diz que o paciente já está em atendimento a quem tem direito de ver esse
+     * agendamento (o paciente da alteração, quando informado); para os demais continua "não encontrado".
+     */
+    private CodigoNegocio motivoSemAlteracao(String conta, long agendamentoId, Agenda.Alteracao alteracao) {
+        return agendamento(conta, agendamentoId)
+                .filter(a -> alteracao.pacienteId() == null || alteracao.pacienteId().equals(a.paciente().id()))
+                .filter(a -> a.status().emAtendimento())
+                .map(a -> CodigoNegocio.AGENDAMENTO_EM_ATENDIMENTO)
+                .orElse(CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO);
+    }
+
     private boolean sobrepoe(String conta, long profissionalId, LocalDateTime inicio, LocalDateTime fim, Long ignorar) {
         Long total = jdbc.queryForObject("""
                 SELECT COUNT(*) FROM agenda.agendamento
-                WHERE conta_id = :conta AND profissional_id = :profissional AND\s""" + ATIVO + """
+                WHERE conta_id = :conta AND profissional_id = :profissional AND\s""" + OCUPA_HORARIO + """
                  AND inicio < :fim AND fim > :inicio AND (CAST(:ignorar AS BIGINT) IS NULL OR id <> CAST(:ignorar AS BIGINT))
                 """, conta(conta).addValue("profissional", profissionalId).addValue("inicio", Timestamp.valueOf(inicio))
                 .addValue("fim", Timestamp.valueOf(fim)).addValue("ignorar", ignorar), Long.class);

@@ -16,6 +16,7 @@
       --rubi: #e54666; --rubi-hover: #dc3b5d; --rubi-suave: #feeaed; --rubi-texto: #ca244d;
       --ambar-suave: #fff7c2; --ambar-texto: #ab6400;
       --verde-suave: #e6f6eb; --verde-texto: #218358;
+      --violeta-suave: #f2eefb; --violeta-texto: #6550b9;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
@@ -87,6 +88,7 @@
     .tag.verde { background: var(--verde-suave); color: var(--verde-texto); }
     .tag.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
     .tag.marca { background: var(--marca-suave); color: var(--marca-texto); }
+    .tag.violeta { background: var(--violeta-suave); color: var(--violeta-texto); }
     .acoes { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
     .vazio { text-align: center; color: var(--texto-2); padding: 48px 0; }
     .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
@@ -322,7 +324,14 @@
       CONFIRMAR: "Confirmar no sistema", CONFERIR: "Conferir divergência" };
     const EVENTOS = { MARCADO: "Marcada", CONFIRMADO: "Confirmada", CANCELADO: "Cancelada", REMARCADO_PARA: "Remarcada para",
       REMARCADO_DE: "Remarcada de", LANCADO: "Lançada no sistema", PENDENCIA_CONCLUIDA: "Pendência concluída",
-      PENDENCIA_REABERTA: "Pendência reaberta", CONFERIDO: "Conferida: igual no sistema", DIVERGENTE: "Conferida: diferente no sistema" };
+      PENDENCIA_REABERTA: "Pendência reaberta", CONFERIDO: "Conferida: igual no sistema", DIVERGENTE: "Conferida: diferente no sistema",
+      CHEGOU: "Chegada registrada", CHEGADA_DESFEITA: "Chegada desfeita", EM_CONSULTA: "Consulta iniciada", EXECUTADO: "Atendimento finalizado" };
+    const STATUS = {
+      MARCADO: ["Marcada", "marca"], CONFIRMADO: ["Confirmada", "verde"], AGUARDANDO: ["Aguardando", "ambar"],
+      EM_CONSULTA: ["Em consulta", "violeta"], EXECUTADO: ["Atendida", ""]
+    };
+    // Em atendimento, a agenda só mostra; a API recusa confirmar, cancelar e remarcar.
+    const alteravel = (a) => a.status === "MARCADO" || a.status === "CONFIRMADO";
 
     const estado = { conta: null, contas: [], cadastros: {}, dia: null, chatwootUrl: "", hoje: null };
     const params = new URLSearchParams(location.search);
@@ -374,7 +383,7 @@
 
     function tagsAgendamento(a) {
       const tags = [
-        el("span", { className: "tag " + (a.status === "CONFIRMADO" ? "verde" : "marca") }, a.status === "CONFIRMADO" ? "Confirmada" : "Marcada"),
+        el("span", { className: "tag " + (STATUS[a.status]?.[1] ?? "") }, STATUS[a.status]?.[0] ?? a.status),
         el("span", { className: "tag" }, a.origem === "BOT" ? "Bot" : "Recepção")];
       a.pendenciasAbertas.forEach((t) => tags.push(el("span", { className: "tag ambar" }, TIPOS[t] || t)));
       if (a.codigoExterno) tags.push(el("span", { className: "tag" }, "Nº " + a.codigoExterno));
@@ -466,8 +475,8 @@
           el("td", {}, el("div", { className: "acoes" },
             el("button", { className: "btn cinza mini", type: "button", onclick: () => detalhe(a.id) }, "Detalhes"),
             a.status === "MARCADO" ? el("button", { className: "btn cinza mini", type: "button", onclick: () => alterar("confirmar", a) }, "Confirmar") : null,
-            el("button", { className: "btn cinza mini", type: "button", onclick: () => alterar("remarcar", a) }, "Remarcar"),
-            el("button", { className: "btn cinza mini", type: "button", onclick: () => alterar("cancelar", a) }, "Cancelar"))));
+            alteravel(a) ? el("button", { className: "btn cinza mini", type: "button", onclick: () => alterar("remarcar", a) }, "Remarcar") : null,
+            alteravel(a) ? el("button", { className: "btn cinza mini", type: "button", onclick: () => alterar("cancelar", a) }, "Cancelar") : null)));
       }
       if (l.situacao === "BLOQUEADO") {
         return el("tr", { className: "bloqueado" }, horario, profissional,

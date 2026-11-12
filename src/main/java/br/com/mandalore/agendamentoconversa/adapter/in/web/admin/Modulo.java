@@ -20,7 +20,11 @@ public enum Modulo {
     FUNIL("/funil", "Funil de orçamentos",
             "Orçamentos que ainda não viraram agendamento, retornos do dia e motivos de perda."),
     USUARIOS("/usuarios", "Usuários",
-            "Quem entra na central, com qual perfil e em quais clínicas. Senhas provisórias e histórico de acesso.");
+            "Quem entra na central, com qual perfil e em quais clínicas. Senhas provisórias e histórico de acesso."),
+    ATENDIMENTO("/atendimento", "Atendimento da recepção",
+            "Fila do dia, chegada do paciente e desfazer chegada, sem conteúdo clínico."),
+    CONSULTORIO("/consultorio", "Consultório",
+            "Fila do médico, início da consulta, anamnese, evolução, diagnóstico, receita e finalização.");
 
     private final String caminho;
     private final String titulo;

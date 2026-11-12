@@ -51,6 +51,36 @@ class AgendaServiceTest {
     }
 
     @Test
+    void credencialNormalizaConselhoEGravaQuandoOUsuarioEDaClinica() {
+        when(port.usuariosDaConta("1")).thenReturn(List.of(new Agenda.UsuarioVinculavel(9L, "Dra. Ana", "ana@c.com", "MEDICO")));
+        when(port.credenciais("1")).thenReturn(java.util.Map.of(8L, new Agenda.Credencial(5L, "1", "SP")));
+
+        Agenda.Credencial salva = service.salvarCredencial("1", 7, new Agenda.Credencial(9L, " 12345 ", "sp"));
+
+        assertThat(salva).isEqualTo(new Agenda.Credencial(9L, "12345", "SP"));
+        verify(port).salvarCredencial("1", 7, salva);
+        assertThat(service.salvarCredencial("1", 7, new Agenda.Credencial(null, " ", " "))).isEqualTo(Agenda.Credencial.VAZIA);
+    }
+
+    @Test
+    void credencialRecusaUfNumeroUsuarioDeOutraClinicaEUsuarioJaVinculado() {
+        when(port.usuariosDaConta("1")).thenReturn(List.of(new Agenda.UsuarioVinculavel(9L, "Dra. Ana", "ana@c.com", "MEDICO")));
+        when(port.credenciais("1")).thenReturn(java.util.Map.of(8L, new Agenda.Credencial(9L, null, null)));
+
+        assertThatThrownBy(() -> service.salvarCredencial("1", 7, new Agenda.Credencial(null, "1", "S")))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("2 letras");
+        assertThatThrownBy(() -> service.salvarCredencial("1", 7, new Agenda.Credencial(null, "1", "S1")))
+                .hasMessageContaining("2 letras");
+        assertThatThrownBy(() -> service.salvarCredencial("1", 7, new Agenda.Credencial(null, "1".repeat(31), "SP")))
+                .hasMessageContaining("30 caracteres");
+        assertThatThrownBy(() -> service.salvarCredencial("1", 7, new Agenda.Credencial(4L, null, null)))
+                .hasMessageContaining("ativo e ter acesso");
+        assertThatThrownBy(() -> service.salvarCredencial("1", 7, new Agenda.Credencial(9L, null, null)))
+                .hasMessage(AgendaService.USUARIO_JA_VINCULADO);
+        verify(port, never()).salvarCredencial(any(), anyLong(), any());
+    }
+
+    @Test
     void horarioSoAceitaEspecialidadeVinculadaAoProfissional() {
         when(port.especialidadesDosProfissionais("1")).thenReturn(java.util.Map.of(7L, List.of(3L)));
         Agenda.Grade cardio = grade(3);

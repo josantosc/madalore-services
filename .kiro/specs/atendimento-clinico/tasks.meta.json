@@ -1,0 +1,1023 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.6 Testes: `Agenda.Status` (7 status), `GradeHorarios` com os status novos, subida dupla do schema sobre banco antigo. _R13_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410159106
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410171755
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410538169
+      }
+    ],
+    "2.1 Criar `src/main/resources/db/atendimento/schema.sql` conforme a seção 5.2 do design. _R1–R9, R11, R12_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410159246
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410542469
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410618815
+      }
+    ],
+    "2.2 Registrar o script por último na lista de `PostgresObservabilityConfig` (depois de `db/acesso/schema.sql`). _R15.3_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410159440
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410623408
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410721756
+      }
+    ],
+    "2.3 Acrescentar `'MEDICO'` ao `usuario_perfil_check` em `db/acesso/schema.sql` (as duas ocorrências). _R10.1_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410159520
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410725466
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410777632
+      }
+    ],
+    "2.4 `*IT` de constraints: liberado sem validade, inativação sem justificativa, segundo `PRINCIPAL`, dois atendimentos ativos no mesmo agendamento, dois `EM_CONSULTA` do mesmo profissional. _R7.3, R9, R15.1_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410159625
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410781535
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411044256
+      }
+    ],
+    "3.1 `Modulo`: adicionar `ATENDIMENTO(\"/atendimento\")` e `CONSULTORIO(\"/consultorio\")`. _R10_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410159759
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411047871
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411258974
+      }
+    ],
+    "3.2 `Usuario.Perfil`: criar `MEDICO` (módulos `ATENDIMENTO`, `CONSULTORIO`); acrescentar `ATENDIMENTO` a `RECEPCAO` e `GESTOR`. _R10.1, R10.2_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410159860
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411263362
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411561967
+      }
+    ],
+    "3.3 `AdminAuthFilter`: proteger `/atendimento` e `/consultorio`. _R10_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410159958
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411565451
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411821454
+      }
+    ],
+    "3.4 Cadastro de profissional (porta, adapter, controller e `cadastros.html`): campos `usuarioId`, `conselhoNumero`, `conselhoUf`, com validação de um usuário por profissional e do mesmo conta. _R10.3_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160075
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411825209
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794412639754
+      }
+    ],
+    "3.5 Tela de usuários: oferecer o perfil `MEDICO`. _R10.1_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160178
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794412643577
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794412717021
+      }
+    ],
+    "3.6 Testes: `RECEPCAO` recebe 403 em `/consultorio`; `MEDICO` acessa; módulo concedido por ajuste de telas. _R10.2, R10.5_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160259
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794412720945
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794412844037
+      }
+    ],
+    "4.1 `Atendimento` (model com enums e records) e novos códigos em `CodigoNegocio` (seção 8 do design). _Todos_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160361
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794412848332
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794413160918
+      }
+    ],
+    "4.2 `AtendimentoUseCase`, `ConsultorioUseCase` e `AtendimentoPort`. _Todos_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160469
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794413164634
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794413344345
+      }
+    ],
+    "4.3 `AtendimentoService` e `ConsultorioService` com as regras (posse do profissional, estados, validações de liberação). _R1, R3–R9_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160581
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794413348276
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794413846488
+      }
+    ],
+    "4.4 Habilitação por clínica: `atendimento.enabled` e `mandalore.clientes.<id>.agenda=mandalore`; rotas devolvem 404 fora disso. _R14_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160666
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794413850468
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414061768
+      }
+    ],
+    "4.5 Testes unitários dos dois services (Mockito). _R1, R3–R9_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160760
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414065698
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414415287
+      }
+    ],
+    "5.1 `PostgresAtendimentoAdapter`: `registrarChegada` na transação da seção 9.1 (lock, idempotência, eventos). _R1_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160863
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414422445
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414603701
+      }
+    ],
+    "5.2 `fila(conta, data)` da recepção, sem conteúdo clínico, com tempo de espera. _R2.1, R2.2, R2.4_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410160963
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414607679
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414694579
+      }
+    ],
+    "5.3 `desfazerChegada` com retorno ao status anterior (seção 9.5). _R3_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161067
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414698598
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414826221
+      }
+    ],
+    "5.4 `*IT`: chegada, chegada repetida, chegada concorrente, fora do dia, status inválido, desfazer e nova chegada. _R1, R3, R15.1_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161160
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414826397
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415031249
+      }
+    ],
+    "6.1 Resolver profissional do usuário e fila do médico. _R2.3, R10.4_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161247
+      },
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415036683
+      },
+      {
+        "executionId": "25d5674f-f527-4ed1-9d23-b599715867cc",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415436454
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415924576
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415924844
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416022177
+      }
+    ],
+    "6.2 `iniciarConsulta` (seção 9.2), traduzindo a violação do índice em `PROFISSIONAL_EM_CONSULTA`. _R4_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161362
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415924728
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416027647
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416230113
+      }
+    ],
+    "6.3 `*IT`: início válido, outro médico (403), status inválido, profissional já em consulta. _R4_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161562
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415925009
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416231123
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416367840
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416398048
+      },
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794418891764
+      }
+    ],
+    "7.1 Rascunho (criar/atualizar), liberar e inativar com justificativa; no máximo uma ativa. _R5_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161677
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415925155
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416368644
+      },
+      {
+        "executionId": "508483ba-7451-4ece-a330-53bd480acef7",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416788671
+      },
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794418891897
+      },
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794418899125
+      },
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794419954685
+      }
+    ],
+    "7.2 Testes: liberar sem queixa principal, editar liberada, atendimento fora de `EM_CONSULTA`. _R5_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161784
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415925259
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416369351
+      },
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794419964392
+      },
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794421091698
+      }
+    ],
+    "8.1 Criar/editar rascunho, liberar, inativar; várias por atendimento. _R6_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161895
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415925377
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416369837
+      },
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794421105284
+      },
+      {
+        "executionId": "10949eed-5008-4421-aa6e-a673fbbc9d76",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794421812538
+      },
+      {
+        "executionId": "72cc934e-3ae3-4b0a-8c68-6a048ee0f52c",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794422858923
+      }
+    ],
+    "8.2 Testes: texto vazio, edição de liberada, inativação sem justificativa. _R6_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410161996
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415925499
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416370377
+      },
+      {
+        "executionId": "72cc934e-3ae3-4b0a-8c68-6a048ee0f52c",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794422865784
+      },
+      {
+        "executionId": "72cc934e-3ae3-4b0a-8c68-6a048ee0f52c",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794423940569
+      }
+    ],
+    "9.1 Incluir e inativar; validar formato; um principal ativo; sem CID repetido ativo. _R7_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410162080
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415925625
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416371370
+      },
+      {
+        "executionId": "72cc934e-3ae3-4b0a-8c68-6a048ee0f52c",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794423954641
+      }
+    ],
+    "9.2 Testes: formatos válidos e inválidos, segundo principal. _R7_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410162190
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415925743
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416371893
+      }
+    ],
+    "10.1 Rascunho com itens, liberar (validade pela propriedade), cancelar com justificativa. _R8.1–R8.4_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410162313
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415925931
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416372496
+      }
+    ],
+    "10.2 Exigir conselho e UF do profissional ao liberar. _R8.6_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410162546
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926022
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416373168
+      }
+    ],
+    "10.3 Visão HTML para impressão (`GET /consultorio/api/receitas/{id}/impressao`) com dados da clínica, paciente, itens, médico e conselho. _R8.5_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410162647
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926132
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416373943
+      }
+    ],
+    "10.4 Testes: sem itens, sem posologia, sem conselho, edição de liberada, impressão de receita em rascunho recusada. _R8_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410162745
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926250
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416374714
+      }
+    ],
+    "11.1 `finalizar` (seção 9.4): registro clínico mínimo, sem rascunho, alta e desfecho, agendamento `EXECUTADO`. _R9_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410162833
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926375
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416375557
+      }
+    ],
+    "11.2 Bloquear qualquer escrita clínica depois de `FINALIZADO`. _R9.6_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410162933
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926498
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416376940
+      }
+    ],
+    "11.3 `*IT` do ciclo completo (marcar → chegada → iniciar → anamnese → evolução → CID → receita → finalizar) e confirmação de que o horário continua ocupado. _R9.5, R1–R9_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163047
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926604
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416377366
+      }
+    ],
+    "12.1 Gravar `acesso_prontuario` nas leituras de prontuário, histórico e impressão. _R8.7, R12.2_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163173
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926715
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416378158
+      }
+    ],
+    "12.2 Endpoint de eventos do atendimento sem conteúdo clínico (gestor e recepção). _R12.1, R12.4_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163276
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926818
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416379288
+      }
+    ],
+    "12.3 Garantir que logs e eventos de histórico não recebem texto clínico (revisão de log e teste). _R15.4_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163366
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415926933
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416379923
+      }
+    ],
+    "13.1 `AtendimentoController` (recepção) e `ConsultorioController` (médico) conforme a seção 7 do design, com `@RequestAttribute(AdminAuthFilter.LOGIN)`, resolução de conta e tradução 200/400/403/409. _R10, R11_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163460
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415927051
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416380309
+      }
+    ],
+    "13.2 Testes de controller (`MockMvc`): perfis, conta de outra clínica (403/não encontrado), códigos HTTP. _R10, R11_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163546
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415927198
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416381016
+      }
+    ],
+    "14.1 `resources/atendimento/index.html`: fila do dia, botão de chegada, desfazer, tempo de espera. _R2_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163646
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415927454
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416381579
+      }
+    ],
+    "14.2 `resources/consultorio/index.html`: fila do médico, iniciar, prontuário (anamnese, evolução, CID, receita), finalizar. _R4–R9_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163764
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415927559
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416382292
+      }
+    ],
+    "14.3 `agenda/index.html`: rótulos e cores dos novos status; esconder ações de agenda para eles. _R13.3_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410163867
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415927681
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416383209
+      }
+    ],
+    "14.4 Link das novas telas na central (`/admin`), respeitando os módulos do usuário. _R10_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410164530
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415927783
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416383775
+      }
+    ],
+    "15.1 Criar `docs/atendimento-clinico.md` (rotina da recepção e do médico, variáveis, checklist de ativação: vincular usuário, preencher conselho/UF, ligar `atendimento.enabled`). _R10, R14_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410164664
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415927880
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416385023
+      }
+    ],
+    "15.2 Atualizar `docs/agenda-mandalore.md` (novos status), `docs/usuarios-perfis.md` (perfil `MEDICO`, módulos) e `docs/roadmap.md`. _R10, R13_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410164834
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415927972
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416385750
+      }
+    ],
+    "15.3 Revisar `docs/contrato-mandalore.md` e o termo de LGPD sobre o Mandalore guardar prontuário (decisão D9). _Risco da seção 13_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410165018
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415928082
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416386519
+      }
+    ],
+    "15.4 Validar com a clínica piloto: guarda do prontuário e receita sem assinatura digital. _R15.6_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410165317
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415928186
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416387515
+      }
+    ],
+    "16.1 `mvn test` e, com Postgres local, `RUN_LOCAL_POSTGRES_TESTS=true mvn verify`. _Todos_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410165536
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415928298
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416388555
+      }
+    ],
+    "16.2 Roteiro manual no perfil `local-postgres`: recepção marca e registra a chegada; médico inicia, registra, prescreve e finaliza; conferir a agenda e os históricos. _Todos_": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410165769
+      },
+      {
+        "executionId": "490401c2-f5fa-4afe-9a95-ff1a46176f57",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415928464
+      },
+      {
+        "executionId": "ddc3a34f-0c5d-422e-965d-0160ba8a733f",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794416391679
+      }
+    ],
+    "1. Ampliar o status do agendamento sem quebrar a agenda (1.1 a 1.5 feitas; falta rodar o `*IT` da subida dupla do schema em Postgres real)": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794410538525
+      }
+    ],
+    "2. Criar o schema `atendimento`": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794411044526
+      }
+    ],
+    "3. Acesso, perfil médico e vínculo com o profissional": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794412844586
+      }
+    ],
+    "4. Domínio, portas e serviços": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794414415680
+      }
+    ],
+    "5. Chegada, fila e desfazer chegada": [
+      {
+        "executionId": "65e1e3d0-6f54-449e-8c80-098ef611f87e",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794415032086
+      }
+    ],
+    "6. Iniciar consulta": [
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794418892011
+      }
+    ],
+    "7. Anamnese": [
+      {
+        "executionId": "501328db-a774-4727-862d-57364e6996eb",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794421093602
+      }
+    ],
+    "8. Evolução": [
+      {
+        "executionId": "72cc934e-3ae3-4b0a-8c68-6a048ee0f52c",
+        "chatSessionId": "sess_7ce4561d-61dd-453a-abef-e8ed6e2def2e",
+        "timestamp": 1794423941809
+      }
+    ]
+  }
+}
