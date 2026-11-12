@@ -14,7 +14,7 @@ class ChatwootClientAdapterTest {
     void baixaAnexoPeloEnderecoInternoDoChatwoot() {
         ChatwootClientAdapter adapter = adapter("http://chatwoot-rails:3000/");
 
-        assertThat(adapter.noChatwoot("https://bs-chat.jscinfor.com/rails/active_storage/blobs/redirect/eyJ--abc/pedido.jpg?disposition=inline"))
+        assertThat(adapter.noChatwoot("https://chat.biosaudelac.com/rails/active_storage/blobs/redirect/eyJ--abc/pedido.jpg?disposition=inline"))
                 .hasToString("http://chatwoot-rails:3000/rails/active_storage/blobs/redirect/eyJ--abc/pedido.jpg?disposition=inline");
     }
 

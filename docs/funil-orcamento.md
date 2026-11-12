@@ -146,7 +146,7 @@ Atrasado: vencia em 04/11.
 Valor: R$ 37,00 (2 exames).
 Última mensagem do paciente há 3 dias.
 Até 24 horas depois da última mensagem do paciente dá para escrever aqui. Depois disso, ligue.
-Quando fechar, marque Agendado ou Perdido no funil: https://bs-api.jscinfor.com/funil
+Quando fechar, marque Agendado ou Perdido no funil: https://api.biosaudelac.com/funil
 ```
 
 O retorno é sempre do atendente, nunca automático. Fora da janela de 24 horas do WhatsApp não há template nesta

@@ -52,7 +52,7 @@ Requer `OBSERVABILITY_POSTGRES_ENABLED=true` e `OBSERVABILITY_POSTGRES_INITIALIZ
 
 ## Tela do financeiro
 
-`https://bs-api.jscinfor.com/precos`, dentro da central de administração (`/admin`). Login do financeiro, que
+`https://api.biosaudelac.com/precos`, dentro da central de administração (`/admin`). Login do financeiro, que
 enxerga só esta tela (o `ADMIN_USER` também entra):
 
 ```
@@ -62,7 +62,7 @@ PRECOS_PASSWORD=<senha forte>
 
 ## Central de administração
 
-`https://bs-api.jscinfor.com/admin` reúne curadoria, tabela de preços e simulador com um login só
+`https://api.biosaudelac.com/admin` reúne curadoria, tabela de preços e simulador com um login só
 (`/admin/login`, mesmo visual do login do Chatwoot) e o mesmo menu lateral em todas as telas:
 
 | Login | Variáveis | Telas |
@@ -76,7 +76,7 @@ responde 403); tela desligada (`CURADORIA_ENABLED`, `ORCAMENTO_ENABLED`, `SIMULA
 A sessão expira após 8 horas sem uso, e **Sair** no rodapé do menu encerra na hora. Cinco senhas erradas
 bloqueiam o IP por 15 minutos. O cookie da sessão só trafega por HTTPS; para testar em `http://localhost`, use
 `SESSAO_COOKIE_SECURE=false`. Logo da marca e link **Conversas** vêm de `ADMIN_CHATWOOT_URL`, padrão
-`https://bs-chat.jscinfor.com`; o nome no menu, de `ADMIN_NOME`.
+`https://chat.biosaudelac.com`; o nome no menu, de `ADMIN_NOME`.
 
 Na tela de preços:
 
@@ -110,7 +110,7 @@ Importar pela tela ou por linha de comando (substitui a tabela inteira; arquivo 
 
 ```bash
 curl -u financeiro -X PUT --data-binary @tabela-precos.csv \
-  -H "Content-Type: text/csv" https://bs-api.jscinfor.com/precos/api/importar
+  -H "Content-Type: text/csv" https://api.biosaudelac.com/precos/api/importar
 # {"itens":28}
 ```
 

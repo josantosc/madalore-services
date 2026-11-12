@@ -37,7 +37,7 @@ Frases ensinadas: 3
 Perguntas frequentes sem texto: estacionamento 5, contato 2
 Falhas registradas: TASY 2
 
-Revisar a fila: https://bs-api.jscinfor.com/curadoria
+Revisar a fila: https://api.biosaudelac.com/curadoria
 ```
 
 ```
@@ -143,8 +143,8 @@ A API, com o token (PowerShell):
 
 ```powershell
 $h = @{ Authorization = "Bearer $env:OPENCLAW_TOKEN" }
-(Invoke-RestMethod "https://bs-api.jscinfor.com/openclaw/relatorios/curadoria" -Headers $h).texto
-(Invoke-RestMethod "https://bs-api.jscinfor.com/openclaw/numeros?de=2026-11-02&ate=2026-11-08" -Headers $h).numeros
+(Invoke-RestMethod "https://api.biosaudelac.com/openclaw/relatorios/curadoria" -Headers $h).texto
+(Invoke-RestMethod "https://api.biosaudelac.com/openclaw/numeros?de=2026-11-02&ate=2026-11-08" -Headers $h).numeros
 ```
 
 No grupo, peça ao OpenClaw "mande o resumo da curadoria do Mandalore" e compare com a prévia da tela de curadoria.
@@ -167,7 +167,7 @@ TELEGRAM_CHAT_ID=<ID do grupo>
 
 Use um bot diferente do bot do OpenClaw. Não ligue os dois ao mesmo tempo, ou o grupo recebe cada relatório
 duas vezes. Com mais de uma réplica do Mandalore, cada réplica envia o seu: deixe o envio ligado em uma só. Para
-enviar na hora: `curl -u admin -X POST https://bs-api.jscinfor.com/curadoria/api/relatorios/curadoria`.
+enviar na hora: `curl -u admin -X POST https://api.biosaudelac.com/curadoria/api/relatorios/curadoria`.
 
 | Log | Significado |
 |---|---|

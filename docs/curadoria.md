@@ -17,7 +17,7 @@ use `OBSERVABILITY_CURADORIA_TEXTO=false`.
 
 ![Tela de curadoria](img/curadoria.png)
 
-Em `/curadoria` (ex.: `https://bs-api.jscinfor.com/curadoria`), com usuário e senha próprios:
+Em `/curadoria` (ex.: `https://api.biosaudelac.com/curadoria`), com usuário e senha próprios:
 
 - Indicadores do período: mensagens, % não entendidas, % confiança baixa, % sem atendente, pendentes e frases ensinadas.
 - Gráfico por dia e intents mais acionadas.

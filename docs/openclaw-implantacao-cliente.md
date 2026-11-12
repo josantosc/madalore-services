@@ -35,7 +35,7 @@ Preencha antes de começar. Segredos ficam no cofre de senhas e no Coolify, nunc
 | Item | Exemplo (BioSaúde) | Onde é usado |
 |---|---|---|
 | Nome no título dos relatórios | `BioSaúde` | `ADMIN_NOME` no Mandalore |
-| Endereço público do Mandalore | `https://bs-api.jscinfor.com` | `RELATORIOS_URL` e `MANDALORE_URL` |
+| Endereço público do Mandalore | `https://api.biosaudelac.com` | `RELATORIOS_URL` e `MANDALORE_URL` |
 | `OPENCLAW_TOKEN` | segredo de 64 caracteres | Mandalore e OpenClaw (mesmo valor) |
 | Projeto do Google para o Gemini | `openclaw-biosaude` | Chave `GEMINI_API_KEY` |
 | Bot do OpenClaw | `@joclow_bot` | `TELEGRAM_BOT_TOKEN` no OpenClaw |
