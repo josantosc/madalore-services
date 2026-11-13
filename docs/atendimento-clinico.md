@@ -152,8 +152,10 @@ Por clínica, no `clientes.properties`: `mandalore.clientes.<id>.agenda` e `mand
 
 O aviso ao vivo (`/atendimento/api/eventos` e `/consultorio/api/eventos`, SSE) fica na memória da
 instância. Com mais de uma instância da aplicação, cada tela só recebe os avisos da instância em que está
-conectada; as outras mudanças aparecem no recarregamento de 60 segundos. Proxy na frente precisa deixar a
-resposta sem buffer (por exemplo `proxy_buffering off` no nginx).
+conectada; as outras mudanças aparecem no recarregamento de 60 segundos. A resposta sai com
+`X-Accel-Buffering: no` e `Cache-Control: no-cache, no-transform`, e o servidor manda um ping a cada 25
+segundos. No Coolify (Traefik ou Caddy) não há configuração extra. Middleware de compressão ou de buffer
+adicionado à mão no proxy não pode valer para `/atendimento/api/eventos` e `/consultorio/api/eventos`.
 
 ## Segurança
 

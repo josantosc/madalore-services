@@ -38,6 +38,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.port.in.Consultor
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.Contexto;
 import br.com.mandalore.agendamentoconversa.application.domain.service.HabilitacaoAtendimento;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Tela do médico (/consultorio) e a API. O service confere a posse do atendimento pelo profissional vinculado ao
@@ -299,8 +300,9 @@ public class ConsultorioController {
     /** Avisos da fila em tempo real (só tipo e números); a tela recarrega a própria fila. */
     @GetMapping(value = "/consultorio/api/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter eventosAoVivo(@RequestParam(required = false) String conta,
-                                    @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
-        return AtendimentoController.assinar(aoVivo, habilitacao, contexto(conta, login).conta());
+                                    @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
+                                    HttpServletResponse resposta) {
+        return AtendimentoController.assinar(aoVivo, habilitacao, contexto(conta, login).conta(), resposta);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -34,6 +34,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento
 import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AtendimentoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.service.HabilitacaoAtendimento;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * API da tela da recepção (/atendimento): fila do dia, chegada e desfazer chegada. Nunca devolve conteúdo clínico.
@@ -148,15 +149,20 @@ public class AtendimentoController {
     /** Avisos da fila em tempo real (só tipo e números, sem dado do paciente). */
     @GetMapping(value = "/atendimento/api/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter eventosAoVivo(@RequestParam(required = false) String conta,
-                                    @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
-        return assinar(aoVivo, habilitacao, conta(conta, login));
+                                    @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
+                                    HttpServletResponse resposta) {
+        return assinar(aoVivo, habilitacao, conta(conta, login), resposta);
     }
 
-    static SseEmitter assinar(FilaAoVivo aoVivo, HabilitacaoAtendimento habilitacao, String conta) {
+    static SseEmitter assinar(FilaAoVivo aoVivo, HabilitacaoAtendimento habilitacao, String conta,
+                              HttpServletResponse resposta) {
         if (aoVivo == null || habilitacao == null) {
             throw new AtendimentoDesabilitadoException();
         }
         habilitacao.exigir(conta);
+        // proxies (nginx, Traefik, Cloudflare) não podem segurar o stream em buffer
+        resposta.setHeader("X-Accel-Buffering", "no");
+        resposta.setHeader("Cache-Control", "no-cache, no-transform");
         return aoVivo.assinar(conta);
     }
 
