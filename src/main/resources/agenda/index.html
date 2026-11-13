@@ -325,10 +325,11 @@
     const EVENTOS = { MARCADO: "Marcada", CONFIRMADO: "Confirmada", CANCELADO: "Cancelada", REMARCADO_PARA: "Remarcada para",
       REMARCADO_DE: "Remarcada de", LANCADO: "Lançada no sistema", PENDENCIA_CONCLUIDA: "Pendência concluída",
       PENDENCIA_REABERTA: "Pendência reaberta", CONFERIDO: "Conferida: igual no sistema", DIVERGENTE: "Conferida: diferente no sistema",
-      CHEGOU: "Chegada registrada", CHEGADA_DESFEITA: "Chegada desfeita", EM_CONSULTA: "Consulta iniciada", EXECUTADO: "Atendimento finalizado" };
+      CHEGOU: "Chegada registrada", CHEGADA_DESFEITA: "Chegada desfeita", EM_CONSULTA: "Consulta iniciada", EXECUTADO: "Atendimento finalizado",
+      FALTOU: "Paciente faltou", FALTA_DESFEITA: "Falta desfeita", ENCAIXE: "Encaixe com chegada na recepção" };
     const STATUS = {
       MARCADO: ["Marcada", "marca"], CONFIRMADO: ["Confirmada", "verde"], AGUARDANDO: ["Aguardando", "ambar"],
-      EM_CONSULTA: ["Em consulta", "violeta"], EXECUTADO: ["Atendida", ""]
+      EM_CONSULTA: ["Em consulta", "violeta"], EXECUTADO: ["Atendida", ""], FALTOU: ["Faltou", "rubi"]
     };
     // Em atendimento, a agenda só mostra; a API recusa confirmar, cancelar e remarcar.
     const alteravel = (a) => a.status === "MARCADO" || a.status === "CONFIRMADO";

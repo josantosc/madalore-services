@@ -252,9 +252,11 @@ class PostgresAtendimentoAdapterIT {
         assertThat(segundo.agendamentoId()).isEqualTo(marcado);
         assertThat(segundo.atendimentoId()).isNull();
         assertThat(segundo.esperaMin()).isNull();
-        // o tipo FilaItem só expõe identificação, horário, status e espera
+        assertThat(primeiro.chamadoEm()).isNull();
+        // o tipo FilaItem só expõe identificação, horário, status, espera e chamada
         assertThat(Atendimento.FilaItem.class.getRecordComponents()).extracting("name").containsExactly("agendamentoId",
-                "atendimentoId", "horario", "paciente", "profissional", "especialidade", "status", "chegadaEm", "esperaMin");
+                "atendimentoId", "horario", "paciente", "cpf", "profissional", "especialidade", "status", "chegadaEm",
+                "esperaMin", "chamadoEm");
     }
 
     @Test
@@ -966,6 +968,20 @@ class PostgresAtendimentoAdapterIT {
         });
     }
 
+    @Test
+    void cabecalhoDoAtendimentoTrazClinicaEPacienteSoNaPropriaConta() {
+        Consulta consulta = novaConsultaEmAndamento();
+        PostgresAtendimentoAdapter comNome = new PostgresAtendimentoAdapter(new NamedParameterJdbcTemplate(jdbc),
+                jdbc.getDataSource(), relogio, conta -> "Clínica " + conta);
+
+        assertThat(comNome.cabecalhoAtendimento(CONTA, consulta.nrAtendimento())).hasValueSatisfying(c -> {
+            assertThat(c.clinica()).isEqualTo("Clínica " + CONTA);
+            assertThat(c.paciente()).startsWith("Paciente ");
+            assertThat(c.cpf()).hasSize(11);
+        });
+        assertThat(comNome.cabecalhoAtendimento("outra", consulta.nrAtendimento())).isEmpty();
+    }
+
     // --- finalizar (11.3) ---
 
     @Test
@@ -1043,6 +1059,94 @@ class PostgresAtendimentoAdapterIT {
         assertThat(finalizar(consulta).codigo()).isEqualTo(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
     }
 
+    // --- finalizar e assinar ---
+
+    @Test
+    void finalizarEAssinarLiberaRascunhosComConteudoEDescartaOsVazios() {
+        Consulta consulta = novaConsultaEmAndamento();
+        long nr = consulta.nrAtendimento();
+        adapter.salvarRascunhoAnamnese(CONTA, nr, consulta.profissionalId(), anamnese(consulta, "Tosse", "Há 3 dias"), "dr");
+        long vazia = criarEvolucao(consulta, " ").id();
+        long receita = criarReceita(consulta, item("Dipirona", "1 cp de 6/6h")).id();
+        long receitaVazia = criarReceita(consulta, new Atendimento.ReceitaItem(0, "", "", "", "", "", false, "")).id();
+
+        Atendimento.Operacao op = finalizarEAssinar(consulta);
+
+        assertThat(op.codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(statusAtendimento(nr)).isEqualTo("FINALIZADO");
+        assertThat(jdbc.queryForObject("SELECT dt_liberacao IS NOT NULL FROM atendimento.anamnese_paciente "
+                + "WHERE nr_atendimento = ? AND ie_situacao = 'A'", Boolean.class, nr)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT ie_situacao FROM atendimento.evolucao_paciente WHERE cd_evolucao = ?",
+                String.class, vazia)).isEqualTo("I");
+        assertThat(jdbc.queryForObject("SELECT dt_validade FROM atendimento.med_receita WHERE nr_sequencia = ?",
+                java.sql.Date.class, receita).toLocalDate()).isEqualTo(LocalDate.of(2030, 2, 6));
+        assertThat(jdbc.queryForObject("SELECT ie_situacao FROM atendimento.med_receita WHERE nr_sequencia = ?",
+                String.class, receitaVazia)).isEqualTo("I");
+        assertThat(adapter.eventos(CONTA, nr)).extracting(Atendimento.Evento::tipo)
+                .contains("ANAMNESE_LIBERADA", "EVOLUCAO_DESCARTADA", "RECEITA_LIBERADA", "RECEITA_DESCARTADA")
+                .endsWith("FINALIZADO");
+    }
+
+    @Test
+    void finalizarEAssinarComRascunhoIncompletoNaoGravaNada() {
+        Consulta consulta = novaConsultaEmAndamento();
+        long nr = consulta.nrAtendimento();
+        adapter.salvarRascunhoAnamnese(CONTA, nr, consulta.profissionalId(), anamnese(consulta, "Tosse", "Há 3 dias"), "dr");
+        criarReceita(consulta, item("Dipirona", " "));
+
+        assertThatThrownBy(() -> finalizarEAssinar(consulta)).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(statusAtendimento(nr)).isEqualTo("EM_CONSULTA");
+        assertThat(jdbc.queryForObject("SELECT dt_liberacao IS NULL FROM atendimento.anamnese_paciente "
+                + "WHERE nr_atendimento = ? AND ie_situacao = 'A'", Boolean.class, nr)).isTrue();
+    }
+
+    @Test
+    void finalizarEAssinarSemRegistroClinicoDesfazOsDescartes() {
+        Consulta consulta = novaConsultaEmAndamento();
+        long vazia = criarEvolucao(consulta, "").id();
+
+        assertThat(finalizarEAssinar(consulta).codigo()).isEqualTo(CodigoNegocio.SEM_REGISTRO_CLINICO);
+
+        assertThat(jdbc.queryForObject("SELECT ie_situacao FROM atendimento.evolucao_paciente WHERE cd_evolucao = ?",
+                String.class, vazia)).isEqualTo("A");
+        assertThat(statusAtendimento(consulta.nrAtendimento())).isEqualTo("EM_CONSULTA");
+    }
+
+    // --- alergias do paciente ---
+
+    @Test
+    void alergiaValeParaOPacienteEApareceNoCabecalho() {
+        Consulta consulta = novaConsultaEmAndamento();
+        long nr = consulta.nrAtendimento();
+
+        Atendimento.Operacao op = adapter.incluirAlergia(CONTA, nr, consulta.profissionalId(), "Dipirona", "dr");
+
+        assertThat(op.codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(adapter.incluirAlergia(CONTA, nr, consulta.profissionalId(), " dipirona", "dr").codigo())
+                .isEqualTo(CodigoNegocio.ALERGIA_DUPLICADA);
+        assertThat(adapter.prontuario(CONTA, nr)).hasValueSatisfying(p -> {
+            assertThat(p.paciente().alergias()).extracting(Atendimento.Alergia::descricao).containsExactly("Dipirona");
+            assertThat(p.paciente().nascimento()).isNotNull();
+        });
+        assertThat(adapter.eventos(CONTA, nr)).allSatisfy(e -> assertThat(e.detalhe()).doesNotContain("Dipirona"));
+
+        assertThat(adapter.inativarAlergia(CONTA, nr, op.id(), consulta.profissionalId(), "Registrada por engano", "dr")
+                .codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(adapter.prontuario(CONTA, nr)).hasValueSatisfying(p -> assertThat(p.paciente().alergias()).isEmpty());
+        assertThat(adapter.incluirAlergia(CONTA, nr, consulta.profissionalId(), "Dipirona", "dr").codigo())
+                .isEqualTo(CodigoNegocio.SUCESSO);
+    }
+
+    @Test
+    void alergiaForaDeConsultaERecusada() {
+        Consulta consulta = novaConsultaEmAndamento();
+        voltarParaAguardando(consulta.nrAtendimento());
+
+        assertThat(adapter.incluirAlergia(CONTA, consulta.nrAtendimento(), consulta.profissionalId(), "Látex", "dr").codigo())
+                .isEqualTo(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
+    }
+
     @Test
     void historicoDoPacienteTrazAtendimentosDoMaisRecenteSemOsCancelados() {
         Consulta consulta = novaConsultaEmAndamento();
@@ -1113,6 +1217,12 @@ class PostgresAtendimentoAdapterIT {
                 new Atendimento.Alta(consulta.nrAtendimento(), null, "", null, AGORA, "dr"), "dr");
     }
 
+    private Atendimento.Operacao finalizarEAssinar(Consulta consulta) {
+        return adapter.finalizarEAssinar(CONTA, consulta.nrAtendimento(), consulta.profissionalId(),
+                Atendimento.MotivoAlta.ALTA_MEDICA,
+                new Atendimento.Alta(consulta.nrAtendimento(), null, "", null, AGORA, "dr"), LocalDate.of(2030, 2, 6), "dr");
+    }
+
     private Atendimento.Operacao criarEvolucao(Consulta consulta, String texto) {
         return adapter.criarEvolucao(CONTA, consulta.nrAtendimento(), consulta.profissionalId(),
                 evolucao(consulta, texto, null, null, null), "dr");
@@ -1135,7 +1245,7 @@ class PostgresAtendimentoAdapterIT {
     private Atendimento.Anamnese anamnese(Consulta consulta, String queixa, String historia) {
         return new Atendimento.Anamnese(null, consulta.nrAtendimento(), 0, consulta.profissionalId(), queixa, historia,
                 "Antecedentes pessoais", "Antecedentes familiares", "Medicamento", "Alergia", "Hábitos", "Exame físico",
-                AGORA, null, true, null, null, null, "dr");
+                "Avaliação", "Conduta", AGORA, null, true, null, null, null, "dr");
     }
 
     private void voltarParaAguardando(long atendimento) {
@@ -1149,6 +1259,144 @@ class PostgresAtendimentoAdapterIT {
     private void definirEntrada(long atendimento, String entrada) {
         jdbc.update("UPDATE atendimento.atendimento_paciente SET dt_entrada = ?::timestamp WHERE nr_atendimento = ?", entrada,
                 atendimento);
+    }
+
+    // --- recepção: chamada, falta e encaixe ---
+
+    @Test
+    void chamarGravaHorarioEventoEApareceNaFila() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long agendamento = novoAgendamento(profissional, "MARCADO", "2030-01-07 09:00");
+        long nr = adapter.registrarChegada(CONTA, agendamento, "recepcao").id();
+
+        assertThat(adapter.chamar(CONTA, nr, profissional + 1, "x").codigo()).isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
+        assertThat(adapter.chamar("outra", nr, null, "x").codigo()).isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
+        assertThat(adapter.chamar(CONTA, nr, profissional, "dr").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+
+        assertThat(adapter.fila(CONTA, AGORA.toLocalDate())).singleElement().satisfies(f -> {
+            assertThat(f.chamadoEm()).isEqualTo(AGORA);
+            assertThat(f.cpf()).hasSize(11);
+            assertThat(f.status()).isEqualTo("AGUARDANDO");
+        });
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM atendimento.atendimento_evento WHERE nr_atendimento = ? AND tipo = 'CHAMADO'",
+                Integer.class, nr)).isEqualTo(1);
+        adapter.iniciarConsulta(CONTA, nr, profissional, "dr");
+        assertThat(adapter.chamar(CONTA, nr, null, "x").codigo()).isEqualTo(CodigoNegocio.STATUS_INVALIDO_PARA_CHAMADA);
+    }
+
+    @Test
+    void faltaSoDepoisDoHorarioELiberaOHorarioAteDesfazer() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long futuro = novoAgendamento(profissional, "MARCADO", "2030-01-07 11:00");
+        long passado = novoAgendamento(profissional, "CONFIRMADO", "2030-01-07 09:00");
+        jdbc.update("INSERT INTO agenda.agendamento_evento (agendamento_id, tipo, usuario) VALUES (?, 'CONFIRMADO', 'bot')", passado);
+
+        assertThat(adapter.marcarFalta(CONTA, futuro, "rec").codigo()).isEqualTo(CodigoNegocio.FALTA_ANTES_DO_HORARIO);
+        assertThat(adapter.marcarFalta("outra", passado, "rec").codigo()).isEqualTo(CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO);
+        assertThat(adapter.marcarFalta(CONTA, passado, "rec").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(statusAgendamento(passado)).isEqualTo("FALTOU");
+        assertThat(adapter.registrarChegada(CONTA, passado, "rec").codigo()).isEqualTo(CodigoNegocio.STATUS_INVALIDO_PARA_CHEGADA);
+        assertThat(adapter.fila(CONTA, AGORA.toLocalDate())).extracting(Atendimento.FilaItem::status).contains("FALTOU");
+
+        assertThat(adapter.desfazerFalta(CONTA, passado, "rec").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(statusAgendamento(passado)).isEqualTo("CONFIRMADO");
+        assertThat(adapter.desfazerFalta(CONTA, passado, "rec").codigo()).isEqualTo(CodigoNegocio.STATUS_INVALIDO_PARA_FALTA);
+    }
+
+    @Test
+    void desfazerFaltaComHorarioJaOcupadoERecusado() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long faltou = novoAgendamento(profissional, "MARCADO", "2030-01-07 09:00");
+        adapter.marcarFalta(CONTA, faltou, "rec");
+        long outro = novoAgendamento(profissional, "MARCADO", "2030-01-07 09:00");
+
+        assertThat(adapter.desfazerFalta(CONTA, faltou, "rec").codigo()).isEqualTo(CodigoNegocio.HORARIO_INDISPONIVEL);
+        assertThat(statusAgendamento(faltou)).isEqualTo("FALTOU");
+        assertThat(statusAgendamento(outro)).isEqualTo("MARCADO");
+    }
+
+    @Test
+    void encaixeCadastraPacienteECriaAtendimentoAguardandoMesmoComHorarioOcupado() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long ocupado = novoAgendamento(profissional, "MARCADO", "2030-01-07 10:00");
+        long especialidade = jdbc.queryForObject("SELECT especialidade_id FROM agenda.agendamento WHERE id = ?", Long.class, ocupado);
+        jdbc.update("INSERT INTO agenda.profissional_especialidade (profissional_id, especialidade_id) VALUES (?, ?)",
+                profissional, especialidade);
+        Atendimento.Encaixe encaixe = new Atendimento.Encaixe(profissional, especialidade, null, "98765432100",
+                LocalDate.of(1990, 5, 1), "Walk In", "11999990000");
+
+        Atendimento.Operacao primeiro = adapter.encaixe(CONTA, encaixe, 15, "rec");
+        Atendimento.Operacao segundo = adapter.encaixe(CONTA, encaixe, 15, "rec");
+
+        assertThat(primeiro.codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(segundo.codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(statusAtendimento(primeiro.id())).isEqualTo("AGUARDANDO");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM agenda.paciente WHERE cpf = '98765432100'", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForList("SELECT inicio FROM agenda.agendamento WHERE profissional_id = ? AND status = 'AGUARDANDO' ORDER BY inicio",
+                java.sql.Timestamp.class, profissional)).extracting(java.sql.Timestamp::toLocalDateTime)
+                .containsExactly(AGORA.plusSeconds(1), AGORA.plusSeconds(2));
+        assertThat(adapter.atendimento(CONTA, primeiro.id())).hasValueSatisfying(f -> assertThat(f.paciente()).isEqualTo("Walk In"));
+        assertThat(adapter.buscarPacientes(CONTA, "walk", 10)).extracting(Atendimento.PacienteResumo::cpf).containsExactly("98765432100");
+        assertThat(adapter.buscarPacientes(CONTA, "987.654", 10)).hasSize(1);
+        assertThat(adapter.buscarPacientes("outra", "walk", 10)).isEmpty();
+        assertThat(adapter.cadastrosEncaixe(CONTA).profissionais()).anySatisfy(p -> {
+            assertThat(p.id()).isEqualTo(profissional);
+            assertThat(p.especialidades()).extracting(Atendimento.Opcao::id).containsExactly(especialidade);
+        });
+    }
+
+    @Test
+    void encaixeComEspecialidadeNaoVinculadaNaoGravaNada() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long especialidade = jdbc.queryForObject("INSERT INTO agenda.especialidade (conta_id, nome) VALUES (?, 'Sem vínculo') RETURNING id",
+                Long.class, CONTA);
+
+        Atendimento.Operacao op = adapter.encaixe(CONTA, new Atendimento.Encaixe(profissional, especialidade, null,
+                "98765432100", LocalDate.of(1990, 5, 1), "Walk In", ""), 15, "rec");
+
+        assertThat(op.codigo()).isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM agenda.paciente WHERE cpf = '98765432100'", Integer.class)).isZero();
+    }
+
+    // --- favoritos e modelos ---
+
+    @Test
+    void favoritoRepetidoAtualizaEFicaSoDoProfissional() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long outro = novoProfissional(CONTA, null, true);
+        long id = adapter.salvarFavorito(CONTA, profissional, new Atendimento.MedicamentoFavorito(null, "Dipirona", "500 mg",
+                "1 cp 6/6h", "Oral", "10", false, ""));
+        long mesmo = adapter.salvarFavorito(CONTA, profissional, new Atendimento.MedicamentoFavorito(null, " dipirona ", "500 MG",
+                "1 cp 6/6h", "Oral", "20", true, ""));
+
+        assertThat(mesmo).isEqualTo(id);
+        assertThat(adapter.favoritos(CONTA, profissional)).singleElement().satisfies(f -> {
+            assertThat(f.quantidade()).isEqualTo("20");
+            assertThat(f.usoContinuo()).isTrue();
+        });
+        assertThat(adapter.favoritos(CONTA, outro)).isEmpty();
+        assertThat(adapter.excluirFavorito(CONTA, outro, id)).isFalse();
+        assertThat(adapter.excluirFavorito(CONTA, profissional, id)).isTrue();
+        assertThat(adapter.favoritos(CONTA, profissional)).isEmpty();
+    }
+
+    @Test
+    void modeloComAtalhoRepetidoERecusado() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long outro = novoProfissional(CONTA, null, true);
+        long id = adapter.salvarModelo(CONTA, profissional, new Atendimento.ModeloNota(null, "normal", "Exame", "BEG")).id();
+
+        assertThat(adapter.salvarModelo(CONTA, profissional, new Atendimento.ModeloNota(null, "normal", "", "Outro")).codigo())
+                .isEqualTo(CodigoNegocio.ATALHO_DUPLICADO);
+        assertThat(adapter.salvarModelo(CONTA, outro, new Atendimento.ModeloNota(null, "normal", "", "Dele")).codigo())
+                .isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(adapter.salvarModelo(CONTA, outro, new Atendimento.ModeloNota(id, "x1", "", "Invasão")).codigo())
+                .isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
+        assertThat(adapter.salvarModelo(CONTA, profissional, new Atendimento.ModeloNota(id, "normal", "Exame", "BEG, corado")).codigo())
+                .isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(adapter.modelos(CONTA, profissional)).singleElement()
+                .satisfies(m -> assertThat(m.texto()).isEqualTo("BEG, corado"));
+        assertThat(adapter.excluirModelo(CONTA, profissional, id)).isTrue();
     }
 
     // --- dados de apoio ---

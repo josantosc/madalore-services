@@ -23,6 +23,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegoc
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AtendimentoPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AtendimentoPort.ProfissionalClinico;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.AvisoFilaPort;
 
 /**
  * Consultório do médico. Regras aqui: posse do profissional, estado do atendimento e validações de liberação.
@@ -38,30 +39,47 @@ public class ConsultorioService implements ConsultorioUseCase {
     static final int VALIDADE_PADRAO_DIAS = 30;
     private static final int TEXTO_CLINICO_MAX = 10_000;
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ROOT);
+    private static final DateTimeFormatter DATA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.ROOT);
 
     static final String ACAO_PRONTUARIO = "PRONTUARIO";
     static final String ACAO_HISTORICO = "HISTORICO";
     static final String ACAO_IMPRESSAO = "IMPRESSAO_RECEITA";
+    static final String ACAO_IMPRESSAO_CONSULTA = "IMPRESSAO_CONSULTA";
+
+    static final Pattern ATALHO = Pattern.compile("^[a-z0-9_-]{2,30}$");
+    static final int MODELO_TEXTO_MAX = 4000;
 
     private final AtendimentoPort atendimentos;
     private final Clock relogio;
     private final int validadeDias;
     private final HabilitacaoAtendimento habilitacao;
+    private final AvisoFilaPort aviso;
 
     @Autowired
     public ConsultorioService(
             AtendimentoPort atendimentos,
             HabilitacaoAtendimento habilitacao,
-            @Value("${atendimento.receita.validade-dias:30}") int validadeDias
+            @Value("${atendimento.receita.validade-dias:30}") int validadeDias,
+            AvisoFilaPort aviso
     ) {
-        this(atendimentos, habilitacao, Clock.system(ZONA), validadeDias);
+        this(atendimentos, habilitacao, Clock.system(ZONA), validadeDias, aviso);
+    }
+
+    public ConsultorioService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, int validadeDias) {
+        this(atendimentos, habilitacao, Clock.system(ZONA), validadeDias, AvisoFilaPort.NENHUM);
     }
 
     ConsultorioService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, Clock relogio, int validadeDias) {
+        this(atendimentos, habilitacao, relogio, validadeDias, AvisoFilaPort.NENHUM);
+    }
+
+    ConsultorioService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, Clock relogio, int validadeDias,
+                       AvisoFilaPort aviso) {
         this.atendimentos = atendimentos;
         this.habilitacao = habilitacao;
         this.relogio = relogio;
         this.validadeDias = validadeDias > 0 ? validadeDias : VALIDADE_PADRAO_DIAS;
+        this.aviso = aviso;
     }
 
     // ---- fila e consulta ----
@@ -84,7 +102,19 @@ public class ConsultorioService implements ConsultorioUseCase {
         if (ficha.get().status() != Atendimento.Status.AGUARDANDO) {
             return Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_CONSULTA);
         }
-        return atendimentos.iniciarConsulta(ctx.conta(), atendimentoId, prof.id(), ctx.ator());
+        return avisar(ctx, atendimentos.iniciarConsulta(ctx.conta(), atendimentoId, prof.id(), ctx.ator()),
+                "CONSULTA_INICIADA", atendimentoId);
+    }
+
+    @Override
+    public Atendimento.Operacao chamar(Contexto ctx, long atendimentoId) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        if (fichaPropria(ctx, prof, atendimentoId).isEmpty()) {
+            return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
+        }
+        return avisar(ctx, atendimentos.chamar(ctx.conta(), atendimentoId, prof.id(), ctx.ator()), "CHAMADO",
+                atendimentoId);
     }
 
     @Override
@@ -127,6 +157,8 @@ public class ConsultorioService implements ConsultorioUseCase {
         String alergias = clinico(in.alergias(), "Alergias");
         String habitos = clinico(in.habitos(), "Hábitos");
         String exame = clinico(in.exameFisico(), "Exame físico");
+        String avaliacao = clinico(in.avaliacao(), "Avaliação");
+        String conduta = clinico(in.conduta(), "Conduta");
         Optional<Atendimento.Ficha> ficha = fichaPropria(ctx, prof, atendimentoId);
         if (ficha.isEmpty()) {
             return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
@@ -135,8 +167,8 @@ public class ConsultorioService implements ConsultorioUseCase {
             return Atendimento.Operacao.falha(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
         }
         Atendimento.Anamnese anamnese = new Atendimento.Anamnese(null, atendimentoId, ficha.get().pacienteId(),
-                prof.id(), queixa, historia, pessoais, familiares, medicamentos, alergias, habitos, exame,
-                agora(), null, true, null, null, null, ctx.ator());
+                prof.id(), queixa, historia, pessoais, familiares, medicamentos, alergias, habitos, exame, avaliacao,
+                conduta, agora(), null, true, null, null, null, ctx.ator());
         return atendimentos.salvarRascunhoAnamnese(ctx.conta(), atendimentoId, prof.id(), anamnese, ctx.ator());
     }
 
@@ -402,6 +434,24 @@ public class ConsultorioService implements ConsultorioUseCase {
         return new Impressao(html(cabecalho, receita, prof));
     }
 
+    @Override
+    public Impressao impressaoConsulta(Contexto ctx, long atendimentoId, String ip) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        Atendimento.Ficha ficha = fichaPropria(ctx, prof, atendimentoId)
+                .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado"));
+        if (ficha.status() != Atendimento.Status.FINALIZADO) {
+            throw new IllegalArgumentException("Finalize a consulta antes de imprimir");
+        }
+        Atendimento.Prontuario prontuario = atendimentos.prontuario(ctx.conta(), atendimentoId)
+                .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado"));
+        AtendimentoPort.CabecalhoReceita cabecalho = atendimentos.cabecalhoAtendimento(ctx.conta(), atendimentoId)
+                .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado"));
+        atendimentos.registrarAcesso(ctx.conta(), atendimentoId, ficha.pacienteId(), ACAO_IMPRESSAO_CONSULTA,
+                ctx.ator(), ip);
+        return new Impressao(htmlConsulta(cabecalho, prontuario, prof, ctx.ator(), agora()));
+    }
+
     // ---- alta ----
 
     @Override
@@ -426,10 +476,155 @@ public class ConsultorioService implements ConsultorioUseCase {
         if (contagem.anamneseEvolucaoLiberadas() < 1) {
             return Atendimento.Operacao.falha(CodigoNegocio.SEM_REGISTRO_CLINICO);
         }
-        Atendimento.Alta alta = new Atendimento.Alta(atendimentoId,
-                in.desfecho() == null ? Atendimento.Desfecho.ALTA : in.desfecho(),
+        return avisar(ctx, atendimentos.finalizar(ctx.conta(), atendimentoId, prof.id(), in.motivoAlta(),
+                alta(atendimentoId, in, orientacao, ctx), ctx.ator()), "FINALIZADO", atendimentoId);
+    }
+
+    @Override
+    public Atendimento.Operacao finalizarEAssinar(Contexto ctx, long atendimentoId, FinalizarInBound in) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        if (in == null || in.motivoAlta() == null) {
+            throw new IllegalArgumentException("Informe o motivo da alta");
+        }
+        String orientacao = clinico(in.orientacao(), "Orientações");
+        Optional<Atendimento.Ficha> ficha = fichaPropria(ctx, prof, atendimentoId);
+        if (ficha.isEmpty()) {
+            return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
+        }
+        if (ficha.get().status() != Atendimento.Status.EM_CONSULTA) {
+            return Atendimento.Operacao.falha(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
+        }
+        boolean receitaParaLiberar = atendimentos.prontuario(ctx.conta(), atendimentoId)
+                .map(p -> p.receitas().stream().anyMatch(r -> r.ativa() && !r.liberada() && r.itens().stream()
+                        .anyMatch(i -> !vazio(i.medicamento()) && !vazio(i.posologia()))))
+                .orElse(false);
+        if (receitaParaLiberar && (vazio(prof.conselhoNumero()) || vazio(prof.conselhoUf()))) {
+            return Atendimento.Operacao.falha(CodigoNegocio.PROFISSIONAL_SEM_CONSELHO);
+        }
+        return avisar(ctx, atendimentos.finalizarEAssinar(ctx.conta(), atendimentoId, prof.id(), in.motivoAlta(),
+                alta(atendimentoId, in, orientacao, ctx), LocalDate.now(relogio).plusDays(validadeDias), ctx.ator()),
+                "FINALIZADO", atendimentoId);
+    }
+
+    private Atendimento.Alta alta(long atendimentoId, FinalizarInBound in, String orientacao, Contexto ctx) {
+        return new Atendimento.Alta(atendimentoId, in.desfecho() == null ? Atendimento.Desfecho.ALTA : in.desfecho(),
                 orientacao, in.retornoPrevisto(), agora(), ctx.ator());
-        return atendimentos.finalizar(ctx.conta(), atendimentoId, prof.id(), in.motivoAlta(), alta, ctx.ator());
+    }
+
+    // ---- alergias do paciente ----
+
+    static final int ALERGIA_MAX = 200;
+
+    @Override
+    public Atendimento.Operacao incluirAlergia(Contexto ctx, long atendimentoId, AlergiaInBound in) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        String descricao = in == null || in.descricao() == null ? "" : in.descricao().trim();
+        if (descricao.isEmpty()) {
+            throw new IllegalArgumentException("Informe a alergia");
+        }
+        if (descricao.length() > ALERGIA_MAX) {
+            throw new IllegalArgumentException("A alergia deve ter no máximo " + ALERGIA_MAX + " caracteres");
+        }
+        Atendimento.Operacao bloqueio = bloqueioDeEscrita(ctx, prof, atendimentoId);
+        if (bloqueio != null) {
+            return bloqueio;
+        }
+        return atendimentos.incluirAlergia(ctx.conta(), atendimentoId, prof.id(), descricao, ctx.ator());
+    }
+
+    @Override
+    public Atendimento.Operacao inativarAlergia(Contexto ctx, long atendimentoId, long alergiaId, String justificativa) {
+        exigirHabilitada(ctx);
+        String motivo = justificativa(justificativa);
+        ProfissionalClinico prof = profissional(ctx);
+        Atendimento.Operacao bloqueio = bloqueioDeEscrita(ctx, prof, atendimentoId);
+        if (bloqueio != null) {
+            return bloqueio;
+        }
+        return atendimentos.inativarAlergia(ctx.conta(), atendimentoId, alergiaId, prof.id(), motivo, ctx.ator());
+    }
+
+    // ---- favoritos e modelos ----
+
+    @Override
+    public List<Atendimento.MedicamentoFavorito> favoritos(Contexto ctx) {
+        exigirHabilitada(ctx);
+        return atendimentos.favoritos(ctx.conta(), profissional(ctx).id());
+    }
+
+    @Override
+    public Atendimento.Operacao salvarFavorito(Contexto ctx, Atendimento.MedicamentoFavorito in) {
+        exigirHabilitada(ctx);
+        if (in == null) {
+            throw new IllegalArgumentException("Informe o medicamento");
+        }
+        String medicamento = limitado(in.medicamento(), 300, "Medicamento");
+        if (medicamento.isEmpty()) {
+            throw new IllegalArgumentException("Informe o medicamento");
+        }
+        Atendimento.MedicamentoFavorito favorito = new Atendimento.MedicamentoFavorito(null, medicamento,
+                limitado(in.apresentacao(), 200, "Apresentação"), limitado(in.posologia(), 500, "Posologia"),
+                limitado(in.via(), 60, "Via"), limitado(in.quantidade(), 100, "Quantidade"), in.usoContinuo(),
+                limitado(in.observacao(), 500, "Observação do item"));
+        ProfissionalClinico prof = profissional(ctx);
+        return Atendimento.Operacao.sucesso(atendimentos.salvarFavorito(ctx.conta(), prof.id(), favorito));
+    }
+
+    @Override
+    public boolean excluirFavorito(Contexto ctx, long favoritoId) {
+        exigirHabilitada(ctx);
+        return atendimentos.excluirFavorito(ctx.conta(), profissional(ctx).id(), favoritoId);
+    }
+
+    @Override
+    public List<Atendimento.ModeloNota> modelos(Contexto ctx) {
+        exigirHabilitada(ctx);
+        return atendimentos.modelos(ctx.conta(), profissional(ctx).id());
+    }
+
+    @Override
+    public Atendimento.Operacao salvarModelo(Contexto ctx, Atendimento.ModeloNota in) {
+        exigirHabilitada(ctx);
+        if (in == null) {
+            throw new IllegalArgumentException("Informe o modelo");
+        }
+        String atalho = in.atalho() == null ? "" : in.atalho().trim().toLowerCase(Locale.ROOT);
+        if (atalho.startsWith(".")) {
+            atalho = atalho.substring(1);
+        }
+        if (!ATALHO.matcher(atalho).matches()) {
+            throw new IllegalArgumentException("Atalho com 2 a 30 caracteres: letras minúsculas sem acento, números, hífen ou sublinhado");
+        }
+        String titulo = limitado(in.titulo(), 100, "Título");
+        String texto = in.texto() == null ? "" : in.texto().strip();
+        if (texto.isEmpty()) {
+            throw new IllegalArgumentException("Escreva o texto do modelo");
+        }
+        if (texto.length() > MODELO_TEXTO_MAX) {
+            throw new IllegalArgumentException("O texto do modelo deve ter no máximo " + MODELO_TEXTO_MAX + " caracteres");
+        }
+        ProfissionalClinico prof = profissional(ctx);
+        return atendimentos.salvarModelo(ctx.conta(), prof.id(), new Atendimento.ModeloNota(in.id(), atalho, titulo, texto));
+    }
+
+    @Override
+    public boolean excluirModelo(Contexto ctx, long modeloId) {
+        exigirHabilitada(ctx);
+        return atendimentos.excluirModelo(ctx.conta(), profissional(ctx).id(), modeloId);
+    }
+
+    /** O aviso é só para as telas recarregarem; falhar nele não desfaz a operação já gravada. */
+    private Atendimento.Operacao avisar(Contexto ctx, Atendimento.Operacao op, String tipo, long atendimentoId) {
+        if (op != null && op.codigo() == CodigoNegocio.SUCESSO) {
+            try {
+                aviso.publicar(ctx.conta(), new AvisoFilaPort.Aviso(tipo, null, atendimentoId));
+            } catch (RuntimeException ignorado) {
+                // as telas também recarregam sozinhas a cada minuto
+            }
+        }
+        return op;
     }
 
     // ---- apoio: posse e estado ----
@@ -614,6 +809,176 @@ public class ConsultorioService implements ConsultorioUseCase {
                 .append(esc(prof.conselhoNumero())).append("/").append(esc(prof.conselhoUf()))
                 .append("</div></body></html>");
         return h.toString();
+    }
+
+    static String htmlConsulta(AtendimentoPort.CabecalhoReceita cabecalho, Atendimento.Prontuario p,
+                               ProfissionalClinico prof, String impressoPor, LocalDateTime impressoEm) {
+        Atendimento.Ficha f = p.atendimento();
+        Atendimento.CabecalhoPaciente pac = p.paciente();
+        StringBuilder h = new StringBuilder(4096);
+        h.append("<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\">")
+                .append("<title>Registro de consulta</title>")
+                .append("<style>body{font-family:sans-serif;margin:2rem;color:#111;font-size:14px}")
+                .append("h1{font-size:1.3rem;margin:0}h2{font-size:1rem;margin:1.2rem 0 .3rem;border-bottom:1px solid #999}")
+                .append("h3{font-size:.9rem;margin:.6rem 0 .1rem}.meta{margin:.5rem 0 1rem;line-height:1.5}")
+                .append(".texto{white-space:pre-wrap;margin:0 0 .4rem}ul,ol{margin:.2rem 0;padding-left:1.2rem}")
+                .append(".rodape{margin-top:1.5rem;font-size:12px;color:#444}")
+                .append(".assinatura{margin-top:3rem;border-top:1px solid #111;width:18rem;padding-top:.3rem}")
+                .append("@media print{body{margin:1cm}}</style></head><body>");
+        h.append("<h1>").append(esc(cabecalho.clinica())).append("</h1>");
+        h.append("<div class=\"meta\"><strong>Registro de consulta</strong> &middot; Atendimento nº ")
+                .append(f.nrAtendimento()).append("<br>Paciente: ").append(esc(cabecalho.paciente()));
+        if (!vazio(cabecalho.cpf())) {
+            h.append(" &middot; CPF: ").append(esc(cabecalho.cpf()));
+        }
+        if (pac != null && pac.nascimento() != null) {
+            h.append(" &middot; Nascimento: ").append(pac.nascimento().format(DATA));
+        }
+        if (pac != null && !vazio(pac.convenio())) {
+            h.append(" &middot; Convênio: ").append(esc(pac.convenio()));
+        }
+        h.append("<br>Profissional: ").append(esc(f.profissional())).append(" &middot; ").append(esc(f.especialidade()));
+        h.append("<br>Chegada: ").append(dataHora(f.dtEntrada()))
+                .append(" &middot; Início: ").append(dataHora(f.dtAtendMedico()))
+                .append(" &middot; Fim: ").append(dataHora(f.dtFimConsulta() != null ? f.dtFimConsulta() : f.dtAlta()))
+                .append("</div>");
+
+        h.append("<h2>Alergias</h2>");
+        if ((pac == null || pac.alergias().isEmpty()) && pac != null && !vazio(pac.alergiasAnteriores())) {
+            h.append("<p class=\"texto\">Registrado em consulta anterior: ").append(esc(pac.alergiasAnteriores())).append("</p>");
+        } else if (pac == null || pac.alergias().isEmpty()) {
+            h.append("<p class=\"texto\">Nenhuma alergia registrada.</p>");
+        } else {
+            h.append("<ul>");
+            pac.alergias().forEach(a -> h.append("<li>").append(esc(a.descricao())).append("</li>"));
+            h.append("</ul>");
+        }
+
+        Atendimento.Anamnese a = p.anamnese() != null && p.anamnese().ativa() && p.anamnese().liberada() ? p.anamnese() : null;
+        h.append("<h2>S &middot; Subjetivo</h2>");
+        if (a == null) {
+            h.append("<p class=\"texto\">Sem nota SOAP liberada.</p>");
+        } else {
+            campo(h, "Queixa principal", a.queixaPrincipal());
+            campo(h, "História da doença atual", a.historiaDoencaAtual());
+            campo(h, "Medicamentos em uso", a.medicamentosEmUso());
+            campo(h, "Antecedentes pessoais", a.antecedentesPessoais());
+            campo(h, "Antecedentes familiares", a.antecedentesFamiliares());
+            campo(h, "Hábitos", a.habitos());
+            h.append("<h2>O &middot; Objetivo</h2>");
+            campo(h, "Exame físico", a.exameFisico());
+        }
+
+        h.append("<h2>A &middot; Avaliação</h2>");
+        if (a != null) {
+            campo(h, "Impressão clínica", a.avaliacao());
+        }
+        List<Atendimento.Diagnostico> cids = p.diagnosticos().stream().filter(Atendimento.Diagnostico::ativo).toList();
+        if (cids.isEmpty()) {
+            h.append("<p class=\"texto\">Sem CID registrado.</p>");
+        } else {
+            h.append("<ul>");
+            cids.forEach(d -> h.append("<li>").append(esc(d.cid())).append(" &ndash; ").append(esc(d.descricao()))
+                    .append(d.tipo() == Atendimento.TipoDiagnostico.PRINCIPAL ? " (principal)" : " (secundário)")
+                    .append("</li>"));
+            h.append("</ul>");
+        }
+
+        h.append("<h2>P &middot; Plano</h2>");
+        if (a != null) {
+            campo(h, "Conduta", a.conduta());
+        }
+        List<Atendimento.Receita> receitas = p.receitas().stream().filter(r -> r.ativa() && r.liberada()).toList();
+        if (!receitas.isEmpty()) {
+            h.append("<h3>Receitas</h3><ol>");
+            for (Atendimento.Receita r : receitas) {
+                for (Atendimento.ReceitaItem i : r.itens()) {
+                    h.append("<li>").append(esc(i.medicamento()));
+                    if (!vazio(i.apresentacao())) {
+                        h.append(" ").append(esc(i.apresentacao()));
+                    }
+                    h.append(" &ndash; ").append(esc(i.posologia()));
+                    if (i.usoContinuo()) {
+                        h.append(" (uso contínuo)");
+                    }
+                    h.append("</li>");
+                }
+            }
+            h.append("</ol>");
+        }
+        List<Atendimento.Evolucao> notas = p.evolucoes().stream().filter(e -> e.ativa() && e.liberada()).toList();
+        for (Atendimento.Evolucao e : notas) {
+            h.append("<h3>Nota complementar &middot; ").append(dataHora(e.dtLiberacao())).append("</h3>");
+            h.append("<p class=\"texto\">").append(esc(e.texto())).append("</p>");
+            List<String> medidas = new ArrayList<>();
+            if (e.pesoKg() != null) {
+                medidas.add("Peso: " + e.pesoKg().stripTrailingZeros().toPlainString() + " kg");
+            }
+            if (e.alturaCm() != null) {
+                medidas.add("Altura: " + e.alturaCm().stripTrailingZeros().toPlainString() + " cm");
+            }
+            if (e.retornoPrevisto() != null) {
+                medidas.add("Retorno previsto: " + e.retornoPrevisto().format(DATA));
+            }
+            if (!medidas.isEmpty()) {
+                h.append("<p class=\"texto\">").append(esc(String.join(" · ", medidas))).append("</p>");
+            }
+        }
+
+        h.append("<h2>Alta</h2><p class=\"texto\">Motivo: ").append(rotulo(f.motivoAlta()));
+        Atendimento.Alta alta = p.alta();
+        if (alta != null && alta.desfecho() != null) {
+            h.append(" &middot; Desfecho: ").append(rotulo(alta.desfecho()));
+        }
+        if (alta != null && alta.retornoPrevisto() != null) {
+            h.append(" &middot; Retorno: ").append(alta.retornoPrevisto().format(DATA));
+        }
+        h.append("</p>");
+        if (alta != null) {
+            campo(h, "Orientações", alta.orientacao());
+        }
+
+        h.append("<div class=\"assinatura\">").append(esc(prof.nome()));
+        if (!vazio(prof.conselhoNumero())) {
+            h.append("<br>").append(esc(prof.conselhoNumero()));
+            if (!vazio(prof.conselhoUf())) {
+                h.append("/").append(esc(prof.conselhoUf()));
+            }
+        }
+        h.append("</div>");
+        h.append("<div class=\"rodape\">Registro eletrônico finalizado em ").append(dataHora(f.dtAlta()));
+        if (!vazio(f.usuarioAlta())) {
+            h.append(" por ").append(esc(f.usuarioAlta()));
+        }
+        h.append(". Impresso em ").append(impressoEm.format(DATA_HORA)).append(" por ").append(esc(impressoPor))
+                .append(". Via para assinatura e guarda da clínica.</div></body></html>");
+        return h.toString();
+    }
+
+    private static void campo(StringBuilder h, String rotulo, String valor) {
+        if (!vazio(valor)) {
+            h.append("<h3>").append(esc(rotulo)).append("</h3><p class=\"texto\">").append(esc(valor)).append("</p>");
+        }
+    }
+
+    private static String dataHora(LocalDateTime valor) {
+        return valor == null ? "—" : valor.format(DATA_HORA);
+    }
+
+    private static String rotulo(Enum<?> valor) {
+        if (valor == null) {
+            return "—";
+        }
+        return switch (valor.name()) {
+            case "ALTA_MEDICA" -> "Alta médica";
+            case "ENCAMINHADO" -> "Encaminhado";
+            case "DESISTENCIA" -> "Desistência";
+            case "OUTRO" -> "Outro";
+            case "ALTA" -> "Alta";
+            case "RETORNO" -> "Retorno";
+            case "ENCAMINHAMENTO" -> "Encaminhamento";
+            default -> esc(valor.name());
+        };
     }
 
     static String esc(String valor) {

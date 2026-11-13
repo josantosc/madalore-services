@@ -28,6 +28,7 @@
     .cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
     h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
     h2 { font-size: 16px; font-weight: 500; margin: 0; }
+    h3 { font-size: 13px; font-weight: 500; margin: 0; color: var(--texto-2); }
     .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 640px; }
     .botoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
@@ -41,6 +42,8 @@
     .btn.perigo { background: var(--rubi); color: #fff; }
     .btn.perigo:hover:not(:disabled) { background: var(--rubi-hover); }
     .btn.mini { height: 26px; padding: 0 8px; font-size: 13px; border-radius: 6px; }
+    .btn.link { background: none; color: var(--marca); padding: 0 4px; height: 24px; font-size: 13px; }
+    .btn.link:hover:not(:disabled) { text-decoration: underline; }
 
     .resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 24px; }
     .indicador { border-radius: 10px; background: var(--alpha-1); outline: 1px solid var(--borda); padding: 10px 12px; }
@@ -50,7 +53,8 @@
     .ferramentas { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 20px 0 8px; }
     input.campo, select.campo, textarea.campo { height: 36px; width: 100%; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1);
       outline: 1px solid var(--borda); font: inherit; font-size: 14px; color: var(--texto); }
-    textarea.campo { height: 72px; padding: 8px 12px; resize: vertical; }
+    textarea.campo { height: 64px; padding: 8px 12px; resize: vertical; }
+    textarea.campo.alto { height: 96px; }
     .ferramentas .campo { width: auto; }
     input.campo:focus, select.campo:focus, textarea.campo:focus { outline: 1px solid var(--marca); background: var(--solido); }
     input.campo:disabled, select.campo:disabled, textarea.campo:disabled { color: var(--texto-2); }
@@ -68,6 +72,18 @@
     .tag.verde { background: var(--verde-suave); color: var(--verde-texto); }
     .tag.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
     .tag.marca { background: var(--marca-suave); color: var(--marca-texto); }
+    .tag.violeta { background: #f2effa; color: #5b4c9e; }
+    .aovivo { display: inline-flex; align-items: center; gap: 6px; color: var(--texto-3); font-size: 12px; }
+    .aovivo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--texto-3); }
+    .aovivo.ligado { color: var(--verde-texto); }
+    .aovivo.ligado::before { background: #30a46c; box-shadow: 0 0 0 3px var(--verde-suave); }
+    .opcoes { display: grid; gap: 6px; max-height: 320px; overflow-y: auto; margin-top: 12px; }
+    .opcao { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; background: var(--alpha-1);
+      border-radius: 8px; padding: 8px 10px; }
+    .opcao .texto-opcao { min-width: 0; }
+    .opcao .previa { color: var(--texto-3); font-size: 12px; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden; }
+    code.atalho-modelo { background: var(--marca-suave); color: var(--marca-texto); border-radius: 4px; padding: 0 4px; font-size: 12px; }
     .espera { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .espera.ambar { color: var(--ambar-texto); }
     .espera.rubi { color: var(--rubi-texto); }
@@ -75,36 +91,75 @@
     .vazio { text-align: center; color: var(--texto-2); padding: 48px 0; }
     .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
 
-    .barra { margin-top: 20px; border-bottom: 1px solid var(--borda); }
-    .abas { display: flex; gap: 20px; flex-wrap: wrap; }
-    .aba { background: none; border: 0; padding: 8px 0 10px; font: inherit; font-size: 14px; color: var(--texto-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
-    .aba:hover { color: var(--texto); }
-    .aba.ativa { color: var(--marca); border-color: var(--marca); font-weight: 500; }
-    .contador { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 18px; }
-    .contador.ambar { background: var(--ambar-suave); color: var(--ambar-texto); }
-    .contador.verde { background: var(--verde-suave); color: var(--verde-texto); }
-    .aba.ativa .contador:not(.ambar):not(.verde) { background: var(--marca-suave); color: var(--marca-texto); }
-    .bloco { padding-top: 20px; }
-    .topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-    .lista { display: grid; gap: 8px; margin-bottom: 12px; }
-    .cartao { background: var(--alpha-1); outline: 1px solid var(--borda); border-radius: 10px; padding: 12px; display: grid; gap: 6px; }
-    .texto { white-space: pre-wrap; margin: 0; }
-    .item { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid var(--borda); }
+    /* ---------- Prontuário ---------- */
+    #telaProntuario { max-width: 1320px; padding-top: 0; }
+    .faixa { position: sticky; top: 0; z-index: 5; background: var(--fundo); border-bottom: 1px solid var(--borda);
+      padding: 16px 0 12px; display: grid; gap: 8px; }
+    .faixa-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    .faixa-dados { color: var(--texto-2); margin-top: 2px; display: flex; gap: 6px 12px; flex-wrap: wrap; }
+    .alergias { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .alergias .rotulo { font-size: 12px; font-weight: 600; color: var(--rubi-texto); text-transform: uppercase; letter-spacing: .03em; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--rubi-suave); color: var(--rubi-texto); border-radius: 6px;
+      padding: 0 4px 0 8px; font-size: 13px; font-weight: 500; line-height: 24px; }
+    .chip button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px; border-radius: 4px; }
+    .chip button:hover { background: rgba(202, 36, 77, .12); }
+    .chip.semx { padding-right: 8px; }
+    .sem-alergia { color: var(--texto-3); font-size: 13px; }
+    .salvo { font-size: 12px; color: var(--texto-3); white-space: nowrap; }
+    .salvo.pendente { color: var(--ambar-texto); }
+    .salvo.erro { color: var(--rubi-texto); }
+
+    .area { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; margin-top: 16px; align-items: start; }
+    .historico { position: sticky; top: 132px; max-height: calc(100vh - 150px); overflow-y: auto; display: grid; gap: 8px; padding-right: 4px; }
+    .consulta-ant { background: var(--alpha-1); outline: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
+    .consulta-ant .data { font-weight: 500; font-variant-numeric: tabular-nums; }
+    .consulta-ant .cid { font-weight: 500; color: var(--marca-texto); }
+    .consulta-ant .trecho { color: var(--texto-2); font-size: 13px; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .consulta-ant details { font-size: 13px; color: var(--texto-2); }
+    .consulta-ant details summary { cursor: pointer; color: var(--marca); font-size: 12px; }
+    .consulta-ant .rec { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 13px; }
+
+    .nota { display: grid; gap: 12px; }
+    .secao { background: var(--solido); outline: 1px solid var(--borda); border-radius: 12px; padding: 0; }
+    .secao > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 12px 16px; user-select: none; }
+    .secao > summary::-webkit-details-marker { display: none; }
+    .secao > summary .letra { width: 26px; height: 26px; border-radius: 7px; background: var(--marca-suave); color: var(--marca-texto);
+      display: inline-flex; align-items: center; justify-content: center; font-weight: 600; flex: none; }
+    .secao > summary .titulo { font-weight: 500; }
+    .secao > summary .resumo-secao { color: var(--texto-3); font-size: 13px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .secao > summary .atalho { color: var(--texto-3); font-size: 11px; border: 1px solid var(--borda); border-radius: 4px; padding: 0 4px; }
+    .secao[open] > summary { border-bottom: 1px solid var(--borda); }
+    .corpo { padding: 14px 16px 16px; display: grid; gap: 12px; }
+    .form { display: grid; gap: 12px; }
+    .form label, .corpo label { display: grid; gap: 6px; font-weight: 500; }
+    .form .dica, .corpo .dica { font-weight: 400; color: var(--texto-3); font-size: 12px; }
+    .obrig { color: var(--rubi-texto); }
+    .mais { border-top: 1px dashed var(--borda); padding-top: 8px; }
+    .mais > summary { cursor: pointer; color: var(--marca); font-size: 13px; }
+    .mais[open] > summary { margin-bottom: 10px; }
+    .grade-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .grade-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .grade-cid { display: grid; grid-template-columns: 140px 1fr 150px auto; gap: 8px; align-items: end; }
     .span-2 { grid-column: span 2; }
-    .check { display: flex; align-items: center; gap: 8px; font-weight: 400; }
-    .form label.check { display: flex; }
+    .lista { display: grid; gap: 8px; }
+    .cartao { background: var(--alpha-1); outline: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
+    .texto { white-space: pre-wrap; margin: 0; }
+    .item { display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 6px; padding: 8px 0; border-top: 1px solid var(--borda); align-items: center; }
+    .item .linha2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 6px; align-items: center; }
+    .check { display: flex !important; align-items: center; gap: 8px; font-weight: 400 !important; white-space: nowrap; }
+    .aviso-lib { background: var(--ambar-suave); color: var(--ambar-texto); border-radius: 8px; padding: 8px 12px; font-size: 13px;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .fim { background: var(--verde-suave); color: var(--verde-texto); border-radius: 8px; padding: 10px 12px; }
 
     dialog { border: 0; padding: 24px; border-radius: 12px; width: min(560px, calc(100vw - 32px)); color: var(--texto);
       box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
     dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
     dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
     dialog p.sub { color: var(--texto-2); margin: 4px 0 0; font-size: 14px; }
+    dialog .form { margin-top: 12px; }
+    dialog ul { margin: 8px 0 0; padding-left: 18px; color: var(--texto-2); font-size: 13px; }
     [hidden] { display: none !important; }
-    .form { display: grid; gap: 14px; margin-top: 12px; }
-    .form label { display: grid; gap: 6px; font-weight: 500; }
-    .form .dica { font-weight: 400; color: var(--texto-3); font-size: 12px; }
-    .form .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 13px; }
+    .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 13px; }
     .rodape { display: flex; gap: 12px; margin-top: 22px; }
     .rodape .btn { flex: 1; height: 36px; }
 
@@ -114,9 +169,13 @@
     #aviso.ver { opacity: 1; transform: translate(-50%, 0); }
     #aviso.erro::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rubi); flex: none; }
 
+    @media (max-width: 1000px) {
+      .area { grid-template-columns: 1fr; }
+      .historico { position: static; max-height: none; order: 2; }
+    }
     @media (max-width: 860px) {
       .conteudo { padding: 20px 16px 40px; }
-      .resumo, .grade-3 { grid-template-columns: 1fr; }
+      .resumo, .grade-3, .grade-2, .grade-cid, .item, .item .linha2 { grid-template-columns: 1fr; }
       .span-2 { grid-column: auto; }
     }
   </style>
@@ -128,7 +187,7 @@
       <div class="cabecalho">
         <div>
           <h1>Consultório</h1>
-          <p class="descricao">Pacientes que já chegaram. Inicie a consulta para registrar anamnese, evolução, CID e receita.</p>
+          <p class="descricao">Pacientes que já chegaram. Inicie a consulta para registrar a nota, o diagnóstico e a receita.</p>
         </div>
       </div>
 
@@ -150,6 +209,7 @@
           <option value="FINALIZADO">Finalizados</option>
         </select>
         <span style="flex:1"></span>
+        <span class="aovivo" id="aovivo">Conectando…</span>
         <span class="sub" id="atualizado"></span>
         <button class="btn cinza" type="button" id="atualizar">Atualizar</button>
       </div>
@@ -161,134 +221,147 @@
     </div>
 
     <div class="conteudo" id="telaProntuario" hidden>
-      <div class="cabecalho">
-        <div>
-          <h1 id="pNome">Paciente</h1>
-          <p class="descricao" id="pSub"></p>
-        </div>
-        <div class="botoes">
-          <span class="tag" id="pStatus"></span>
-          <button class="btn cinza" type="button" id="btnVoltar">Voltar à fila</button>
-          <button class="btn solido" type="button" id="btnFinalizar">Finalizar</button>
-        </div>
-      </div>
-      <p class="sub" id="pAvisoFim" hidden>Atendimento finalizado. Os registros não podem mais ser alterados.</p>
-      <p class="sub" id="pDica">Libere a anamnese ou uma evolução antes de finalizar. Rascunho aberto impede a alta.</p>
-
-      <div class="barra">
-        <div class="abas">
-          <button class="aba ativa" type="button" data-aba="anamnese">Anamnese <span class="contador" id="cAnamnese">—</span></button>
-          <button class="aba" type="button" data-aba="evolucao">Evolução <span class="contador" id="cEvolucao">0</span></button>
-          <button class="aba" type="button" data-aba="cid">Diagnóstico (CID) <span class="contador" id="cCid">0</span></button>
-          <button class="aba" type="button" data-aba="receita">Receita <span class="contador" id="cReceita">0</span></button>
-          <button class="aba" type="button" data-aba="alta" id="abaAlta" hidden>Alta</button>
-        </div>
-      </div>
-
-      <section class="bloco" data-aba="anamnese">
-        <div class="topo">
-          <h2>Anamnese</h2>
-          <span class="tag" id="aEstado">Sem anamnese</span>
-        </div>
-        <div class="form">
-          <label>Queixa principal <textarea class="campo" id="aQueixa" maxlength="10000"></textarea></label>
-          <label>História da doença atual <textarea class="campo" id="aHistoria" maxlength="10000"></textarea></label>
-          <label>Antecedentes pessoais <textarea class="campo" id="aPessoais" maxlength="10000"></textarea></label>
-          <label>Antecedentes familiares <textarea class="campo" id="aFamiliares" maxlength="10000"></textarea></label>
-          <label>Medicamentos em uso <textarea class="campo" id="aMedicamentos" maxlength="10000"></textarea></label>
-          <label>Alergias <textarea class="campo" id="aAlergias" maxlength="10000"></textarea></label>
-          <label>Hábitos <textarea class="campo" id="aHabitos" maxlength="10000"></textarea></label>
-          <label>Exame físico <textarea class="campo" id="aExame" maxlength="10000"></textarea></label>
+      <header class="faixa">
+        <div class="faixa-topo">
+          <div>
+            <h1 id="pNome">Paciente</h1>
+            <div class="faixa-dados" id="pDados"></div>
+          </div>
           <div class="botoes">
-            <button class="btn solido" type="button" id="aSalvar">Salvar rascunho</button>
-            <button class="btn cinza" type="button" id="aLiberar">Salvar e liberar</button>
-            <button class="btn cinza" type="button" id="aInativar" hidden>Inativar</button>
+            <span class="salvo" id="salvo"></span>
+            <span class="tag" id="pStatus"></span>
+            <button class="btn cinza" type="button" id="btnModelos" title="Textos prontos: digite .atalho e espaço num campo">Modelos</button>
+            <button class="btn cinza" type="button" id="btnVoltar">Voltar à fila</button>
+            <button class="btn solido" type="button" id="btnFinalizar" title="Ctrl+Enter">Finalizar e assinar</button>
+            <button class="btn solido" type="button" id="btnImprimirConsulta" hidden
+              title="Folha da consulta para o médico assinar e a clínica guardar">Imprimir consulta</button>
           </div>
         </div>
-      </section>
+        <div class="alergias" id="pAlergias"></div>
+      </header>
 
-      <section class="bloco" data-aba="evolucao" hidden>
-        <div class="topo"><h2>Evolução</h2></div>
-        <div class="lista" id="listaEvolucoes"></div>
-        <form id="formEvolucao" novalidate>
-          <p class="sub" id="eModo">Nova evolução</p>
-          <div class="form">
-            <label>Texto <textarea class="campo" id="eTexto" maxlength="10000"></textarea></label>
-            <div class="grade-3">
-              <label>Peso (kg) <input class="campo" id="ePeso" inputmode="decimal" placeholder="opcional"></label>
-              <label>Altura (cm) <input class="campo" id="eAltura" inputmode="decimal" placeholder="opcional"></label>
-              <label>Retorno previsto <input class="campo" id="eRetorno" type="date"></label>
-            </div>
-            <div class="botoes">
-              <button class="btn solido" type="submit" id="eSalvar">Salvar rascunho</button>
-              <button class="btn cinza" type="button" id="eLiberar">Salvar e liberar</button>
-              <button class="btn cinza" type="button" id="eNova">Nova</button>
-            </div>
-          </div>
-        </form>
-      </section>
+      <div class="area">
+        <aside class="historico" id="historico" aria-label="Consultas anteriores"></aside>
 
-      <section class="bloco" data-aba="cid" hidden>
-        <div class="topo"><h2>Diagnóstico (CID)</h2></div>
-        <div class="lista" id="listaCid"></div>
-        <form id="formCid" novalidate>
-          <div class="form">
-            <div class="grade-3">
-              <label>CID <span class="dica">J06 ou J06.9</span>
-                <input class="campo" id="dCid" maxlength="10" placeholder="J06.9"></label>
-              <label>Descrição <input class="campo" id="dDescricao" maxlength="500"></label>
-              <label>Tipo
-                <select class="campo" id="dTipo">
-                  <option value="PRINCIPAL">Principal</option>
-                  <option value="SECUNDARIO">Secundário</option>
-                </select>
-              </label>
-            </div>
-            <div class="botoes">
-              <button class="btn solido" type="submit">Incluir</button>
-            </div>
-          </div>
-        </form>
-      </section>
+        <div class="nota">
+          <p class="fim" id="pFim" hidden></p>
 
-      <section class="bloco" data-aba="receita" hidden>
-        <div class="topo"><h2>Receita</h2></div>
-        <div class="lista" id="listaReceitas"></div>
-        <form id="formReceita" novalidate>
-          <p class="sub" id="rModo">Nova receita</p>
-          <div class="form">
-            <div class="grade-3">
-              <label>Tipo
-                <select class="campo" id="rTipo">
-                  <option value="COMUM">Comum</option>
-                  <option value="ESPECIAL">Especial</option>
-                </select>
-              </label>
-              <label class="span-2">Observação <input class="campo" id="rObs" maxlength="1000"></label>
+          <details class="secao" data-secao="S" open>
+            <summary><span class="letra">S</span><span class="titulo">Subjetivo</span>
+              <span class="resumo-secao" id="resumoS"></span><span class="atalho">Alt+1</span></summary>
+            <div class="corpo">
+              <div class="aviso-lib" id="aLiberada" hidden>
+                <span>Nota já liberada. Para corrigir, inative-a com justificativa e escreva de novo.</span>
+                <button class="btn cinza mini" type="button" id="aInativar">Inativar nota</button>
+              </div>
+              <label>Queixa principal <span class="obrig">*</span>
+                <textarea class="campo" id="aQueixa" maxlength="10000" data-anamnese="queixaPrincipal"></textarea></label>
+              <label>História da doença atual
+                <textarea class="campo alto" id="aHistoria" maxlength="10000" data-anamnese="historiaDoencaAtual"></textarea></label>
+              <label>Medicamentos em uso
+                <textarea class="campo" id="aMedicamentos" maxlength="10000" data-anamnese="medicamentosEmUso"></textarea></label>
+              <details class="mais" id="maisS">
+                <summary>Antecedentes e hábitos</summary>
+                <div class="form">
+                  <label>Antecedentes pessoais <textarea class="campo" id="aPessoais" maxlength="10000" data-anamnese="antecedentesPessoais"></textarea></label>
+                  <label>Antecedentes familiares <textarea class="campo" id="aFamiliares" maxlength="10000" data-anamnese="antecedentesFamiliares"></textarea></label>
+                  <label>Hábitos <textarea class="campo" id="aHabitos" maxlength="10000" data-anamnese="habitos"></textarea></label>
+                </div>
+              </details>
             </div>
-            <div id="rItens"></div>
-            <div class="botoes">
-              <button class="btn cinza" type="button" id="rAdd">Adicionar item</button>
-              <button class="btn solido" type="submit" id="rSalvar">Salvar rascunho</button>
-              <button class="btn cinza" type="button" id="rLiberar">Salvar e liberar</button>
-              <button class="btn cinza" type="button" id="rNova">Nova</button>
-            </div>
-          </div>
-        </form>
-      </section>
+          </details>
 
-      <section class="bloco" data-aba="alta" hidden>
-        <div class="topo"><h2>Alta</h2></div>
-        <p id="altaResumo"></p>
-        <p class="texto" id="altaOrientacao"></p>
-      </section>
+          <details class="secao" data-secao="O" open>
+            <summary><span class="letra">O</span><span class="titulo">Objetivo</span>
+              <span class="resumo-secao" id="resumoO"></span><span class="atalho">Alt+2</span></summary>
+            <div class="corpo">
+              <label>Exame físico
+                <textarea class="campo alto" id="aExame" maxlength="10000" data-anamnese="exameFisico"></textarea></label>
+            </div>
+          </details>
+
+          <details class="secao" data-secao="A" open>
+            <summary><span class="letra">A</span><span class="titulo">Avaliação</span>
+              <span class="resumo-secao" id="resumoA"></span><span class="atalho">Alt+3</span></summary>
+            <div class="corpo">
+              <label>Avaliação <span class="dica">Raciocínio clínico e hipóteses</span>
+                <textarea class="campo" id="aAvaliacao" maxlength="10000" data-anamnese="avaliacao"></textarea></label>
+              <div>
+                <h3>Diagnóstico (CID)</h3>
+                <div class="lista" id="listaCid" style="margin-top:8px"></div>
+              </div>
+              <form id="formCid" class="grade-cid" novalidate>
+                <label>CID <span class="dica">J06 ou J06.9</span>
+                  <input class="campo" id="dCid" maxlength="10" placeholder="J06.9" autocomplete="off"></label>
+                <label>Descrição <input class="campo" id="dDescricao" maxlength="500" autocomplete="off"></label>
+                <label>Tipo
+                  <select class="campo" id="dTipo">
+                    <option value="PRINCIPAL">Principal</option>
+                    <option value="SECUNDARIO">Secundário</option>
+                  </select>
+                </label>
+                <button class="btn cinza" type="submit" style="height:36px">Incluir</button>
+              </form>
+            </div>
+          </details>
+
+          <details class="secao" data-secao="P" open>
+            <summary><span class="letra">P</span><span class="titulo">Plano</span>
+              <span class="resumo-secao" id="resumoP"></span><span class="atalho">Alt+4</span></summary>
+            <div class="corpo">
+              <label>Conduta <span class="dica">Exames solicitados, encaminhamentos e orientações</span>
+                <textarea class="campo" id="aConduta" maxlength="10000" data-anamnese="conduta"></textarea></label>
+
+              <div>
+                <div class="botoes" style="justify-content:space-between">
+                  <h3>Receitas</h3>
+                  <button class="btn link" type="button" id="rNova">+ Nova receita</button>
+                </div>
+                <div class="lista" id="listaReceitas" style="margin-top:8px"></div>
+              </div>
+              <div class="form" id="formReceita">
+                <p class="sub" id="rModo">Nova receita</p>
+                <div class="grade-3">
+                  <label>Tipo
+                    <select class="campo" id="rTipo">
+                      <option value="COMUM">Comum</option>
+                      <option value="ESPECIAL">Especial</option>
+                    </select>
+                  </label>
+                  <label class="span-2">Observação <input class="campo" id="rObs" maxlength="1000"></label>
+                </div>
+                <div id="rItens"></div>
+                <div class="botoes">
+                  <button class="btn cinza mini" type="button" id="rAdd">+ Medicamento</button>
+                  <button class="btn cinza mini" type="button" id="rFavoritos">★ Favoritos</button>
+                </div>
+              </div>
+
+              <details class="mais" id="maisEvolucao">
+                <summary>Nota complementar, peso e altura</summary>
+                <div class="lista" id="listaEvolucoes"></div>
+                <div class="form" id="formEvolucao">
+                  <label>Texto <textarea class="campo" id="eTexto" maxlength="10000"></textarea></label>
+                  <div class="grade-3">
+                    <label>Peso (kg) <input class="campo" id="ePeso" inputmode="decimal" placeholder="opcional"></label>
+                    <label>Altura (cm) <input class="campo" id="eAltura" inputmode="decimal" placeholder="opcional"></label>
+                    <label>Retorno previsto <input class="campo" id="eRetorno" type="date"></label>
+                  </div>
+                </div>
+              </details>
+
+              <div id="altaResumo" hidden></div>
+            </div>
+          </details>
+        </div>
+      </div>
     </div>
   </main>
 
   <dialog id="dlgJust">
     <form method="dialog" id="formJust" novalidate>
       <h2 id="jTitulo">Justificativa</h2>
-      <p class="sub">Obrigatória. O registro deixa de valer neste atendimento.</p>
+      <p class="sub" id="jSub">Obrigatória. O registro deixa de valer e continua no histórico.</p>
       <div class="form">
         <label>Justificativa
           <textarea class="campo" id="jTexto" maxlength="500"></textarea></label>
@@ -301,33 +374,86 @@
     </form>
   </dialog>
 
+  <dialog id="dlgAlergia">
+    <form method="dialog" id="formAlergia" novalidate>
+      <h2>Registrar alergia</h2>
+      <p class="sub">Fica no cadastro do paciente e aparece em todas as consultas.</p>
+      <div class="form">
+        <label>Alergia <span class="dica">Ex.: dipirona, penicilina, látex, frutos do mar</span>
+          <input class="campo" id="alDescricao" maxlength="200" autocomplete="off"></label>
+        <span class="msg-erro" id="alErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="alOk">Registrar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgFavoritos">
+    <form method="dialog" novalidate>
+      <h2>Medicamentos favoritos</h2>
+      <p class="sub">Clique para incluir na receita. Para salvar um novo, use "Favoritar" no item da receita.</p>
+      <div class="form"><input class="campo" type="search" id="favBusca" placeholder="Filtrar" autocomplete="off"></div>
+      <div class="opcoes" id="favLista"></div>
+      <div class="rodape"><button class="btn cinza" type="button" data-fechar>Fechar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgModelos">
+    <form method="dialog" id="formModelo" novalidate>
+      <h2>Modelos de texto</h2>
+      <p class="sub">Num campo da nota, digite <code class="atalho-modelo">.atalho</code> e espaço (ou Tab) para trocar pelo texto.</p>
+      <div class="opcoes" id="modLista"></div>
+      <div class="form">
+        <p class="sub" id="modModo">Novo modelo</p>
+        <div class="grade-2">
+          <label>Atalho <span class="dica">Ex.: normal, ivas, retorno</span>
+            <input class="campo" id="modAtalho" maxlength="31" autocomplete="off"></label>
+          <label>Título <span class="dica">Opcional</span> <input class="campo" id="modTitulo" maxlength="100" autocomplete="off"></label>
+        </div>
+        <label>Texto <textarea class="campo alto" id="modTexto" maxlength="4000"></textarea></label>
+        <span class="msg-erro" id="modErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Fechar</button>
+        <button class="btn cinza" type="button" id="modNovo">Limpar</button>
+        <button class="btn solido" type="submit" id="modOk">Salvar modelo</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="dlgFinalizar">
     <form method="dialog" id="formFinalizar" novalidate>
-      <h2>Finalizar atendimento</h2>
-      <p class="sub">A consulta encerra e o horário fica como executado na agenda.</p>
+      <h2>Finalizar e assinar</h2>
+      <p class="sub">A nota, as receitas e as evoluções em rascunho são liberadas juntas. Rascunhos vazios são descartados.
+        A consulta encerra e o horário fica como executado na agenda.</p>
+      <ul id="fResumo"></ul>
       <div class="form">
-        <label>Motivo da alta
-          <select class="campo" id="fMotivo">
-            <option value="ALTA_MEDICA">Alta médica</option>
-            <option value="ENCAMINHADO">Encaminhado</option>
-            <option value="DESISTENCIA">Desistência</option>
-            <option value="OUTRO">Outro</option>
-          </select>
-        </label>
-        <label>Desfecho
-          <select class="campo" id="fDesfecho">
-            <option value="ALTA">Alta</option>
-            <option value="RETORNO">Retorno</option>
-            <option value="ENCAMINHAMENTO">Encaminhamento</option>
-          </select>
-        </label>
-        <label>Orientações <textarea class="campo" id="fOrientacao" maxlength="10000"></textarea></label>
+        <div class="grade-2">
+          <label>Motivo da alta
+            <select class="campo" id="fMotivo">
+              <option value="ALTA_MEDICA">Alta médica</option>
+              <option value="ENCAMINHADO">Encaminhado</option>
+              <option value="DESISTENCIA">Desistência</option>
+              <option value="OUTRO">Outro</option>
+            </select>
+          </label>
+          <label>Desfecho
+            <select class="campo" id="fDesfecho">
+              <option value="ALTA">Alta</option>
+              <option value="RETORNO">Retorno</option>
+              <option value="ENCAMINHAMENTO">Encaminhamento</option>
+            </select>
+          </label>
+        </div>
+        <label>Orientações ao paciente <textarea class="campo" id="fOrientacao" maxlength="10000"></textarea></label>
         <label>Retorno previsto <input class="campo" id="fRetorno" type="date"></label>
         <span class="msg-erro" id="fErro"></span>
       </div>
       <div class="rodape">
         <button class="btn cinza" type="button" data-fechar>Voltar</button>
-        <button class="btn solido" type="submit" id="fOk">Finalizar</button>
+        <button class="btn solido" type="submit" id="fOk">Finalizar e assinar</button>
       </div>
     </form>
   </dialog>
@@ -337,6 +463,7 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const fmtHora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const fmtHoraSeg = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     const STATUS = {
       AGUARDANDO: ["Aguardando", "tag ambar"],
       EM_CONSULTA: ["Em consulta", "tag verde"],
@@ -346,15 +473,16 @@
     const DESFECHO = { ALTA: "Alta", RETORNO: "Retorno", ENCAMINHAMENTO: "Encaminhamento" };
     const TIPO_DIAG = { PRINCIPAL: "Principal", SECUNDARIO: "Secundário" };
     const TIPO_REC = { COMUM: "Comum", ESPECIAL: "Especial" };
-    const CAMPOS_ANAMNESE = [
-      ["aQueixa", "queixaPrincipal"], ["aHistoria", "historiaDoencaAtual"], ["aPessoais", "antecedentesPessoais"],
-      ["aFamiliares", "antecedentesFamiliares"], ["aMedicamentos", "medicamentosEmUso"], ["aAlergias", "alergias"],
-      ["aHabitos", "habitos"], ["aExame", "exameFisico"]
-    ];
+    const CAMPOS_ANAMNESE = [...document.querySelectorAll("[data-anamnese]")];
     const ESPERA_ALERTA_MIN = 15;
     const ESPERA_ATRASO_MIN = 30;
+    const AUTOSALVAR_MS = 1500;
 
-    const estado = { conta: null, fila: [], atendimentoId: null, prontuario: null, evolucaoId: null, receitaId: null, aba: "anamnese" };
+    const estado = {
+      conta: null, fila: [], atendimentoId: null, prontuario: null,
+      receitaId: null, receitaNova: false, evolucaoId: null, historico: [],
+      favoritos: null, modelos: null, modeloId: null, ultimoCampo: null
+    };
     const params = new URLSearchParams(location.search);
     let ocupado = false;
     let caminhoJustificativa = null;
@@ -396,11 +524,22 @@
     const hoje = () => dataIso(new Date());
     const dataBr = (iso) => { if (!iso) return ""; const [a, m, d] = String(iso).substring(0, 10).split("-"); return d + "/" + m + "/" + a; };
     const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+    const vazio = (s) => !s || !String(s).trim();
     const emConsulta = () => estado.prontuario && estado.prontuario.atendimento && estado.prontuario.atendimento.status === "EM_CONSULTA";
+    const anamneseLiberada = () => !!(estado.prontuario && estado.prontuario.anamnese && estado.prontuario.anamnese.dtLiberacao);
 
     function duracao(min) {
       if (min < 60) return plural(min, "min", "min");
       return Math.floor(min / 60) + "h" + String(min % 60).padStart(2, "0");
+    }
+
+    function idade(nascimento) {
+      if (!nascimento) return null;
+      const n = deIso(nascimento);
+      const h = new Date();
+      let anos = h.getFullYear() - n.getFullYear();
+      if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) anos--;
+      return anos;
     }
 
     function numero(id, nome) {
@@ -421,6 +560,59 @@
       } finally {
         ocupado = false;
       }
+    }
+
+    // ---------- Salvamento automático ----------
+    // Cada chave guarda a última gravação pendente; as gravações rodam em série para não duplicar rascunho.
+    const salvamento = { pendentes: new Map(), timer: null, emCurso: null, ultimo: null, erro: false };
+
+    function agendar(chave, gravar) {
+      if (!emConsulta()) return;
+      salvamento.pendentes.set(chave, gravar);
+      clearTimeout(salvamento.timer);
+      salvamento.timer = setTimeout(salvarPendentes, AUTOSALVAR_MS);
+      indicadorSalvo();
+    }
+
+    async function salvarPendentes() {
+      clearTimeout(salvamento.timer);
+      while (salvamento.emCurso) await salvamento.emCurso.catch(() => {});
+      if (!salvamento.pendentes.size) return !salvamento.erro;
+      const lote = [...salvamento.pendentes.entries()];
+      salvamento.pendentes.clear();
+      salvamento.emCurso = (async () => { for (const [, gravar] of lote) await gravar(); })();
+      indicadorSalvo();
+      try {
+        await salvamento.emCurso;
+        salvamento.ultimo = new Date();
+        salvamento.erro = false;
+        return true;
+      } catch (e) {
+        lote.forEach(([chave, gravar]) => { if (!salvamento.pendentes.has(chave)) salvamento.pendentes.set(chave, gravar); });
+        salvamento.erro = true;
+        aviso("Não foi possível salvar. " + e.message, true);
+        return false;
+      } finally {
+        salvamento.emCurso = null;
+        indicadorSalvo();
+      }
+    }
+
+    function indicadorSalvo() {
+      const s = $("salvo");
+      if (!emConsulta()) { s.textContent = ""; s.className = "salvo"; return; }
+      if (salvamento.emCurso) { s.textContent = "Salvando…"; s.className = "salvo"; return; }
+      if (salvamento.erro) { s.textContent = "Erro ao salvar"; s.className = "salvo erro"; return; }
+      if (salvamento.pendentes.size) { s.textContent = "Alterações não salvas"; s.className = "salvo pendente"; return; }
+      s.textContent = salvamento.ultimo ? "Salvo às " + fmtHoraSeg.format(salvamento.ultimo) : "";
+      s.className = "salvo";
+    }
+
+    function limparSalvamento() {
+      clearTimeout(salvamento.timer);
+      salvamento.pendentes.clear();
+      salvamento.ultimo = null;
+      salvamento.erro = false;
     }
 
     // ---------- Fila do médico ----------
@@ -465,6 +657,8 @@
       }
       const acoes = [];
       if (f.atendimentoId && f.status === "AGUARDANDO") {
+        acoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: (ev) => chamar(f, ev.currentTarget) },
+          f.chamadoEm ? "Chamar de novo" : "Chamar"));
         acoes.push(el("button", { className: "btn solido mini", type: "button", onclick: (ev) => iniciar(f, ev.currentTarget) }, "Iniciar"));
       }
       if (f.atendimentoId && (f.status === "EM_CONSULTA" || f.status === "FINALIZADO")) {
@@ -475,9 +669,21 @@
         el("td", { className: "hora" }, hora(f.horario)),
         el("td", {}, el("span", { className: "nome" }, f.paciente || ""),
           el("span", { className: "sub" }, f.especialidade || "")),
-        el("td", {}, el("span", { className: classe }, rotulo)),
+        el("td", {}, el("span", { className: classe }, rotulo),
+          f.status === "AGUARDANDO" && f.chamadoEm ? el("span", { className: "tag violeta", style: "margin-left:4px" }, "Chamado " + hora(f.chamadoEm)) : null),
         el("td", {}, espera || el("span", { className: "sub" }, "—")),
         el("td", {}, el("div", { className: "acoes" }, acoes)));
+    }
+
+    async function chamar(f, botao) {
+      botao.disabled = true;
+      try {
+        await api("/consultorio/api/atendimentos/" + f.atendimentoId + "/chamar", { method: "POST" });
+        aviso((f.paciente || "Paciente") + " chamado. A recepção vê a chamada no quadro.");
+      } catch (e) {
+        aviso(e.message, true);
+      }
+      await carregarFila();
     }
 
     async function iniciar(f, botao) {
@@ -495,7 +701,13 @@
 
     // ---------- Prontuário ----------
     async function abrir(id) {
-      if (estado.atendimentoId !== id) estado.aba = "anamnese";
+      if (estado.atendimentoId !== id) {
+        limparSalvamento();
+        estado.receitaId = null;
+        estado.receitaNova = false;
+        estado.evolucaoId = null;
+        estado.historico = [];
+      }
       estado.atendimentoId = id;
       if (!await carregarProntuario()) {
         if ($("telaProntuario").hidden) await carregarFila();
@@ -506,9 +718,12 @@
       const q = new URLSearchParams(location.search);
       q.set("atendimento", String(id));
       history.replaceState(null, "", location.pathname + "?" + q);
+      carregarHistorico();
+      if (emConsulta() && !anamneseLiberada() && vazio($("aQueixa").value)) $("aQueixa").focus();
     }
 
-    function voltar() {
+    async function voltar() {
+      if (!await salvarPendentes()) return;
       $("telaProntuario").hidden = true;
       $("telaFila").hidden = false;
       const q = new URLSearchParams(location.search);
@@ -530,180 +745,108 @@
       }
     }
 
+    /** Grava o que estiver pendente antes de redesenhar, para não perder texto digitado. */
+    async function recarregar() {
+      await salvarPendentes();
+      await carregarProntuario();
+    }
+
     function desenharProntuario() {
       const p = estado.prontuario;
-      renderCabecalho(p);
+      renderFaixa(p);
       renderAnamnese(p);
-      renderEvolucoes(p);
       renderDiagnosticos(p);
       renderReceitas(p);
+      renderEvolucoes(p);
       renderAlta(p);
-      renderAbas(p);
+      renderResumos();
+      indicadorSalvo();
     }
 
-    function contador(id, texto, classe) {
-      $(id).textContent = texto;
-      $(id).className = "contador" + (classe ? " " + classe : "");
-    }
-
-    function renderAbas(p) {
-      const a = p.anamnese;
-      contador("cAnamnese", !a ? "—" : a.dtLiberacao ? "Liberada" : "Rascunho", !a ? "" : a.dtLiberacao ? "verde" : "ambar");
-      const evolucoes = p.evolucoes || [];
-      const receitas = p.receitas || [];
-      contador("cEvolucao", evolucoes.length, evolucoes.some((e) => !e.dtLiberacao) ? "ambar" : "");
-      contador("cCid", (p.diagnosticos || []).length);
-      contador("cReceita", receitas.length, receitas.some((r) => !r.dtLiberacao) ? "ambar" : "");
-      $("abaAlta").hidden = p.atendimento.status !== "FINALIZADO";
-      if (estado.aba === "alta" && $("abaAlta").hidden) estado.aba = "anamnese";
-      abrirAba(estado.aba);
-    }
-
-    function abrirAba(nome) {
-      estado.aba = nome;
-      document.querySelectorAll(".aba").forEach((b) => b.classList.toggle("ativa", b.dataset.aba === nome));
-      document.querySelectorAll("section.bloco[data-aba]").forEach((s) => s.hidden = s.dataset.aba !== nome);
-    }
-
-    function renderCabecalho(p) {
+    function renderFaixa(p) {
       const f = p.atendimento;
+      const pac = p.paciente || {};
       const [rotulo, classe] = STATUS[f.status] || [f.status, "tag"];
-      $("pNome").textContent = f.paciente || "Paciente";
-      $("pSub").textContent = [f.profissional, f.especialidade].filter(Boolean).join(" · ");
+      $("pNome").textContent = pac.nome || f.paciente || "Paciente";
+      const dados = [];
+      const anos = idade(pac.nascimento);
+      if (anos !== null) dados.push(plural(anos, "ano", "anos"));
+      dados.push(pac.convenio || "Particular ou convênio não informado");
+      if (f.especialidade) dados.push(f.especialidade);
+      if (f.status === "EM_CONSULTA" && f.dtAtendMedico) dados.push("em consulta desde " + hora(f.dtAtendMedico));
+      $("pDados").replaceChildren(...dados.map((d) => el("span", {}, d)));
       $("pStatus").textContent = rotulo;
       $("pStatus").className = classe;
       $("btnFinalizar").hidden = f.status !== "EM_CONSULTA";
-      $("pAvisoFim").hidden = f.status !== "FINALIZADO";
-      $("pDica").hidden = f.status !== "EM_CONSULTA";
+      $("btnImprimirConsulta").hidden = f.status !== "FINALIZADO";
+
+      const escrever = emConsulta();
+      const alergias = pac.alergias || [];
+      const itens = [el("span", { className: "rotulo" }, "Alergias")];
+      alergias.forEach((a) => {
+        const chip = el("span", { className: "chip" + (escrever ? "" : " semx"), title: "Registrada por " + (a.usuario || "") }, a.descricao);
+        if (escrever) {
+          chip.append(el("button", { type: "button", title: "Inativar alergia " + a.descricao,
+            onclick: () => pedirJustificativa("Inativar alergia: " + a.descricao,
+              "/consultorio/api/atendimentos/" + estado.atendimentoId + "/alergias/" + a.id + "/inativar") }, "×"));
+        }
+        itens.push(chip);
+      });
+      if (!alergias.length) {
+        itens.push(el("span", { className: "sem-alergia" },
+          pac.alergiasAnteriores ? "Registrado em consulta anterior: " + pac.alergiasAnteriores : "Nenhuma alergia registrada"));
+      }
+      if (escrever) itens.push(el("button", { className: "btn link", type: "button", onclick: abrirAlergia }, "+ Alergia"));
+      $("pAlergias").replaceChildren(...itens);
     }
 
+    // ---------- S, O, A (texto): nota SOAP ----------
     function dadosAnamnese() {
-      const dados = {};
-      CAMPOS_ANAMNESE.forEach(([id, campo]) => dados[campo] = $(id).value);
+      const a = estado.prontuario && estado.prontuario.anamnese;
+      const dados = { alergias: a && a.alergias ? a.alergias : "" };
+      CAMPOS_ANAMNESE.forEach((c) => dados[c.dataset.anamnese] = c.value);
       return dados;
     }
 
     function renderAnamnese(p) {
       const a = p.anamnese;
-      const escrever = emConsulta();
       const liberada = !!(a && a.dtLiberacao);
-      CAMPOS_ANAMNESE.forEach(([id, campo]) => {
-        $(id).value = a && a[campo] ? a[campo] : "";
-        $(id).disabled = !escrever || liberada;
+      const escrever = emConsulta() && !liberada;
+      CAMPOS_ANAMNESE.forEach((c) => {
+        c.value = a && a[c.dataset.anamnese] ? a[c.dataset.anamnese] : "";
+        c.disabled = !escrever;
       });
-      $("aEstado").textContent = !a ? "Sem anamnese" : liberada ? "Liberada" : "Rascunho";
-      $("aEstado").className = "tag" + (!a ? "" : liberada ? " verde" : " ambar");
-      $("aSalvar").hidden = !escrever || liberada;
-      $("aLiberar").hidden = !escrever || liberada;
-      $("aInativar").hidden = !escrever || !liberada;
+      $("aLiberada").hidden = !(emConsulta() && liberada);
+      const temAntecedentes = a && (a.antecedentesPessoais || a.antecedentesFamiliares || a.habitos);
+      if (temAntecedentes) $("maisS").open = true;
     }
 
-    async function salvarAnamnese() {
+    async function gravarAnamnese() {
       await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/anamnese", json("PUT", dadosAnamnese()));
     }
 
-    function renderEvolucoes(p) {
-      const escrever = emConsulta();
-      $("formEvolucao").hidden = !escrever;
-      limparEvolucao();
-      const lista = p.evolucoes || [];
-      $("listaEvolucoes").replaceChildren(...(lista.length
-        ? lista.map((e) => cartaoEvolucao(e, escrever))
-        : [el("p", { className: "sub" }, "Nenhuma evolução.")]));
-    }
+    CAMPOS_ANAMNESE.forEach((c) => c.addEventListener("input", () => {
+      agendar("anamnese", gravarAnamnese);
+      renderResumos();
+    }));
 
-    function limparEvolucao() {
-      estado.evolucaoId = null;
-      $("eTexto").value = "";
-      $("ePeso").value = "";
-      $("eAltura").value = "";
-      $("eRetorno").value = "";
-      $("eModo").textContent = "Nova evolução";
-    }
-
-    function dadosEvolucao() {
-      return {
-        texto: $("eTexto").value,
-        pesoKg: numero("ePeso", "o peso"),
-        alturaCm: numero("eAltura", "a altura"),
-        retornoPrevisto: $("eRetorno").value || null
-      };
-    }
-
-    function cartaoEvolucao(e, escrever) {
-      const liberada = !!e.dtLiberacao;
-      const botoes = [];
-      if (escrever && !liberada) {
-        botoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: () => editarEvolucao(e) }, "Editar"));
-        botoes.push(el("button", { className: "btn solido mini", type: "button", onclick: () => executar(() =>
-          estado.evolucaoId === e.id ? liberarEvolucaoForm() : liberarEvolucao(e.id)) }, "Liberar"));
-      }
-      if (escrever && liberada) {
-        botoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: () =>
-          pedirJustificativa("Inativar evolução", "/consultorio/api/evolucoes/" + e.id + "/inativar") }, "Inativar"));
-      }
-      const extras = [];
-      if (e.pesoKg !== null && e.pesoKg !== undefined) extras.push(e.pesoKg + " kg");
-      if (e.alturaCm !== null && e.alturaCm !== undefined) extras.push(e.alturaCm + " cm");
-      if (e.retornoPrevisto) extras.push("Retorno " + dataBr(e.retornoPrevisto));
-      return el("div", { className: "cartao" },
-        el("div", { className: "botoes" }, el("span", { className: liberada ? "tag verde" : "tag ambar" }, liberada ? "Liberada" : "Rascunho"), ...botoes),
-        el("p", { className: "texto" }, e.texto || ""),
-        extras.length ? el("span", { className: "sub" }, extras.join(" · ")) : null);
-    }
-
-    function editarEvolucao(e) {
-      estado.evolucaoId = e.id;
-      $("eTexto").value = e.texto || "";
-      $("ePeso").value = e.pesoKg !== null && e.pesoKg !== undefined ? String(e.pesoKg) : "";
-      $("eAltura").value = e.alturaCm !== null && e.alturaCm !== undefined ? String(e.alturaCm) : "";
-      $("eRetorno").value = e.retornoPrevisto ? String(e.retornoPrevisto).substring(0, 10) : "";
-      $("eModo").textContent = "Editando rascunho";
-      $("eTexto").focus();
-    }
-
-    async function salvarEvolucao() {
-      const dados = dadosEvolucao();
-      if (estado.evolucaoId) {
-        await api("/consultorio/api/evolucoes/" + estado.evolucaoId, json("PUT", dados));
-        return estado.evolucaoId;
-      }
-      const resp = await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/evolucoes", json("POST", dados));
-      if (!resp.id) throw new Error("Não foi possível gravar a evolução.");
-      estado.evolucaoId = resp.id;
-      return resp.id;
-    }
-
-    async function liberarEvolucao(id) {
-      await api("/consultorio/api/evolucoes/" + id + "/liberar", { method: "POST" });
-      aviso("Evolução liberada.");
-      await carregarProntuario();
-    }
-
-    async function liberarEvolucaoForm() {
-      const id = await salvarEvolucao();
-      await liberarEvolucao(id);
-    }
-
+    // ---------- A: diagnóstico ----------
     function renderDiagnosticos(p) {
       const escrever = emConsulta();
       $("formCid").hidden = !escrever;
       $("dCid").value = "";
       $("dDescricao").value = "";
       const lista = p.diagnosticos || [];
+      $("dTipo").value = lista.some((d) => d.tipo === "PRINCIPAL") ? "SECUNDARIO" : "PRINCIPAL";
       $("listaCid").replaceChildren(...(lista.length
-        ? lista.map((d) => cartaoDiagnostico(d, escrever))
+        ? lista.map((d) => el("div", { className: "cartao" },
+            el("div", { className: "botoes" },
+              el("span", { className: d.tipo === "PRINCIPAL" ? "tag marca" : "tag" }, TIPO_DIAG[d.tipo] || d.tipo),
+              el("b", {}, d.cid || ""), d.descricao ? el("span", {}, d.descricao) : null,
+              el("span", { style: "flex:1" }),
+              escrever ? el("button", { className: "btn link", type: "button", onclick: () =>
+                pedirJustificativa("Remover diagnóstico " + d.cid, "/consultorio/api/diagnosticos/" + d.id + "/inativar") }, "Remover") : null)))
         : [el("p", { className: "sub" }, "Nenhum diagnóstico.")]));
-    }
-
-    function cartaoDiagnostico(d, escrever) {
-      return el("div", { className: "cartao" },
-        el("div", { className: "botoes" },
-          el("span", { className: d.tipo === "PRINCIPAL" ? "tag marca" : "tag" }, TIPO_DIAG[d.tipo] || d.tipo),
-          el("b", {}, d.cid || ""),
-          escrever ? el("button", { className: "btn cinza mini", type: "button", onclick: () =>
-            pedirJustificativa("Inativar diagnóstico", "/consultorio/api/diagnosticos/" + d.id + "/inativar") }, "Inativar") : null),
-        d.descricao ? el("span", {}, d.descricao) : null);
     }
 
     async function incluirDiagnostico() {
@@ -711,42 +854,85 @@
         cid: $("dCid").value, descricao: $("dDescricao").value, tipo: $("dTipo").value
       }));
       aviso("Diagnóstico incluído.");
-      await carregarProntuario();
+      await recarregar();
+      $("dCid").focus();
     }
 
+    // ---------- P: receitas ----------
     function renderReceitas(p) {
       const escrever = emConsulta();
+      const receitas = p.receitas || [];
+      const rascunhos = receitas.filter((r) => !r.dtLiberacao);
+      if (!estado.receitaNova && !rascunhos.some((r) => r.id === estado.receitaId)) {
+        estado.receitaId = rascunhos.length ? rascunhos[rascunhos.length - 1].id : null;
+      }
+      const emEdicao = receitas.find((r) => r.id === estado.receitaId);
+      carregarEditorReceita(emEdicao);
       $("formReceita").hidden = !escrever;
-      limparReceita();
-      const lista = p.receitas || [];
-      $("listaReceitas").replaceChildren(...(lista.length
-        ? lista.map((r) => cartaoReceita(r, escrever))
-        : [el("p", { className: "sub" }, "Nenhuma receita.")]));
+      $("rNova").hidden = !escrever;
+
+      const outras = receitas.filter((r) => r.id !== estado.receitaId || !escrever);
+      $("listaReceitas").replaceChildren(...(outras.length
+        ? outras.map((r) => cartaoReceita(r, escrever))
+        : [el("p", { className: "sub" }, escrever ? "Preencha abaixo; a receita é salva sozinha." : "Nenhuma receita.")]));
     }
 
-    function limparReceita() {
-      estado.receitaId = null;
-      $("rTipo").value = "COMUM";
-      $("rObs").value = "";
+    function cartaoReceita(r, escrever) {
+      const liberada = !!r.dtLiberacao;
+      const botoes = [];
+      if (escrever && !liberada) {
+        botoes.push(el("button", { className: "btn link", type: "button", onclick: () => editarReceita(r) }, "Editar"));
+      }
+      if (liberada) {
+        botoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: () => imprimirReceita(r.id) }, "Imprimir"));
+      }
+      if (escrever && liberada) {
+        botoes.push(el("button", { className: "btn link", type: "button", onclick: () =>
+          pedirJustificativa("Cancelar receita", "/consultorio/api/receitas/" + r.id + "/cancelar") }, "Cancelar"));
+      }
+      return el("div", { className: "cartao" },
+        el("div", { className: "botoes" },
+          el("span", { className: liberada ? "tag verde" : "tag ambar" }, liberada ? "Liberada" : "Rascunho"),
+          el("span", { className: "tag" }, TIPO_REC[r.tipo] || r.tipo || "Comum"),
+          r.dtValidade ? el("span", { className: "sub" }, "Válida até " + dataBr(r.dtValidade)) : null,
+          el("span", { style: "flex:1" }), ...botoes),
+        ...(r.itens || []).map((i) => el("div", {},
+          el("b", {}, i.medicamento || "Item"), i.apresentacao ? " " + i.apresentacao : "",
+          i.posologia ? " — " + i.posologia : "",
+          i.usoContinuo ? el("span", { className: "sub" }, "Uso contínuo") : null)),
+        r.observacao ? el("span", { className: "sub" }, r.observacao) : null);
+    }
+
+    function carregarEditorReceita(r) {
+      $("rTipo").value = r && r.tipo || "COMUM";
+      $("rObs").value = r && r.observacao || "";
       $("rItens").replaceChildren();
-      adicionarItem();
-      $("rModo").textContent = "Nova receita";
+      (r && r.itens && r.itens.length ? r.itens : [null]).forEach((item) => adicionarItem(item));
+      $("rModo").textContent = r ? "Rascunho da receita (salvo automaticamente)" : "Nova receita";
     }
 
     function adicionarItem(item) {
-      const med = el("input", { className: "campo", maxLength: 300, placeholder: "Medicamento", value: item && item.medicamento || "" });
-      const apres = el("input", { className: "campo", maxLength: 200, placeholder: "Apresentação", value: item && item.apresentacao || "" });
-      const pos = el("input", { className: "campo", maxLength: 500, placeholder: "Posologia", value: item && item.posologia || "" });
-      const via = el("input", { className: "campo", maxLength: 60, placeholder: "Via", value: item && item.via || "" });
-      const qtd = el("input", { className: "campo", maxLength: 100, placeholder: "Quantidade", value: item && item.quantidade || "" });
+      const campo = (ph, max, valor) => el("input", { className: "campo", maxLength: max, placeholder: ph, value: valor || "" });
+      const med = campo("Medicamento", 300, item && item.medicamento);
+      const apres = campo("Apresentação (ex.: 500 mg cp)", 200, item && item.apresentacao);
+      const pos = campo("Posologia (ex.: 1 cp de 6/6h por 5 dias)", 500, item && item.posologia);
+      const via = campo("Via", 60, item && item.via);
+      const qtd = campo("Quantidade", 100, item && item.quantidade);
+      const obs = campo("Observação do item", 500, item && item.observacao);
       const uso = el("input", { type: "checkbox" });
       uso.checked = !!(item && item.usoContinuo);
-      const obs = el("input", { className: "campo", maxLength: 500, placeholder: "Observação do item", value: item && item.observacao || "" });
       const box = el("div", { className: "item" });
-      const remover = el("button", { className: "btn cinza mini", type: "button", onclick: () => box.remove() }, "Remover");
-      box.append(med, apres, pos, via, qtd, el("label", { className: "check" }, uso, "Uso contínuo"), obs, remover);
+      const remover = el("button", { className: "btn link", type: "button", title: "Remover item",
+        onclick: () => { box.remove(); if (!$("rItens").children.length) adicionarItem(); agendarReceita(); } }, "Remover");
+      const favoritar = el("button", { className: "btn link", type: "button", title: "Salvar este item nos seus favoritos",
+        onclick: () => executar(() => favoritarItem(box)) }, "Favoritar");
+      box.append(med, apres, pos, el("div", { className: "botoes" }, favoritar, remover),
+        el("div", { className: "linha2" }, via, qtd, obs, el("label", { className: "check" }, uso, "Uso contínuo")));
       box._c = { med, apres, pos, via, qtd, uso, obs };
+      box.addEventListener("input", agendarReceita);
+      box.addEventListener("change", agendarReceita);
       $("rItens").append(box);
+      return box;
     }
 
     function itensReceita() {
@@ -761,71 +947,215 @@
       })).filter((i) => i.medicamento || i.apresentacao || i.posologia || i.via || i.quantidade || i.observacao || i.usoContinuo);
     }
 
-    function dadosReceita() {
-      return { tipo: $("rTipo").value, observacao: $("rObs").value, itens: itensReceita() };
+    function agendarReceita() {
+      agendar("receita", gravarReceita);
+      renderResumos();
     }
 
-    function cartaoReceita(r, escrever) {
-      const liberada = !!r.dtLiberacao;
-      const botoes = [];
-      if (escrever && !liberada) {
-        botoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: () => editarReceita(r) }, "Editar"));
-        botoes.push(el("button", { className: "btn solido mini", type: "button", onclick: () => executar(() =>
-          estado.receitaId === r.id ? liberarReceitaForm() : liberarReceita(r.id)) }, "Liberar"));
+    async function gravarReceita() {
+      const dados = { tipo: $("rTipo").value, observacao: $("rObs").value, itens: itensReceita() };
+      if (estado.receitaId) {
+        await api("/consultorio/api/receitas/" + estado.receitaId, json("PUT", dados));
+        return;
       }
-      if (liberada) {
-        botoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: () => imprimirReceita(r.id) }, "Imprimir"));
-      }
-      if (escrever && liberada) {
-        botoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: () =>
-          pedirJustificativa("Cancelar receita", "/consultorio/api/receitas/" + r.id + "/cancelar") }, "Cancelar"));
-      }
-      const extras = [];
-      if (r.dtValidade) extras.push("Válida até " + dataBr(r.dtValidade));
-      return el("div", { className: "cartao" },
-        el("div", { className: "botoes" },
-          el("span", { className: liberada ? "tag verde" : "tag ambar" }, liberada ? "Liberada" : "Rascunho"),
-          el("span", { className: "tag" }, TIPO_REC[r.tipo] || r.tipo || "Comum"),
-          ...botoes),
-        ...(r.itens || []).map((i) => el("div", {},
-          el("b", {}, i.medicamento || "Item"),
-          i.posologia ? " — " + i.posologia : "",
-          i.usoContinuo ? el("span", { className: "sub" }, "Uso contínuo") : null)),
-        r.observacao ? el("span", { className: "sub" }, r.observacao) : null,
-        extras.length ? el("span", { className: "sub" }, extras.join(" · ")) : null);
+      if (!dados.itens.length && vazio(dados.observacao)) return;
+      const resp = await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/receitas", json("POST", dados));
+      if (!resp.id) throw new Error("Não foi possível gravar a receita.");
+      estado.receitaId = resp.id;
+      estado.receitaNova = false;
+      $("rModo").textContent = "Rascunho da receita (salvo automaticamente)";
     }
 
-    function editarReceita(r) {
+    async function editarReceita(r) {
+      await salvarPendentes();
       estado.receitaId = r.id;
+      estado.receitaNova = false;
+      await carregarProntuario();
+      $("rItens").querySelector("input").focus();
+    }
+
+    async function novaReceita() {
+      await salvarPendentes();
+      estado.receitaId = null;
+      estado.receitaNova = true;
+      await carregarProntuario();
+      $("rItens").querySelector("input").focus();
+    }
+
+    /** Copia uma receita do histórico para uma receita nova em rascunho. */
+    async function repetirReceita(r) {
+      if (!emConsulta()) return;
+      await salvarPendentes();
+      estado.receitaId = null;
+      estado.receitaNova = true;
+      await carregarProntuario();
       $("rTipo").value = r.tipo || "COMUM";
       $("rObs").value = r.observacao || "";
       $("rItens").replaceChildren();
       (r.itens && r.itens.length ? r.itens : [null]).forEach((item) => adicionarItem(item));
-      $("rModo").textContent = "Editando rascunho";
-      $("rTipo").focus();
+      $("rModo").textContent = "Receita repetida de consulta anterior";
+      document.querySelector('[data-secao="P"]').open = true;
+      $("formReceita").scrollIntoView({ behavior: "smooth", block: "center" });
+      agendarReceita();
+      aviso("Receita copiada. Revise antes de finalizar.");
     }
 
-    async function salvarReceita() {
-      const dados = dadosReceita();
-      if (estado.receitaId) {
-        await api("/consultorio/api/receitas/" + estado.receitaId, json("PUT", dados));
-        return estado.receitaId;
+    // ---------- Favoritos de medicamento ----------
+    function itemDoBox(box) {
+      return {
+        medicamento: box._c.med.value.trim(), apresentacao: box._c.apres.value.trim(), posologia: box._c.pos.value.trim(),
+        via: box._c.via.value.trim(), quantidade: box._c.qtd.value.trim(), usoContinuo: box._c.uso.checked,
+        observacao: box._c.obs.value.trim()
+      };
+    }
+
+    async function favoritarItem(box) {
+      const item = itemDoBox(box);
+      if (!item.medicamento) throw new Error("Preencha o medicamento antes de favoritar.");
+      await api("/consultorio/api/favoritos", json("POST", item));
+      estado.favoritos = null;
+      aviso(item.medicamento + " salvo nos favoritos.");
+    }
+
+    async function abrirFavoritos() {
+      try {
+        estado.favoritos = estado.favoritos || await api("/consultorio/api/favoritos");
+      } catch (e) {
+        return aviso("Não foi possível carregar os favoritos. " + e.message, true);
       }
-      const resp = await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/receitas", json("POST", dados));
-      if (!resp.id) throw new Error("Não foi possível gravar a receita.");
-      estado.receitaId = resp.id;
-      return resp.id;
+      $("favBusca").value = "";
+      desenharFavoritos();
+      $("dlgFavoritos").showModal();
+      $("favBusca").focus();
     }
 
-    async function liberarReceita(id) {
-      await api("/consultorio/api/receitas/" + id + "/liberar", { method: "POST" });
-      aviso("Receita liberada.");
-      await carregarProntuario();
+    function desenharFavoritos() {
+      const termo = $("favBusca").value.trim().toLowerCase();
+      const lista = (estado.favoritos || []).filter((f) => !termo
+        || (f.medicamento + " " + f.apresentacao + " " + f.posologia).toLowerCase().includes(termo));
+      $("favLista").replaceChildren(...(lista.length ? lista.map((f) => el("div", { className: "opcao" },
+        el("div", { className: "texto-opcao" }, el("b", {}, f.medicamento), f.apresentacao ? " " + f.apresentacao : "",
+          el("span", { className: "previa" }, [f.posologia, f.usoContinuo ? "uso contínuo" : ""].filter(Boolean).join(" · "))),
+        el("div", { className: "botoes" },
+          el("button", { className: "btn solido mini", type: "button", onclick: () => incluirFavorito(f) }, "Incluir"),
+          el("button", { className: "btn link", type: "button", onclick: () => executar(() => excluirFavorito(f)) }, "Excluir"))))
+        : [el("p", { className: "sub" }, estado.favoritos && estado.favoritos.length ? "Nenhum favorito com este filtro."
+          : "Você ainda não tem favoritos. Preencha um item da receita e clique em \"Favoritar\".")]));
     }
 
-    async function liberarReceitaForm() {
-      const id = await salvarReceita();
-      await liberarReceita(id);
+    function incluirFavorito(f) {
+      if (!emConsulta()) return;
+      const vazioBox = [...$("rItens").children].find((box) => {
+        const i = itemDoBox(box);
+        return !i.medicamento && !i.apresentacao && !i.posologia && !i.via && !i.quantidade && !i.observacao && !i.usoContinuo;
+      });
+      if (vazioBox) vazioBox.remove();
+      adicionarItem(f);
+      agendarReceita();
+      $("dlgFavoritos").close();
+      aviso(f.medicamento + " incluído na receita.");
+    }
+
+    async function excluirFavorito(f) {
+      await api("/consultorio/api/favoritos/" + f.id, { method: "DELETE" });
+      estado.favoritos = (estado.favoritos || []).filter((x) => x.id !== f.id);
+      desenharFavoritos();
+    }
+
+    // ---------- Modelos de texto ----------
+    async function carregarModelos() {
+      if (estado.modelos) return estado.modelos;
+      try {
+        estado.modelos = await api("/consultorio/api/modelos");
+      } catch (e) {
+        estado.modelos = null;
+      }
+      return estado.modelos || [];
+    }
+
+    async function abrirModelos() {
+      estado.modelos = null;
+      await carregarModelos();
+      limparModelo();
+      desenharModelos();
+      $("dlgModelos").showModal();
+    }
+
+    function desenharModelos() {
+      const podeInserir = emConsulta() && estado.ultimoCampo && !estado.ultimoCampo.disabled;
+      const lista = estado.modelos || [];
+      $("modLista").replaceChildren(...(lista.length ? lista.map((m) => el("div", { className: "opcao" },
+        el("div", { className: "texto-opcao" }, el("code", { className: "atalho-modelo" }, "." + m.atalho), m.titulo ? " " + m.titulo : "",
+          el("span", { className: "previa" }, m.texto)),
+        el("div", { className: "botoes" },
+          podeInserir ? el("button", { className: "btn solido mini", type: "button", onclick: () => inserirModelo(m) }, "Inserir") : null,
+          el("button", { className: "btn link", type: "button", onclick: () => editarModelo(m) }, "Editar"),
+          el("button", { className: "btn link", type: "button", onclick: () => executar(() => excluirModelo(m)) }, "Excluir"))))
+        : [el("p", { className: "sub" }, "Nenhum modelo ainda. Crie o primeiro abaixo, por exemplo .normal com o exame físico normal.")]));
+    }
+
+    function limparModelo() {
+      estado.modeloId = null;
+      $("modAtalho").value = "";
+      $("modTitulo").value = "";
+      $("modTexto").value = "";
+      $("modErro").textContent = "";
+      $("modModo").textContent = "Novo modelo";
+      $("modOk").disabled = false;
+    }
+
+    function editarModelo(m) {
+      estado.modeloId = m.id;
+      $("modAtalho").value = m.atalho;
+      $("modTitulo").value = m.titulo || "";
+      $("modTexto").value = m.texto;
+      $("modErro").textContent = "";
+      $("modModo").textContent = "Editando ." + m.atalho;
+      $("modTexto").focus();
+    }
+
+    async function excluirModelo(m) {
+      await api("/consultorio/api/modelos/" + m.id, { method: "DELETE" });
+      estado.modelos = (estado.modelos || []).filter((x) => x.id !== m.id);
+      if (estado.modeloId === m.id) limparModelo();
+      desenharModelos();
+    }
+
+    function inserirNoCampo(campo, inicio, fim, texto) {
+      campo.setRangeText(texto, inicio, fim, "end");
+      campo.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function inserirModelo(m) {
+      const campo = estado.ultimoCampo;
+      if (!campo || campo.disabled) return;
+      $("dlgModelos").close();
+      const inicio = campo.selectionStart ?? campo.value.length;
+      const fim = campo.selectionEnd ?? inicio;
+      const antes = campo.value.substring(0, inicio);
+      inserirNoCampo(campo, inicio, fim, (antes && !/\s$/.test(antes) ? " " : "") + m.texto);
+      campo.focus();
+    }
+
+    /** .atalho antes do cursor vira o texto do modelo quando o médico digita espaço ou Tab. */
+    function expandirAtalho(ev) {
+      if (ev.key !== " " && ev.key !== "Tab") return;
+      const campo = ev.target;
+      if (!(campo instanceof HTMLTextAreaElement) || campo.disabled || !estado.modelos || !estado.modelos.length) return;
+      if (campo.selectionStart !== campo.selectionEnd) return;
+      const antes = campo.value.substring(0, campo.selectionStart);
+      const achado = /(^|\s)\.([a-z0-9_-]{2,30})$/.exec(antes);
+      if (!achado) return;
+      const modelo = estado.modelos.find((m) => m.atalho === achado[2]);
+      if (!modelo) return;
+      ev.preventDefault();
+      const inicio = campo.selectionStart - achado[2].length - 1;
+      inserirNoCampo(campo, inicio, campo.selectionStart, modelo.texto + (ev.key === " " ? " " : ""));
+    }
+
+    function imprimirConsulta(id) {
+      const janela = window.open(url("/consultorio/api/atendimentos/" + id + "/impressao"), "_blank");
+      if (!janela) aviso("O navegador bloqueou a janela da consulta. Permita pop-ups para imprimir.", true);
     }
 
     function imprimirReceita(id) {
@@ -833,17 +1163,129 @@
       if (!janela) aviso("O navegador bloqueou a janela da receita. Permita pop-ups para imprimir.", true);
     }
 
-    function renderAlta(p) {
-      if (p.atendimento.status !== "FINALIZADO") return;
-      const alta = p.alta;
-      const partes = ["Motivo: " + (MOTIVO[p.atendimento.motivoAlta] || p.atendimento.motivoAlta || "—")];
-      if (alta && alta.desfecho) partes.push("Desfecho: " + (DESFECHO[alta.desfecho] || alta.desfecho));
-      if (alta && alta.retornoPrevisto) partes.push("Retorno: " + dataBr(alta.retornoPrevisto));
-      $("altaResumo").textContent = partes.join(" · ");
-      $("altaOrientacao").textContent = alta && alta.orientacao ? alta.orientacao : "";
-      $("altaOrientacao").hidden = !(alta && alta.orientacao);
+    // ---------- P: nota complementar (evolução) ----------
+    function renderEvolucoes(p) {
+      const escrever = emConsulta();
+      const evolucoes = p.evolucoes || [];
+      const rascunho = evolucoes.filter((e) => !e.dtLiberacao).pop();
+      estado.evolucaoId = rascunho ? rascunho.id : null;
+      $("eTexto").value = rascunho && rascunho.texto || "";
+      $("ePeso").value = rascunho && rascunho.pesoKg !== null && rascunho.pesoKg !== undefined ? String(rascunho.pesoKg) : "";
+      $("eAltura").value = rascunho && rascunho.alturaCm !== null && rascunho.alturaCm !== undefined ? String(rascunho.alturaCm) : "";
+      $("eRetorno").value = rascunho && rascunho.retornoPrevisto ? String(rascunho.retornoPrevisto).substring(0, 10) : "";
+      $("formEvolucao").hidden = !escrever;
+      const liberadas = evolucoes.filter((e) => e.dtLiberacao);
+      if (liberadas.length || rascunho) $("maisEvolucao").open = true;
+      $("listaEvolucoes").replaceChildren(...liberadas.map((e) => {
+        const extras = [];
+        if (e.pesoKg !== null && e.pesoKg !== undefined) extras.push(e.pesoKg + " kg");
+        if (e.alturaCm !== null && e.alturaCm !== undefined) extras.push(e.alturaCm + " cm");
+        if (e.retornoPrevisto) extras.push("Retorno " + dataBr(e.retornoPrevisto));
+        return el("div", { className: "cartao" },
+          el("div", { className: "botoes" }, el("span", { className: "tag verde" }, "Liberada"), el("span", { style: "flex:1" }),
+            escrever ? el("button", { className: "btn link", type: "button", onclick: () =>
+              pedirJustificativa("Inativar nota complementar", "/consultorio/api/evolucoes/" + e.id + "/inativar") }, "Inativar") : null),
+          el("p", { className: "texto" }, e.texto || ""),
+          extras.length ? el("span", { className: "sub" }, extras.join(" · ")) : null);
+      }));
     }
 
+    async function gravarEvolucao() {
+      const dados = {
+        texto: $("eTexto").value,
+        pesoKg: numero("ePeso", "o peso"),
+        alturaCm: numero("eAltura", "a altura"),
+        retornoPrevisto: $("eRetorno").value || null
+      };
+      if (estado.evolucaoId) {
+        await api("/consultorio/api/evolucoes/" + estado.evolucaoId, json("PUT", dados));
+        return;
+      }
+      if (vazio(dados.texto) && dados.pesoKg === null && dados.alturaCm === null && !dados.retornoPrevisto) return;
+      const resp = await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/evolucoes", json("POST", dados));
+      if (!resp.id) throw new Error("Não foi possível gravar a nota complementar.");
+      estado.evolucaoId = resp.id;
+    }
+
+    ["eTexto", "ePeso", "eAltura", "eRetorno"].forEach((id) => $(id).addEventListener("input", () => agendar("evolucao", gravarEvolucao)));
+
+    // ---------- Alta ----------
+    function renderAlta(p) {
+      const f = p.atendimento;
+      const fim = f.status === "FINALIZADO";
+      $("pFim").hidden = !fim;
+      $("altaResumo").hidden = !fim;
+      if (!fim) return;
+      const alta = p.alta;
+      const partes = ["Motivo: " + (MOTIVO[f.motivoAlta] || f.motivoAlta || "—")];
+      if (alta && alta.desfecho) partes.push("Desfecho: " + (DESFECHO[alta.desfecho] || alta.desfecho));
+      if (alta && alta.retornoPrevisto) partes.push("Retorno: " + dataBr(alta.retornoPrevisto));
+      $("pFim").textContent = "Consulta finalizada" + (f.dtAlta ? " às " + hora(f.dtAlta) : "") + ". Os registros não podem mais ser alterados.";
+      $("altaResumo").replaceChildren(el("h3", {}, "Alta"), el("p", { className: "texto" }, partes.join(" · ")),
+        alta && alta.orientacao ? el("p", { className: "texto" }, alta.orientacao) : null);
+    }
+
+    // ---------- Resumos das seções (aparecem com a seção recolhida) ----------
+    const curto = (s, n) => { const t = String(s || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.substring(0, n) + "…" : t; };
+
+    function renderResumos() {
+      $("resumoS").textContent = curto($("aQueixa").value, 90);
+      $("resumoO").textContent = curto($("aExame").value, 90);
+      const p = estado.prontuario;
+      const cids = p ? (p.diagnosticos || []).map((d) => d.cid).join(", ") : "";
+      $("resumoA").textContent = [cids, curto($("aAvaliacao").value, 60)].filter(Boolean).join(" · ");
+      const nRec = p ? (p.receitas || []).filter((r) => r.id !== estado.receitaId).length + (itensReceita().length ? 1 : 0) : 0;
+      $("resumoP").textContent = [nRec ? plural(nRec, "receita", "receitas") : "", curto($("aConduta").value, 60)].filter(Boolean).join(" · ");
+    }
+
+    // ---------- Histórico (leitura em APSO: diagnóstico e conduta primeiro) ----------
+    async function carregarHistorico() {
+      const pac = estado.prontuario && estado.prontuario.atendimento;
+      if (!pac) return;
+      const caixa = $("historico");
+      caixa.replaceChildren(el("h3", {}, "Consultas anteriores"), el("p", { className: "sub" }, "Carregando…"));
+      try {
+        const lista = await api("/consultorio/api/pacientes/" + pac.pacienteId + "/historico");
+        estado.historico = (lista || []).filter((h) => h.atendimento.nrAtendimento !== estado.atendimentoId
+          && h.atendimento.status === "FINALIZADO");
+        desenharHistorico();
+      } catch (e) {
+        caixa.replaceChildren(el("h3", {}, "Consultas anteriores"), el("p", { className: "sub" }, "Não foi possível carregar o histórico."));
+      }
+    }
+
+    function desenharHistorico() {
+      const caixa = $("historico");
+      const itens = estado.historico.map((h) => {
+        const a = h.anamnese || {};
+        const principal = (h.diagnosticos || []).find((d) => d.tipo === "PRINCIPAL") || (h.diagnosticos || [])[0];
+        const receitas = (h.receitas || []).filter((r) => r.dtLiberacao);
+        const detalhes = [
+          ["Queixa", a.queixaPrincipal], ["História", a.historiaDoencaAtual], ["Exame físico", a.exameFisico],
+          ["Avaliação", a.avaliacao], ...(h.evolucoes || []).filter((e) => e.dtLiberacao).map((e) => ["Nota", e.texto])
+        ].filter(([, v]) => !vazio(v));
+        return el("div", { className: "consulta-ant" },
+          el("div", { className: "botoes", style: "justify-content:space-between" },
+            el("span", { className: "data" }, dataBr(h.atendimento.dtEntrada)),
+            h.atendimento.especialidade ? el("span", { className: "sub" }, h.atendimento.especialidade) : null,
+            el("button", { className: "btn link", type: "button", title: "Imprimir a folha desta consulta",
+              onclick: () => imprimirConsulta(h.atendimento.nrAtendimento) }, "Imprimir")),
+          principal ? el("span", { className: "cid" }, principal.cid + (principal.descricao ? " · " + principal.descricao : "")) : null,
+          !vazio(a.conduta) ? el("span", { className: "trecho" }, a.conduta)
+            : !vazio(a.avaliacao) ? el("span", { className: "trecho" }, a.avaliacao)
+            : !vazio(a.queixaPrincipal) ? el("span", { className: "trecho" }, a.queixaPrincipal) : null,
+          ...receitas.map((r) => el("div", { className: "rec" },
+            el("span", {}, (r.itens || []).map((i) => i.medicamento).filter(Boolean).join(", ") || "Receita"),
+            emConsulta() ? el("button", { className: "btn link", type: "button", title: "Copiar para uma receita nova",
+              onclick: () => executar(() => repetirReceita(r)) }, "Repetir") : null)),
+          detalhes.length ? el("details", {}, el("summary", {}, "Ver nota completa"),
+            ...detalhes.map(([rotulo, valor]) => el("p", { className: "texto", style: "margin:6px 0 0" }, el("b", {}, rotulo + ": "), valor))) : null);
+      });
+      caixa.replaceChildren(el("h3", {}, "Consultas anteriores"),
+        ...(itens.length ? itens : [el("p", { className: "sub" }, "Primeira consulta com você.")]));
+    }
+
+    // ---------- Diálogos ----------
     function pedirJustificativa(titulo, caminho) {
       $("jTitulo").textContent = titulo;
       $("jTexto").value = "";
@@ -854,17 +1296,34 @@
       $("jTexto").focus();
     }
 
-    function abrirFinalizar() {
+    function abrirAlergia() {
+      $("alDescricao").value = "";
+      $("alErro").textContent = "";
+      $("alOk").disabled = false;
+      $("dlgAlergia").showModal();
+      $("alDescricao").focus();
+    }
+
+    async function abrirFinalizar() {
+      if (!emConsulta()) return;
+      if (!await salvarPendentes()) return;
+      const p = estado.prontuario;
+      const resumo = [];
+      if (vazio($("aQueixa").value)) resumo.push("A queixa principal está vazia: preencha para finalizar.");
+      const receitas = itensReceita().length + (p.receitas || []).filter((r) => r.id !== estado.receitaId && !r.dtLiberacao).length;
+      if (receitas) resumo.push(plural(receitas, "receita será liberada", "receitas serão liberadas") + ".");
+      if (!(p.diagnosticos || []).length) resumo.push("Nenhum CID informado.");
+      $("fResumo").replaceChildren(...resumo.map((t) => el("li", {}, t)));
       $("fMotivo").value = "ALTA_MEDICA";
       $("fDesfecho").value = "ALTA";
       $("fOrientacao").value = "";
-      $("fRetorno").value = "";
+      $("fRetorno").value = $("eRetorno").value || "";
       $("fErro").textContent = "";
       $("fOk").disabled = false;
       $("dlgFinalizar").showModal();
     }
 
-    // ---------- Navegação ----------
+    // ---------- Navegação e eventos ----------
     document.querySelectorAll("[data-fechar]").forEach((b) => b.onclick = () => b.closest("dialog").close());
     document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (ev) => {
       const r = d.getBoundingClientRect();
@@ -872,49 +1331,47 @@
       if (ev.target === d && fora) d.close();
     }));
 
-    $("aSalvar").onclick = () => executar(async () => {
-      await salvarAnamnese();
-      aviso("Anamnese salva.");
-      await carregarProntuario();
-    });
-    $("aLiberar").onclick = () => executar(async () => {
-      await salvarAnamnese();
-      await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/anamnese/liberar", { method: "POST" });
-      aviso("Anamnese liberada.");
-      await carregarProntuario();
-    });
     $("aInativar").onclick = () => {
       const a = estado.prontuario && estado.prontuario.anamnese;
-      if (a && a.id) pedirJustificativa("Inativar anamnese", "/consultorio/api/anamneses/" + a.id + "/inativar");
+      if (a && a.id) pedirJustificativa("Inativar nota", "/consultorio/api/anamneses/" + a.id + "/inativar");
     };
-
-    $("formEvolucao").addEventListener("submit", (ev) => {
-      ev.preventDefault();
-      executar(async () => {
-        await salvarEvolucao();
-        aviso("Evolução salva.");
-        await carregarProntuario();
-      });
-    });
-    $("eLiberar").onclick = () => executar(liberarEvolucaoForm);
-    $("eNova").onclick = () => limparEvolucao();
 
     $("formCid").addEventListener("submit", (ev) => {
       ev.preventDefault();
       executar(incluirDiagnostico);
     });
 
-    $("formReceita").addEventListener("submit", (ev) => {
-      ev.preventDefault();
-      executar(async () => {
-        await salvarReceita();
-        aviso("Receita salva.");
-        await carregarProntuario();
-      });
+    $("rTipo").addEventListener("change", agendarReceita);
+    $("rObs").addEventListener("input", agendarReceita);
+    $("rAdd").onclick = () => adicionarItem().querySelector("input").focus();
+    $("rFavoritos").onclick = abrirFavoritos;
+    $("favBusca").addEventListener("input", desenharFavoritos);
+    $("btnModelos").onclick = abrirModelos;
+    $("modNovo").onclick = limparModelo;
+    $("telaProntuario").addEventListener("keydown", expandirAtalho);
+    $("telaProntuario").addEventListener("focusin", (ev) => {
+      if (ev.target instanceof HTMLTextAreaElement) estado.ultimoCampo = ev.target;
     });
-    $("rLiberar").onclick = () => executar(liberarReceitaForm);
-    $("rNova").onclick = () => limparReceita();
-    $("rAdd").onclick = () => adicionarItem();
+
+    $("formModelo").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const corpo = { id: estado.modeloId, atalho: $("modAtalho").value.trim(), titulo: $("modTitulo").value.trim(), texto: $("modTexto").value };
+      if (!corpo.atalho) return $("modErro").textContent = "Informe o atalho.";
+      if (vazio(corpo.texto)) return $("modErro").textContent = "Escreva o texto do modelo.";
+      $("modOk").disabled = true;
+      try {
+        await api("/consultorio/api/modelos", json("PUT", corpo));
+        estado.modelos = null;
+        await carregarModelos();
+        limparModelo();
+        desenharModelos();
+        aviso("Modelo salvo.");
+      } catch (e) {
+        $("modErro").textContent = e.message;
+        $("modOk").disabled = false;
+      }
+    });
+    $("rNova").onclick = () => executar(novaReceita);
 
     $("formJust").addEventListener("submit", async (ev) => {
       ev.preventDefault();
@@ -922,6 +1379,7 @@
       if (!texto) return $("jErro").textContent = "Informe a justificativa.";
       $("jOk").disabled = true;
       try {
+        await salvarPendentes();
         await api(caminhoJustificativa, json("POST", { justificativa: texto }));
         $("dlgJust").close();
         aviso("Registrado.");
@@ -932,29 +1390,74 @@
       }
     });
 
+    $("formAlergia").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const descricao = $("alDescricao").value.trim();
+      if (!descricao) return $("alErro").textContent = "Informe a alergia.";
+      $("alOk").disabled = true;
+      try {
+        await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/alergias", json("POST", { descricao }));
+        $("dlgAlergia").close();
+        aviso("Alergia registrada.");
+        await recarregar();
+      } catch (e) {
+        $("alErro").textContent = e.message;
+        $("alOk").disabled = false;
+      }
+    });
+
     $("formFinalizar").addEventListener("submit", async (ev) => {
       ev.preventDefault();
       if (!$("fMotivo").value) return $("fErro").textContent = "Informe o motivo da alta.";
       $("fOk").disabled = true;
       try {
-        await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/finalizar", json("POST", {
+        if (!await salvarPendentes()) throw new Error("Há alterações que não foram salvas. Tente de novo.");
+        await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/finalizar-e-assinar", json("POST", {
           motivoAlta: $("fMotivo").value,
           desfecho: $("fDesfecho").value || null,
           orientacao: $("fOrientacao").value,
           retornoPrevisto: $("fRetorno").value || null
         }));
         $("dlgFinalizar").close();
-        aviso("Atendimento finalizado.");
+        limparSalvamento();
+        aviso("Consulta finalizada. Imprima a folha da consulta para o médico assinar.");
         await carregarProntuario();
+        desenharHistorico();
       } catch (e) {
         $("fErro").textContent = e.message;
         $("fOk").disabled = false;
       }
     });
 
-    document.querySelectorAll(".aba").forEach((b) => b.onclick = () => abrirAba(b.dataset.aba));
+    document.addEventListener("keydown", (ev) => {
+      if ($("telaProntuario").hidden || document.querySelector("dialog[open]")) return;
+      if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
+        ev.preventDefault();
+        abrirFinalizar();
+      } else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "s") {
+        ev.preventDefault();
+        salvarPendentes();
+      } else if (ev.altKey && ["1", "2", "3", "4"].includes(ev.key)) {
+        ev.preventDefault();
+        const secao = document.querySelector('[data-secao="' + "SOAP"[Number(ev.key) - 1] + '"]');
+        secao.open = true;
+        secao.scrollIntoView({ behavior: "smooth", block: "start" });
+        const alvo = secao.querySelector("textarea:not(:disabled), input:not(:disabled)");
+        if (alvo) alvo.focus({ preventScroll: true });
+      }
+    });
+
+    window.addEventListener("beforeunload", (ev) => {
+      if (salvamento.pendentes.size || salvamento.emCurso) {
+        salvarPendentes();
+        ev.preventDefault();
+        ev.returnValue = "";
+      }
+    });
+
     $("btnVoltar").onclick = voltar;
     $("btnFinalizar").onclick = abrirFinalizar;
+    $("btnImprimirConsulta").onclick = () => imprimirConsulta(estado.atendimentoId);
     $("data").addEventListener("change", carregarFila);
     $("diaAnterior").onclick = () => { $("data").value = somaDias($("data").value || hoje(), -1); carregarFila(); };
     $("diaSeguinte").onclick = () => { $("data").value = somaDias($("data").value || hoje(), 1); carregarFila(); };
@@ -967,12 +1470,27 @@
       if (!document.hidden && !$("telaFila").hidden && !dialogoAberto && $("data").value === hoje()) carregarFila();
     }, 60000);
 
+    let recarga = null;
+    function conectarAoVivo() {
+      if (!window.EventSource) return;
+      const fonte = new EventSource(url("/consultorio/api/eventos"));
+      fonte.onopen = () => { $("aovivo").textContent = "Ao vivo"; $("aovivo").className = "aovivo ligado"; };
+      fonte.onerror = () => { $("aovivo").textContent = "Reconectando…"; $("aovivo").className = "aovivo"; };
+      fonte.addEventListener("fila", () => {
+        if ($("telaFila").hidden || $("data").value !== hoje()) return;
+        clearTimeout(recarga);
+        recarga = setTimeout(carregarFila, 400);
+      });
+    }
+
     (() => {
       if (params.get("conta")) estado.conta = params.get("conta");
       $("data").value = params.get("data") || hoje();
       const id = Number(params.get("atendimento"));
       if (Number.isFinite(id) && id > 0) abrir(id);
       else carregarFila();
+      carregarModelos();
+      conectarAoVivo();
     })();
   </script>
 </body>

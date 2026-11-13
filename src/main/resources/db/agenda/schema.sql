@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS agenda.paciente (
 );
 
 -- status: MARCADO, CONFIRMADO, CANCELADO, REMARCADO e, do atendimento clínico, AGUARDANDO (paciente chegou),
--- EM_CONSULTA e EXECUTADO. origem: BOT ou RECEPCAO.
+-- EM_CONSULTA, EXECUTADO e FALTOU (não veio; libera o horário). origem: BOT ou RECEPCAO.
 -- codigo_externo: número do agendamento no sistema da clínica, informado ao concluir a pendência.
 CREATE TABLE IF NOT EXISTS agenda.agendamento (
     id BIGSERIAL PRIMARY KEY,
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS agenda.agendamento (
     fim TIMESTAMP NOT NULL,
     local VARCHAR(200) NOT NULL DEFAULT '',
     status VARCHAR(20) NOT NULL
-        CHECK (status IN ('MARCADO', 'CONFIRMADO', 'CANCELADO', 'REMARCADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO')),
+        CHECK (status IN ('MARCADO', 'CONFIRMADO', 'CANCELADO', 'REMARCADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO', 'FALTOU')),
     origem VARCHAR(20) NOT NULL CHECK (origem IN ('BOT', 'RECEPCAO')),
     codigo_externo VARCHAR(100),
     conversa_id VARCHAR(40),
@@ -111,10 +111,10 @@ CREATE TABLE IF NOT EXISTS agenda.agendamento (
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bancos criados antes do atendimento clínico têm a constraint só com os 4 status originais.
+-- Bancos antigos têm a constraint sem os status do atendimento clínico.
 ALTER TABLE agenda.agendamento DROP CONSTRAINT IF EXISTS agendamento_status_check;
 ALTER TABLE agenda.agendamento ADD CONSTRAINT agendamento_status_check
-    CHECK (status IN ('MARCADO', 'CONFIRMADO', 'CANCELADO', 'REMARCADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO'));
+    CHECK (status IN ('MARCADO', 'CONFIRMADO', 'CANCELADO', 'REMARCADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO', 'FALTOU'));
 
 -- Dois agendamentos no mesmo horário do mesmo profissional são impossíveis, em todo o ciclo até a consulta executada.
 CREATE UNIQUE INDEX IF NOT EXISTS uk_agendamento_ocupa_horario

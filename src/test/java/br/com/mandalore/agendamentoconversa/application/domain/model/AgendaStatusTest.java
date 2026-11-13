@@ -7,10 +7,10 @@ import org.junit.jupiter.api.Test;
 class AgendaStatusTest {
 
     @Test
-    void temOsSeteStatusNaOrdemDoCiclo() {
+    void temOsOitoStatusNaOrdemDoCiclo() {
         assertThat(Agenda.Status.values()).containsExactly(
                 Agenda.Status.MARCADO, Agenda.Status.CONFIRMADO, Agenda.Status.CANCELADO, Agenda.Status.REMARCADO,
-                Agenda.Status.AGUARDANDO, Agenda.Status.EM_CONSULTA, Agenda.Status.EXECUTADO);
+                Agenda.Status.AGUARDANDO, Agenda.Status.EM_CONSULTA, Agenda.Status.EXECUTADO, Agenda.Status.FALTOU);
     }
 
     @Test

@@ -26,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import br.com.mandalore.agendamentoconversa.application.domain.exception.AcessoNegadoException;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento;
 import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.AlergiaInBound;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.AnamneseInBound;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.Contexto;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.DiagnosticoInBound;
@@ -239,6 +240,34 @@ class ConsultorioServiceTest {
         verify(port).registrarAcesso(CONTA, ATEND, PACIENTE, "IMPRESSAO_RECEITA", "dr", "1.2.3.4");
     }
 
+    @Test
+    void impressaoDeConsultaAindaEmAndamentoERecusada() {
+        emConsulta();
+
+        assertThatThrownBy(() -> service.impressaoConsulta(CTX, ATEND, "1.2.3.4"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(port, never()).registrarAcesso(anyString(), any(), anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void impressaoDeConsultaFinalizadaTrazSoRegistrosLiberadosEscapaHtmlERegistraAcesso() {
+        profissional();
+        Atendimento.Ficha finalizada = ficha(Atendimento.Status.FINALIZADO, PROF);
+        when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(finalizada));
+        Atendimento.Prontuario p = new Atendimento.Prontuario(finalizada, anamnese("<b>dor</b>", AGORA),
+                List.of(evolucao("Melhora relatada", AGORA), evolucao("rascunho secreto", null)), List.of(),
+                List.of(receita(AGORA, item("Dipirona", "1 cp de 6/6h")), receita(null, item("Rascunho", "x"))), null, null);
+        when(port.prontuario(CONTA, ATEND)).thenReturn(Optional.of(p));
+        when(port.cabecalhoAtendimento(CONTA, ATEND)).thenReturn(Optional.of(new CabecalhoReceita("Clínica & Cia", "Maria", "52998224725")));
+
+        Impressao impressao = service.impressaoConsulta(CTX, ATEND, "1.2.3.4");
+
+        assertThat(impressao.html()).contains("Clínica &amp; Cia", "&lt;b&gt;dor&lt;/b&gt;", "Melhora relatada", "Dipirona",
+                "Impresso em 10/11/2026 07:00 por dr").doesNotContain("<b>dor", "rascunho secreto", "Rascunho");
+        verify(port).registrarAcesso(CONTA, ATEND, PACIENTE, "IMPRESSAO_CONSULTA", "dr", "1.2.3.4");
+    }
+
     // ---- finalizar ----
 
     @Test
@@ -286,6 +315,77 @@ class ConsultorioServiceTest {
                 .isEqualTo(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
     }
 
+    // ---- finalizar e assinar ----
+
+    @Test
+    void finalizarEAssinarDelegaComValidadeDaReceita() {
+        emConsulta();
+        when(port.prontuario(CONTA, ATEND)).thenReturn(Optional.of(prontuario(anamnese("dor", null))));
+        when(port.finalizarEAssinar(eq(CONTA), eq(ATEND), eq(PROF), eq(Atendimento.MotivoAlta.ALTA_MEDICA), any(),
+                eq(LocalDate.of(2026, 11, 20)), eq("dr"))).thenReturn(Atendimento.Operacao.sucesso(ATEND));
+
+        assertThat(service.finalizarEAssinar(CTX, ATEND, finalizarIn()).codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+    }
+
+    @Test
+    void finalizarEAssinarComReceitaParaLiberarESemConselhoDevolveProfissionalSemConselho() {
+        emConsulta(new ProfissionalClinico(PROF, "Dra. Ana", null, null));
+        when(port.prontuario(CONTA, ATEND)).thenReturn(Optional.of(new Atendimento.Prontuario(
+                ficha(Atendimento.Status.EM_CONSULTA, PROF), null, List.of(), List.of(),
+                List.of(receita(null, item("Dipirona", "1 cp 6/6h"))), null, null)));
+
+        assertThat(service.finalizarEAssinar(CTX, ATEND, finalizarIn()).codigo())
+                .isEqualTo(CodigoNegocio.PROFISSIONAL_SEM_CONSELHO);
+
+        verify(port, never()).finalizarEAssinar(anyString(), anyLong(), anyLong(), any(), any(), any(), anyString());
+    }
+
+    @Test
+    void finalizarEAssinarForaDeEmConsultaNaoChamaOPort() {
+        profissional();
+        when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.FINALIZADO, PROF)));
+
+        assertThat(service.finalizarEAssinar(CTX, ATEND, finalizarIn()).codigo())
+                .isEqualTo(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
+
+        verify(port, never()).finalizarEAssinar(anyString(), anyLong(), anyLong(), any(), any(), any(), anyString());
+    }
+
+    // ---- alergias ----
+
+    @Test
+    void incluirAlergiaRemoveEspacosEDelega() {
+        emConsulta();
+        when(port.incluirAlergia(CONTA, ATEND, PROF, "Dipirona", "dr")).thenReturn(Atendimento.Operacao.sucesso(1L));
+
+        assertThat(service.incluirAlergia(CTX, ATEND, new AlergiaInBound("  Dipirona ")).codigo())
+                .isEqualTo(CodigoNegocio.SUCESSO);
+    }
+
+    @Test
+    void incluirAlergiaVaziaOuLongaLancaIllegalArgument() {
+        profissional();
+
+        assertThatThrownBy(() -> service.incluirAlergia(CTX, ATEND, new AlergiaInBound(" ")))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.incluirAlergia(CTX, ATEND, new AlergiaInBound("x".repeat(201))))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(port, never()).incluirAlergia(anyString(), anyLong(), anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void inativarAlergiaExigeJustificativaEConsultaEmAndamento() {
+        assertThatThrownBy(() -> service.inativarAlergia(CTX, ATEND, 1L, " ")).isInstanceOf(IllegalArgumentException.class);
+
+        profissional();
+        when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.AGUARDANDO, PROF)));
+        assertThat(service.inativarAlergia(CTX, ATEND, 1L, "registrada por engano").codigo())
+                .isEqualTo(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
+
+        verify(port, never()).inativarAlergia(anyString(), anyLong(), anyLong(), anyLong(), anyString(), anyString());
+    }
+
     // ---- prontuário ----
 
     @Test
@@ -303,6 +403,68 @@ class ConsultorioServiceTest {
 
     private void profissional() {
         profissional(new ProfissionalClinico(PROF, "Dra. Ana", "12345", "SP"));
+    }
+
+    // ---- chamada, favoritos e modelos ----
+
+    @Test
+    void chamarRestringeAoProfissionalDoUsuario() {
+        profissional();
+        when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.AGUARDANDO, PROF)));
+        when(port.chamar(CONTA, ATEND, PROF, "dr")).thenReturn(Atendimento.Operacao.sucesso(ATEND));
+
+        assertThat(service.chamar(CTX, ATEND).codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+
+        verify(port).chamar(CONTA, ATEND, PROF, "dr");
+    }
+
+    @Test
+    void chamarPacienteDeOutroProfissionalEAcessoNegado() {
+        profissional();
+        when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.AGUARDANDO, 99L)));
+
+        assertThatThrownBy(() -> service.chamar(CTX, ATEND)).isInstanceOf(AcessoNegadoException.class);
+
+        verify(port, never()).chamar(anyString(), anyLong(), any(), anyString());
+    }
+
+    @Test
+    void salvarModeloNormalizaAtalhoETexto() {
+        profissional();
+        when(port.salvarModelo(eq(CONTA), eq(PROF), any())).thenReturn(Atendimento.Operacao.sucesso(1L));
+
+        service.salvarModelo(CTX, new Atendimento.ModeloNota(null, " .Normal ", " Exame normal ", "\n  BEG, corado  \n"));
+
+        verify(port).salvarModelo(CONTA, PROF, new Atendimento.ModeloNota(null, "normal", "Exame normal", "BEG, corado"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"a", "com espaço", "acentuação", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"})
+    void atalhoInvalidoLancaIllegalArgument(String atalho) {
+        assertThatThrownBy(() -> service.salvarModelo(CTX, new Atendimento.ModeloNota(null, atalho, "", "texto")))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(port, never()).salvarModelo(anyString(), anyLong(), any());
+    }
+
+    @Test
+    void modeloSemTextoLancaIllegalArgument() {
+        assertThatThrownBy(() -> service.salvarModelo(CTX, new Atendimento.ModeloNota(null, "normal", "", "  ")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void favoritoExigeMedicamentoEDevolveOId() {
+        profissional();
+        when(port.salvarFavorito(eq(CONTA), eq(PROF), any())).thenReturn(12L);
+
+        assertThatThrownBy(() -> service.salvarFavorito(CTX, new Atendimento.MedicamentoFavorito(null, " ", "", "", "",
+                "", false, ""))).isInstanceOf(IllegalArgumentException.class);
+        assertThat(service.salvarFavorito(CTX, new Atendimento.MedicamentoFavorito(null, " Dipirona ", "500 mg",
+                "1 cp 6/6h", null, null, false, null)).id()).isEqualTo(12L);
+
+        verify(port).salvarFavorito(CONTA, PROF, new Atendimento.MedicamentoFavorito(null, "Dipirona", "500 mg",
+                "1 cp 6/6h", "", "", false, ""));
     }
 
     private void profissional(ProfissionalClinico prof) {
@@ -324,11 +486,11 @@ class ConsultorioServiceTest {
     }
 
     private static AnamneseInBound anamneseIn(String queixa) {
-        return new AnamneseInBound(queixa, null, null, null, null, null, null, null);
+        return new AnamneseInBound(queixa, null, null, null, null, null, null, null, null, null);
     }
 
     private static Atendimento.Anamnese anamnese(String queixa, LocalDateTime liberacao) {
-        return new Atendimento.Anamnese(8L, ATEND, PACIENTE, PROF, queixa, "", "", "", "", "", "", "", AGORA, liberacao,
+        return new Atendimento.Anamnese(8L, ATEND, PACIENTE, PROF, queixa, "", "", "", "", "", "", "", "", "", AGORA, liberacao,
                 true, null, null, null, "dr");
     }
 
@@ -348,7 +510,7 @@ class ConsultorioServiceTest {
 
     private static Atendimento.Prontuario prontuario(Atendimento.Anamnese anamnese) {
         return new Atendimento.Prontuario(ficha(Atendimento.Status.EM_CONSULTA, PROF), anamnese, List.of(), List.of(),
-                List.of(), null);
+                List.of(), null, null);
     }
 
     private static FinalizarInBound finalizarIn() {

@@ -46,6 +46,9 @@ CREATE INDEX IF NOT EXISTS idx_atendimento_conta_entrada
     ON atendimento.atendimento_paciente (conta_id, dt_entrada);
 CREATE INDEX IF NOT EXISTS idx_atendimento_paciente
     ON atendimento.atendimento_paciente (conta_id, paciente_id, dt_entrada DESC);
+-- Chamada do paciente na sala de espera. O status continua AGUARDANDO até o médico iniciar.
+ALTER TABLE atendimento.atendimento_paciente ADD COLUMN IF NOT EXISTS dt_chamada TIMESTAMP;
+ALTER TABLE atendimento.atendimento_paciente ADD COLUMN IF NOT EXISTS nm_usuario_chamada VARCHAR(100);
 
 -- AGENDA_CONS_LOG_STATUS / ATEND_PACIENTE_HIST. Nunca guarda conteúdo clínico.
 CREATE TABLE IF NOT EXISTS atendimento.atendimento_evento (
@@ -85,6 +88,27 @@ CREATE TABLE IF NOT EXISTS atendimento.anamnese_paciente (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_anamnese_ativa
     ON atendimento.anamnese_paciente (nr_atendimento) WHERE ie_situacao = 'A';
+-- Nota SOAP: avaliação (A) e conduta (P) completam subjetivo e objetivo da anamnese.
+ALTER TABLE atendimento.anamnese_paciente ADD COLUMN IF NOT EXISTS ds_avaliacao TEXT NOT NULL DEFAULT '';
+ALTER TABLE atendimento.anamnese_paciente ADD COLUMN IF NOT EXISTS ds_conduta TEXT NOT NULL DEFAULT '';
+
+-- PACIENTE_ALERGIA: alergia é do paciente e vale para todas as consultas. Correção por inativação com justificativa.
+CREATE TABLE IF NOT EXISTS atendimento.alergia_paciente (
+    id BIGSERIAL PRIMARY KEY,
+    conta_id VARCHAR(40) NOT NULL,
+    paciente_id BIGINT NOT NULL REFERENCES agenda.paciente (id),
+    nr_atendimento BIGINT NOT NULL REFERENCES atendimento.atendimento_paciente (nr_atendimento),
+    ds_alergia VARCHAR(200) NOT NULL CHECK (btrim(ds_alergia) <> ''),
+    dt_registro TIMESTAMP NOT NULL,
+    nm_usuario VARCHAR(100) NOT NULL,
+    ie_situacao CHAR(1) NOT NULL DEFAULT 'A' CHECK (ie_situacao IN ('A', 'I')),
+    dt_inativacao TIMESTAMP,
+    nm_usuario_inativacao VARCHAR(100),
+    ds_justificativa VARCHAR(500),
+    CHECK (ie_situacao = 'A' OR (dt_inativacao IS NOT NULL AND ds_justificativa IS NOT NULL))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_alergia_ativa
+    ON atendimento.alergia_paciente (conta_id, paciente_id, lower(btrim(ds_alergia))) WHERE ie_situacao = 'A';
 
 -- EVOLUCAO_PACIENTE (cd_evolucao, dt_evolucao, ds_evolucao, dt_liberacao, ie_situacao...)
 CREATE TABLE IF NOT EXISTS atendimento.evolucao_paciente (
@@ -192,3 +216,33 @@ CREATE TABLE IF NOT EXISTS atendimento.acesso_prontuario (
     criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_acesso_prontuario ON atendimento.acesso_prontuario (conta_id, paciente_id, criado_em);
+
+-- Medicamentos favoritos do profissional, para montar a receita com um clique. Não é dado de paciente.
+CREATE TABLE IF NOT EXISTS atendimento.medicamento_favorito (
+    id BIGSERIAL PRIMARY KEY,
+    conta_id VARCHAR(40) NOT NULL,
+    profissional_id BIGINT NOT NULL REFERENCES agenda.profissional (id),
+    ds_medicamento VARCHAR(300) NOT NULL CHECK (btrim(ds_medicamento) <> ''),
+    ds_apresentacao VARCHAR(200) NOT NULL DEFAULT '',
+    ds_posologia VARCHAR(500) NOT NULL DEFAULT '',
+    ie_via_aplicacao VARCHAR(60) NOT NULL DEFAULT '',
+    ds_quantidade VARCHAR(100) NOT NULL DEFAULT '',
+    ie_uso_continuo BOOLEAN NOT NULL DEFAULT FALSE,
+    ds_observacao VARCHAR(500) NOT NULL DEFAULT '',
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_medicamento_favorito
+    ON atendimento.medicamento_favorito (conta_id, profissional_id, lower(btrim(ds_medicamento)),
+                                         lower(btrim(ds_apresentacao)), lower(btrim(ds_posologia)));
+
+-- Modelos de texto do profissional. Digitar .atalho num campo da nota expande o texto.
+CREATE TABLE IF NOT EXISTS atendimento.modelo_nota (
+    id BIGSERIAL PRIMARY KEY,
+    conta_id VARCHAR(40) NOT NULL,
+    profissional_id BIGINT NOT NULL REFERENCES agenda.profissional (id),
+    nm_atalho VARCHAR(30) NOT NULL CHECK (nm_atalho ~ '^[a-z0-9_-]{2,30}$'),
+    ds_titulo VARCHAR(100) NOT NULL DEFAULT '',
+    ds_texto TEXT NOT NULL CHECK (btrim(ds_texto) <> ''),
+    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_modelo_nota_atalho ON atendimento.modelo_nota (conta_id, profissional_id, nm_atalho);

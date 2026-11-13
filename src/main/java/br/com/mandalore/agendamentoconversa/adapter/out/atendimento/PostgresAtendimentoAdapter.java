@@ -56,8 +56,9 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
     private static final String ANAMNESE = """
             SELECT id, nr_atendimento, paciente_id, profissional_id, ds_queixa_principal,
                    ds_historia_doenca_atual, ds_antecedentes_pessoais, ds_antecedentes_familiares,
-                   ds_medicamentos_uso, ds_alergias, ds_habitos, ds_exame_fisico, dt_registro,
-                   dt_liberacao, ie_situacao, dt_inativacao, nm_usuario_inativacao, ds_justificativa, nm_usuario
+                   ds_medicamentos_uso, ds_alergias, ds_habitos, ds_exame_fisico, ds_avaliacao, ds_conduta,
+                   dt_registro, dt_liberacao, ie_situacao, dt_inativacao, nm_usuario_inativacao, ds_justificativa,
+                   nm_usuario
             FROM atendimento.anamnese_paciente
             """;
 
@@ -134,20 +135,15 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
 
     private Atendimento.Operacao chegada(org.springframework.transaction.TransactionStatus status, String conta,
                                          long agendamentoId, String ator) {
-        List<AgendamentoTravado> travados = jdbc.query("""
-                SELECT id, status, inicio, paciente_id, profissional_id, especialidade_id, convenio_id
-                FROM agenda.agendamento WHERE id = :id AND conta_id = :conta FOR UPDATE
-                """, conta(conta).addValue("id", agendamentoId), (rs, i) -> new AgendamentoTravado(
-                rs.getString("status"), rs.getTimestamp("inicio").toLocalDateTime(), rs.getLong("paciente_id"),
-                rs.getLong("profissional_id"), rs.getLong("especialidade_id"), longOuNulo(rs, "convenio_id")));
-        if (travados.isEmpty()) {
+        Optional<AgendamentoTravado> travado = travarAgendamento(conta, agendamentoId);
+        if (travado.isEmpty()) {
             return Atendimento.Operacao.falha(CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO);
         }
         Optional<Long> existente = existente(conta, agendamentoId);
         if (existente.isPresent()) {
             return Atendimento.Operacao.sucesso(existente.get());
         }
-        AgendamentoTravado agendamento = travados.get(0);
+        AgendamentoTravado agendamento = travado.get();
         if (!"MARCADO".equals(agendamento.status()) && !"CONFIRMADO".equals(agendamento.status())) {
             return Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_CHEGADA);
         }
@@ -183,8 +179,18 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         return Atendimento.Operacao.sucesso(nrAtendimento);
     }
 
-    private record AgendamentoTravado(String status, LocalDateTime inicio, long pacienteId, long profissionalId,
-                                      long especialidadeId, Long convenioId) {
+    private record AgendamentoTravado(String status, LocalDateTime inicio, LocalDateTime fim, long pacienteId,
+                                      long profissionalId, long especialidadeId, Long convenioId) {
+    }
+
+    private Optional<AgendamentoTravado> travarAgendamento(String conta, long agendamentoId) {
+        return jdbc.query("""
+                SELECT id, status, inicio, fim, paciente_id, profissional_id, especialidade_id, convenio_id
+                FROM agenda.agendamento WHERE id = :id AND conta_id = :conta FOR UPDATE
+                """, conta(conta).addValue("id", agendamentoId), (rs, i) -> new AgendamentoTravado(
+                rs.getString("status"), rs.getTimestamp("inicio").toLocalDateTime(),
+                rs.getTimestamp("fim").toLocalDateTime(), rs.getLong("paciente_id"), rs.getLong("profissional_id"),
+                rs.getLong("especialidade_id"), longOuNulo(rs, "convenio_id"))).stream().findFirst();
     }
 
     // ---- helpers reutilizáveis ----
@@ -221,7 +227,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                 rs.getString("ds_historia_doenca_atual"), rs.getString("ds_antecedentes_pessoais"),
                 rs.getString("ds_antecedentes_familiares"), rs.getString("ds_medicamentos_uso"),
                 rs.getString("ds_alergias"), rs.getString("ds_habitos"), rs.getString("ds_exame_fisico"),
-                data(rs, "dt_registro"), data(rs, "dt_liberacao"), "A".equals(rs.getString("ie_situacao")),
+                rs.getString("ds_avaliacao"), rs.getString("ds_conduta"), data(rs, "dt_registro"), data(rs, "dt_liberacao"), "A".equals(rs.getString("ie_situacao")),
                 data(rs, "dt_inativacao"), rs.getString("nm_usuario_inativacao"), rs.getString("ds_justificativa"),
                 rs.getString("nm_usuario"));
     }
@@ -281,8 +287,8 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
     public List<Atendimento.FilaItem> fila(String conta, LocalDate data) {
         LocalDateTime agora = LocalDateTime.now(relogio);
         return jdbc.query("""
-                SELECT a.id AS agendamento_id, a.inicio, a.status, pa.nome AS paciente, p.nome AS profissional,
-                       e.nome AS especialidade, at.nr_atendimento, at.dt_entrada
+                SELECT a.id AS agendamento_id, a.inicio, a.status, pa.nome AS paciente, pa.cpf, p.nome AS profissional,
+                       e.nome AS especialidade, at.nr_atendimento, at.dt_entrada, at.dt_chamada
                 FROM agenda.agendamento a
                 JOIN agenda.paciente pa ON pa.id = a.paciente_id
                 JOIN agenda.profissional p ON p.id = a.profissional_id
@@ -290,7 +296,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                 LEFT JOIN atendimento.atendimento_paciente at ON at.agendamento_id = a.id
                      AND at.conta_id = a.conta_id AND at.ie_status_atendimento <> 'CANCELADO'
                 WHERE a.conta_id = :conta
-                  AND a.status IN ('MARCADO', 'CONFIRMADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO')
+                  AND a.status IN ('MARCADO', 'CONFIRMADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO', 'FALTOU')
                   AND a.inicio >= :de AND a.inicio < :ate
                 ORDER BY a.inicio, pa.nome
                 """, conta(conta).addValue("de", Timestamp.valueOf(data.atStartOfDay()))
@@ -307,8 +313,9 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
             espera = Math.max(0, java.time.Duration.between(chegada, agora).toMinutes());
         }
         return new Atendimento.FilaItem(rs.getLong("agendamento_id"), longOuNulo(rs, "nr_atendimento"),
-                rs.getTimestamp("inicio").toLocalDateTime(), rs.getString("paciente"),
-                rs.getString("profissional"), rs.getString("especialidade"), status, chegada, espera);
+                rs.getTimestamp("inicio").toLocalDateTime(), rs.getString("paciente"), rs.getString("cpf"),
+                rs.getString("profissional"), rs.getString("especialidade"), status, chegada, espera,
+                data(rs, "dt_chamada"));
     }
 
     // ---- tarefa 6.1 ----
@@ -319,7 +326,8 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         LocalDateTime agora = LocalDateTime.now(relogio);
         return jdbc.query("""
                 SELECT a.id AS agendamento_id, a.inicio, at.ie_status_atendimento AS status, pa.nome AS paciente,
-                       p.nome AS profissional, e.nome AS especialidade, at.nr_atendimento, at.dt_entrada
+                       pa.cpf, p.nome AS profissional, e.nome AS especialidade, at.nr_atendimento, at.dt_entrada,
+                       at.dt_chamada
                 FROM agenda.agendamento a
                 JOIN agenda.paciente pa ON pa.id = a.paciente_id
                 JOIN agenda.profissional p ON p.id = a.profissional_id
@@ -433,14 +441,47 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
 
     @Override
     public Optional<Atendimento.Prontuario> prontuario(String conta, long nrAtendimento) {
-        return fichaDaConta(conta, nrAtendimento).map(ficha -> prontuario(conta, ficha));
+        return fichaDaConta(conta, nrAtendimento)
+                .map(ficha -> prontuario(conta, ficha, cabecalhoPaciente(conta, ficha).orElse(null)));
     }
 
-    private Atendimento.Prontuario prontuario(String conta, Atendimento.Ficha ficha) {
+    private Atendimento.Prontuario prontuario(String conta, Atendimento.Ficha ficha,
+                                              Atendimento.CabecalhoPaciente paciente) {
         long nrAtendimento = ficha.nrAtendimento();
         return new Atendimento.Prontuario(ficha, anamneseAtiva(conta, nrAtendimento).orElse(null),
                 evolucoesAtivas(conta, nrAtendimento), diagnosticosAtivos(conta, nrAtendimento),
-                receitasAtivas(conta, nrAtendimento), alta(conta, nrAtendimento).orElse(null));
+                receitasAtivas(conta, nrAtendimento), alta(conta, nrAtendimento).orElse(null), paciente);
+    }
+
+    private Optional<Atendimento.CabecalhoPaciente> cabecalhoPaciente(String conta, Atendimento.Ficha ficha) {
+        String anteriores = jdbc.queryForList("""
+                SELECT ds_alergias FROM atendimento.anamnese_paciente
+                WHERE conta_id = :conta AND paciente_id = :paciente AND ie_situacao = 'A' AND dt_liberacao IS NOT NULL
+                  AND btrim(ds_alergias) <> ''
+                ORDER BY dt_liberacao DESC, id DESC LIMIT 1
+                """, conta(conta).addValue("paciente", ficha.pacienteId()), String.class).stream().findFirst().orElse("");
+        List<Atendimento.Alergia> alergias = alergiasAtivas(conta, ficha.pacienteId());
+        return jdbc.query("""
+                SELECT pa.id, pa.nome, pa.nascimento, c.nome AS convenio
+                FROM agenda.paciente pa
+                LEFT JOIN agenda.convenio c ON c.id = :convenio
+                WHERE pa.id = :paciente AND pa.conta_id = :conta
+                """, conta(conta).addValue("paciente", ficha.pacienteId()).addValue("convenio", ficha.convenioId()),
+                (rs, i) -> {
+                    java.sql.Date nascimento = rs.getDate("nascimento");
+                    return new Atendimento.CabecalhoPaciente(rs.getLong("id"), rs.getString("nome"),
+                            nascimento == null ? null : nascimento.toLocalDate(), rs.getString("convenio"), alergias,
+                            anteriores);
+                }).stream().findFirst();
+    }
+
+    private List<Atendimento.Alergia> alergiasAtivas(String conta, long pacienteId) {
+        return jdbc.query("""
+                SELECT id, paciente_id, ds_alergia, dt_registro, nm_usuario FROM atendimento.alergia_paciente
+                WHERE conta_id = :conta AND paciente_id = :paciente AND ie_situacao = 'A'
+                ORDER BY dt_registro, id
+                """, conta(conta).addValue("paciente", pacienteId), (rs, i) -> new Atendimento.Alergia(rs.getLong("id"),
+                rs.getLong("paciente_id"), rs.getString("ds_alergia"), data(rs, "dt_registro"), rs.getString("nm_usuario")));
     }
 
     private Optional<Atendimento.Anamnese> anamneseAtiva(String conta, long nrAtendimento) {
@@ -462,7 +503,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                            AND at.ie_status_atendimento <> 'CANCELADO'
                          ORDER BY at.dt_entrada DESC, at.nr_atendimento DESC
                         """, conta(conta).addValue("paciente", pacienteId), (rs, i) -> ficha(rs)).stream()
-                .map(ficha -> prontuario(conta, ficha))
+                .map(ficha -> prontuario(conta, ficha, null))
                 .toList();
     }
 
@@ -510,6 +551,16 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                 JOIN agenda.paciente pa ON pa.id = r.paciente_id
                 WHERE r.nr_sequencia = :id AND r.conta_id = :conta
                 """, conta(conta).addValue("id", receitaId), (rs, i) -> new CabecalhoReceita(nomeClinica.apply(conta),
+                rs.getString("nome"), rs.getString("cpf"))).stream().findFirst();
+    }
+
+    @Override
+    public Optional<CabecalhoReceita> cabecalhoAtendimento(String conta, long nrAtendimento) {
+        return jdbc.query("""
+                SELECT pa.nome, pa.cpf FROM atendimento.atendimento_paciente a
+                JOIN agenda.paciente pa ON pa.id = a.paciente_id
+                WHERE a.nr_atendimento = :nr AND a.conta_id = :conta
+                """, conta(conta).addValue("nr", nrAtendimento), (rs, i) -> new CabecalhoReceita(nomeClinica.apply(conta),
                 rs.getString("nome"), rs.getString("cpf"))).stream().findFirst();
     }
 
@@ -632,9 +683,10 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                     INSERT INTO atendimento.anamnese_paciente
                         (conta_id, nr_atendimento, paciente_id, profissional_id, ds_queixa_principal,
                          ds_historia_doenca_atual, ds_antecedentes_pessoais, ds_antecedentes_familiares,
-                         ds_medicamentos_uso, ds_alergias, ds_habitos, ds_exame_fisico, dt_registro, nm_usuario)
+                         ds_medicamentos_uso, ds_alergias, ds_habitos, ds_exame_fisico, ds_avaliacao, ds_conduta,
+                         dt_registro, nm_usuario)
                     VALUES (:conta, :nr, :paciente, :profissional, :queixa, :historia, :pessoais, :familiares,
-                            :medicamentos, :alergias, :habitos, :exame, :agora, :usuario)
+                            :medicamentos, :alergias, :habitos, :exame, :avaliacao, :conduta, :agora, :usuario)
                     ON CONFLICT (nr_atendimento) WHERE ie_situacao = 'A' DO UPDATE
                     SET ds_queixa_principal = EXCLUDED.ds_queixa_principal,
                         ds_historia_doenca_atual = EXCLUDED.ds_historia_doenca_atual,
@@ -644,6 +696,8 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                         ds_alergias = EXCLUDED.ds_alergias,
                         ds_habitos = EXCLUDED.ds_habitos,
                         ds_exame_fisico = EXCLUDED.ds_exame_fisico,
+                        ds_avaliacao = EXCLUDED.ds_avaliacao,
+                        ds_conduta = EXCLUDED.ds_conduta,
                         nm_usuario = EXCLUDED.nm_usuario,
                         atualizado_em = CURRENT_TIMESTAMP
                     WHERE anamnese_paciente.dt_liberacao IS NULL
@@ -781,7 +835,8 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                 .addValue("familiares", texto(anamnese.antecedentesFamiliares()))
                 .addValue("medicamentos", texto(anamnese.medicamentosEmUso()))
                 .addValue("alergias", texto(anamnese.alergias())).addValue("habitos", texto(anamnese.habitos()))
-                .addValue("exame", texto(anamnese.exameFisico())).addValue("agora", Timestamp.valueOf(agora))
+                .addValue("exame", texto(anamnese.exameFisico())).addValue("avaliacao", texto(anamnese.avaliacao()))
+                .addValue("conduta", texto(anamnese.conduta())).addValue("agora", Timestamp.valueOf(agora))
                 .addValue("usuario", usuario(ator));
     }
 
@@ -1357,59 +1412,545 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         if (motivoAlta == null || alta == null) {
             throw new IllegalArgumentException("Informe o motivo da alta");
         }
+        return transacao.execute(status -> encerrar(status, conta, nrAtendimento, profissionalId, motivoAlta, alta,
+                false, null, ator));
+    }
+
+    @Override
+    public Atendimento.Operacao finalizarEAssinar(String conta, long nrAtendimento, long profissionalId,
+                                                  Atendimento.MotivoAlta motivoAlta, Atendimento.Alta alta,
+                                                  LocalDate validadeReceita, String ator) {
+        if (motivoAlta == null || alta == null) {
+            throw new IllegalArgumentException("Informe o motivo da alta");
+        }
+        return transacao.execute(status -> encerrar(status, conta, nrAtendimento, profissionalId, motivoAlta, alta,
+                true, validadeReceita, ator));
+    }
+
+    /** Falha depois de liberar rascunhos desfaz a transação inteira: nada fica liberado sem a alta. */
+    private Atendimento.Operacao encerrar(org.springframework.transaction.TransactionStatus status, String conta,
+                                          long nrAtendimento, long profissionalId, Atendimento.MotivoAlta motivoAlta,
+                                          Atendimento.Alta alta, boolean liberarRascunhos, LocalDate validadeReceita,
+                                          String ator) {
+        List<AtendimentoDoProfissional> travados = jdbc.query("""
+                SELECT agendamento_id, profissional_id, ie_status_atendimento FROM atendimento.atendimento_paciente
+                WHERE nr_atendimento = :nr AND conta_id = :conta FOR UPDATE
+                """, conta(conta).addValue("nr", nrAtendimento), (rs, i) -> new AtendimentoDoProfissional(
+                rs.getLong("agendamento_id"), rs.getLong("profissional_id"), rs.getString("ie_status_atendimento")));
+        if (travados.isEmpty() || travados.get(0).profissionalId() != profissionalId) {
+            return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
+        }
+        AtendimentoDoProfissional atendimento = travados.get(0);
+        if (!"EM_CONSULTA".equals(atendimento.status())) {
+            return Atendimento.Operacao.falha(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
+        }
+        if (liberarRascunhos) {
+            liberarRascunhos(conta, nrAtendimento, profissionalId, validadeReceita, ator);
+        }
+        ContagemClinica contagem = contagemParaFinalizar(conta, nrAtendimento);
+        if (contagem.rascunhos() > 0) {
+            status.setRollbackOnly();
+            return Atendimento.Operacao.falha(CodigoNegocio.RASCUNHO_PENDENTE);
+        }
+        if (contagem.anamneseEvolucaoLiberadas() < 1) {
+            status.setRollbackOnly();
+            return Atendimento.Operacao.falha(CodigoNegocio.SEM_REGISTRO_CLINICO);
+        }
+        LocalDateTime agora = LocalDateTime.now(relogio);
+        jdbc.update("""
+                INSERT INTO atendimento.atendimento_alta
+                    (nr_atendimento, conta_id, ie_desfecho, ds_orientacao, dt_retorno_prev, dt_liberacao, nm_usuario)
+                VALUES (:nr, :conta, :desfecho, :orientacao, :retorno, :agora, :usuario)
+                """, conta(conta).addValue("nr", nrAtendimento)
+                .addValue("desfecho", (alta.desfecho() == null ? Atendimento.Desfecho.ALTA : alta.desfecho()).name())
+                .addValue("orientacao", texto(alta.orientacao()))
+                .addValue("retorno", alta.retornoPrevisto() == null ? null : java.sql.Date.valueOf(alta.retornoPrevisto()))
+                .addValue("agora", Timestamp.valueOf(agora)).addValue("usuario", usuario(ator)));
+        int finalizados = jdbc.update("""
+                UPDATE atendimento.atendimento_paciente
+                SET ie_status_atendimento = 'FINALIZADO', dt_fim_consulta = :agora, dt_alta = :agora,
+                    ie_motivo_alta = :motivo, nm_usuario_alta = :usuario, atualizado_em = CURRENT_TIMESTAMP
+                WHERE nr_atendimento = :nr AND conta_id = :conta AND profissional_id = :profissional
+                  AND ie_status_atendimento = 'EM_CONSULTA'
+                """, conta(conta).addValue("nr", nrAtendimento).addValue("profissional", profissionalId)
+                .addValue("agora", Timestamp.valueOf(agora)).addValue("motivo", motivoAlta.name())
+                .addValue("usuario", usuario(ator)));
+        if (finalizados != 1) {
+            status.setRollbackOnly();
+            return Atendimento.Operacao.falha(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
+        }
+        int alterados = jdbc.update("UPDATE agenda.agendamento SET status = 'EXECUTADO', atualizado_em = CURRENT_TIMESTAMP "
+                        + "WHERE id = :id AND conta_id = :conta AND status = 'EM_CONSULTA'",
+                conta(conta).addValue("id", atendimento.agendamentoId()));
+        if (alterados != 1) {
+            status.setRollbackOnly();
+            return Atendimento.Operacao.falha(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
+        }
+        eventoAtendimento(nrAtendimento, "FINALIZADO", ator, motivoAlta.name());
+        eventoAgendamento(atendimento.agendamentoId(), "EXECUTADO", ator, "Atendimento " + nrAtendimento);
+        return Atendimento.Operacao.sucesso(nrAtendimento);
+    }
+
+    static final String JUSTIFICATIVA_DESCARTE = "Rascunho vazio descartado na finalização";
+
+    /**
+     * Com o atendimento já travado: libera os rascunhos com conteúdo e inativa os vazios (anamnese, evoluções e
+     * receitas do profissional). Rascunho com conteúdo que não fecha a regra de liberação lança IllegalArgumentException.
+     */
+    private void liberarRascunhos(String conta, long nrAtendimento, long profissionalId, LocalDate validadeReceita,
+                                  String ator) {
+        MapSqlParameterSource base = conta(conta).addValue("nr", nrAtendimento).addValue("profissional", profissionalId)
+                .addValue("agora", Timestamp.valueOf(LocalDateTime.now(relogio))).addValue("usuario", usuario(ator))
+                .addValue("justificativa", JUSTIFICATIVA_DESCARTE);
+        String rascunho = " WHERE nr_atendimento = :nr AND conta_id = :conta AND profissional_id = :profissional"
+                + " AND ie_situacao = 'A' AND dt_liberacao IS NULL";
+
+        List<RascunhoAnamnese> anamneses = jdbc.query("""
+                SELECT id, ds_queixa_principal,
+                       concat(ds_queixa_principal, ds_historia_doenca_atual, ds_antecedentes_pessoais,
+                              ds_antecedentes_familiares, ds_medicamentos_uso, ds_alergias, ds_habitos, ds_exame_fisico,
+                              ds_avaliacao, ds_conduta) AS conteudo
+                FROM atendimento.anamnese_paciente""" + rascunho + " FOR UPDATE", base,
+                (rs, i) -> new RascunhoAnamnese(rs.getLong("id"), rs.getString("ds_queixa_principal"),
+                        rs.getString("conteudo")));
+        for (RascunhoAnamnese a : anamneses) {
+            MapSqlParameterSource p = new MapSqlParameterSource(base.getValues()).addValue("id", a.id());
+            if (vazio(a.conteudo())) {
+                jdbc.update("UPDATE atendimento.anamnese_paciente SET ie_situacao = 'I', dt_inativacao = :agora, "
+                        + "nm_usuario_inativacao = :usuario, ds_justificativa = :justificativa, "
+                        + "atualizado_em = CURRENT_TIMESTAMP" + rascunho + " AND id = :id", p);
+                eventoAtendimento(nrAtendimento, "ANAMNESE_DESCARTADA", ator, "Anamnese " + a.id());
+                continue;
+            }
+            if (vazio(a.queixaPrincipal())) {
+                throw new IllegalArgumentException("Informe a queixa principal para finalizar");
+            }
+            jdbc.update("UPDATE atendimento.anamnese_paciente SET dt_liberacao = :agora, atualizado_em = CURRENT_TIMESTAMP"
+                    + rascunho + " AND id = :id", p);
+            eventoAtendimento(nrAtendimento, "ANAMNESE_LIBERADA", ator, "Anamnese " + a.id());
+        }
+
+        List<RascunhoEvolucao> evolucoes = jdbc.query("""
+                SELECT cd_evolucao, ds_evolucao,
+                       (qt_peso IS NOT NULL OR qt_altura_cm IS NOT NULL OR dt_retorno_prev IS NOT NULL) AS tem_dados
+                FROM atendimento.evolucao_paciente""" + rascunho + " FOR UPDATE", base,
+                (rs, i) -> new RascunhoEvolucao(rs.getLong("cd_evolucao"), rs.getString("ds_evolucao"),
+                        rs.getBoolean("tem_dados")));
+        for (RascunhoEvolucao e : evolucoes) {
+            MapSqlParameterSource p = new MapSqlParameterSource(base.getValues()).addValue("id", e.id());
+            if (vazio(e.texto()) && e.temDados()) {
+                throw new IllegalArgumentException("Escreva o texto da evolução ou apague o rascunho antes de finalizar");
+            }
+            if (vazio(e.texto())) {
+                jdbc.update("UPDATE atendimento.evolucao_paciente SET ie_situacao = 'I', dt_inativacao = :agora, "
+                        + "nm_usuario_inativacao = :usuario, ds_justificativa = :justificativa, "
+                        + "atualizado_em = CURRENT_TIMESTAMP" + rascunho + " AND cd_evolucao = :id", p);
+                eventoAtendimento(nrAtendimento, "EVOLUCAO_DESCARTADA", ator, "Evolucao " + e.id());
+                continue;
+            }
+            jdbc.update("UPDATE atendimento.evolucao_paciente SET dt_liberacao = :agora, atualizado_em = CURRENT_TIMESTAMP"
+                    + rascunho + " AND cd_evolucao = :id", p);
+            eventoAtendimento(nrAtendimento, "EVOLUCAO_LIBERADA", ator, "Evolucao " + e.id());
+        }
+
+        List<RascunhoReceita> receitas = jdbc.query("""
+                SELECT r.nr_sequencia,
+                       (SELECT count(*) FROM atendimento.med_receita_item i WHERE i.nr_seq_receita = r.nr_sequencia
+                          AND btrim(i.ds_medicamento) <> '' AND btrim(i.ds_posologia) <> '') AS completos,
+                       (btrim(r.ds_observacao) <> '' OR EXISTS (SELECT 1 FROM atendimento.med_receita_item i
+                          WHERE i.nr_seq_receita = r.nr_sequencia
+                            AND concat(btrim(i.ds_medicamento), btrim(i.ds_apresentacao), btrim(i.ds_posologia),
+                                       btrim(i.ie_via_aplicacao), btrim(i.ds_quantidade), btrim(i.ds_observacao)) <> '')
+                       ) AS tem_conteudo
+                FROM atendimento.med_receita r
+                WHERE r.nr_atendimento = :nr AND r.conta_id = :conta AND r.profissional_id = :profissional
+                  AND r.ie_situacao = 'A' AND r.dt_liberacao IS NULL
+                FOR UPDATE OF r
+                """, base,
+                (rs, i) -> new RascunhoReceita(rs.getLong("nr_sequencia"), rs.getInt("completos"),
+                        rs.getBoolean("tem_conteudo")));
+        for (RascunhoReceita r : receitas) {
+            MapSqlParameterSource p = new MapSqlParameterSource(base.getValues()).addValue("id", r.id());
+            if (r.completos() > 0) {
+                if (validadeReceita == null) {
+                    throw new IllegalArgumentException("Informe a validade da receita");
+                }
+                jdbc.update("UPDATE atendimento.med_receita SET dt_liberacao = :agora, dt_validade = :validade, "
+                        + "atualizado_em = CURRENT_TIMESTAMP" + rascunho + " AND nr_sequencia = :id",
+                        p.addValue("validade", java.sql.Date.valueOf(validadeReceita)));
+                eventoAtendimento(nrAtendimento, "RECEITA_LIBERADA", ator, "Receita " + r.id());
+                continue;
+            }
+            if (r.temConteudo()) {
+                throw new IllegalArgumentException("Complete a receita: informe medicamento e posologia em ao menos um item");
+            }
+            jdbc.update("UPDATE atendimento.med_receita SET ie_situacao = 'I', dt_inativacao = :agora, "
+                    + "nm_usuario_inativacao = :usuario, ds_justificativa = :justificativa, "
+                    + "atualizado_em = CURRENT_TIMESTAMP" + rascunho + " AND nr_sequencia = :id", p);
+            eventoAtendimento(nrAtendimento, "RECEITA_DESCARTADA", ator, "Receita " + r.id());
+        }
+    }
+
+    private static boolean vazio(String valor) {
+        return valor == null || valor.isBlank();
+    }
+
+    private record RascunhoAnamnese(long id, String queixaPrincipal, String conteudo) {
+    }
+
+    private record RascunhoEvolucao(long id, String texto, boolean temDados) {
+    }
+
+    private record RascunhoReceita(long id, int completos, boolean temConteudo) {
+    }
+
+    // ---- alergias do paciente ----
+
+    /** Falha interna que desfaz a transação (abortada pelo Postgres) quando a alergia já está ativa. */
+    private static final class AlergiaDuplicada extends RuntimeException {
+        AlergiaDuplicada(Throwable causa) {
+            super(null, causa, false, false);
+        }
+    }
+
+    @Override
+    public Atendimento.Operacao incluirAlergia(String conta, long nrAtendimento, long profissionalId, String descricao,
+                                               String ator) {
+        try {
+            return transacao.execute(status -> {
+                Optional<AtendimentoClinicoTravado> atendimento = travarAtendimento(conta, nrAtendimento, profissionalId);
+                CodigoNegocio bloqueio = bloqueioClinico(atendimento);
+                if (bloqueio != null) {
+                    return Atendimento.Operacao.falha(bloqueio);
+                }
+                Long id;
+                try {
+                    id = jdbc.queryForObject("""
+                            INSERT INTO atendimento.alergia_paciente
+                                (conta_id, paciente_id, nr_atendimento, ds_alergia, dt_registro, nm_usuario)
+                            VALUES (:conta, :paciente, :nr, :descricao, :agora, :usuario)
+                            RETURNING id
+                            """, conta(conta).addValue("paciente", atendimento.orElseThrow().pacienteId())
+                            .addValue("nr", nrAtendimento).addValue("descricao", descricao)
+                            .addValue("agora", Timestamp.valueOf(LocalDateTime.now(relogio)))
+                            .addValue("usuario", usuario(ator)), Long.class);
+                } catch (DuplicateKeyException ex) {
+                    String mensagem = ex.getMessage() == null ? "" : ex.getMessage();
+                    if (mensagem.contains("uk_alergia_ativa")) {
+                        throw new AlergiaDuplicada(ex);
+                    }
+                    throw ex;
+                }
+                long novo = id == null ? 0 : id;
+                eventoAtendimento(nrAtendimento, "ALERGIA_INCLUIDA", ator, "Alergia " + novo);
+                return Atendimento.Operacao.sucesso(novo);
+            });
+        } catch (AlergiaDuplicada duplicada) {
+            return Atendimento.Operacao.falha(CodigoNegocio.ALERGIA_DUPLICADA);
+        }
+    }
+
+    @Override
+    public Atendimento.Operacao inativarAlergia(String conta, long nrAtendimento, long alergiaId, long profissionalId,
+                                                String justificativa, String ator) {
+        String motivo = justificativa(justificativa);
         return transacao.execute(status -> {
-            List<AtendimentoDoProfissional> travados = jdbc.query("""
-                    SELECT agendamento_id, profissional_id, ie_status_atendimento FROM atendimento.atendimento_paciente
-                    WHERE nr_atendimento = :nr AND conta_id = :conta FOR UPDATE
-                    """, conta(conta).addValue("nr", nrAtendimento), (rs, i) -> new AtendimentoDoProfissional(
-                    rs.getLong("agendamento_id"), rs.getLong("profissional_id"), rs.getString("ie_status_atendimento")));
-            if (travados.isEmpty() || travados.get(0).profissionalId() != profissionalId) {
+            Optional<AtendimentoClinicoTravado> atendimento = travarAtendimento(conta, nrAtendimento, profissionalId);
+            CodigoNegocio bloqueio = bloqueioClinico(atendimento);
+            if (bloqueio != null) {
+                return Atendimento.Operacao.falha(bloqueio);
+            }
+            int inativadas = jdbc.update("""
+                    UPDATE atendimento.alergia_paciente
+                    SET ie_situacao = 'I', dt_inativacao = :agora, nm_usuario_inativacao = :usuario,
+                        ds_justificativa = :justificativa
+                    WHERE id = :id AND conta_id = :conta AND paciente_id = :paciente AND ie_situacao = 'A'
+                    """, conta(conta).addValue("id", alergiaId).addValue("paciente", atendimento.orElseThrow().pacienteId())
+                    .addValue("agora", Timestamp.valueOf(LocalDateTime.now(relogio))).addValue("usuario", usuario(ator))
+                    .addValue("justificativa", motivo));
+            if (inativadas != 1) {
                 return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
             }
-            AtendimentoDoProfissional atendimento = travados.get(0);
-            if (!"EM_CONSULTA".equals(atendimento.status())) {
-                return Atendimento.Operacao.falha(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
+            eventoAtendimento(nrAtendimento, "ALERGIA_INATIVADA", ator, "Alergia " + alergiaId);
+            return Atendimento.Operacao.sucesso(alergiaId);
+        });
+    }
+
+    // ---- recepção: chamada, falta e encaixe ----
+
+    /** Status do agendamento que toma o horário do profissional (mesma lista de uk_agendamento_ocupa_horario). */
+    private static final String OCUPA_HORARIO = "status IN ('MARCADO', 'CONFIRMADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO')";
+
+    @Override
+    public Atendimento.Operacao chamar(String conta, long nrAtendimento, Long profissionalId, String ator) {
+        return transacao.execute(status -> {
+            List<String> situacao = jdbc.queryForList("""
+                    SELECT ie_status_atendimento FROM atendimento.atendimento_paciente
+                    WHERE nr_atendimento = :nr AND conta_id = :conta
+                      AND (CAST(:profissional AS BIGINT) IS NULL OR profissional_id = CAST(:profissional AS BIGINT))
+                    FOR UPDATE
+                    """, conta(conta).addValue("nr", nrAtendimento).addValue("profissional", profissionalId), String.class);
+            if (situacao.isEmpty()) {
+                return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
             }
-            ContagemClinica contagem = contagemParaFinalizar(conta, nrAtendimento);
-            if (contagem.rascunhos() > 0) {
-                return Atendimento.Operacao.falha(CodigoNegocio.RASCUNHO_PENDENTE);
+            if (!"AGUARDANDO".equals(situacao.get(0))) {
+                return Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_CHAMADA);
             }
-            if (contagem.anamneseEvolucaoLiberadas() < 1) {
-                return Atendimento.Operacao.falha(CodigoNegocio.SEM_REGISTRO_CLINICO);
-            }
-            LocalDateTime agora = LocalDateTime.now(relogio);
             jdbc.update("""
-                    INSERT INTO atendimento.atendimento_alta
-                        (nr_atendimento, conta_id, ie_desfecho, ds_orientacao, dt_retorno_prev, dt_liberacao, nm_usuario)
-                    VALUES (:nr, :conta, :desfecho, :orientacao, :retorno, :agora, :usuario)
-                    """, conta(conta).addValue("nr", nrAtendimento)
-                    .addValue("desfecho", (alta.desfecho() == null ? Atendimento.Desfecho.ALTA : alta.desfecho()).name())
-                    .addValue("orientacao", texto(alta.orientacao()))
-                    .addValue("retorno", alta.retornoPrevisto() == null ? null : java.sql.Date.valueOf(alta.retornoPrevisto()))
-                    .addValue("agora", Timestamp.valueOf(agora)).addValue("usuario", usuario(ator)));
-            int finalizados = jdbc.update("""
                     UPDATE atendimento.atendimento_paciente
-                    SET ie_status_atendimento = 'FINALIZADO', dt_fim_consulta = :agora, dt_alta = :agora,
-                        ie_motivo_alta = :motivo, nm_usuario_alta = :usuario, atualizado_em = CURRENT_TIMESTAMP
-                    WHERE nr_atendimento = :nr AND conta_id = :conta AND profissional_id = :profissional
-                      AND ie_status_atendimento = 'EM_CONSULTA'
-                    """, conta(conta).addValue("nr", nrAtendimento).addValue("profissional", profissionalId)
-                    .addValue("agora", Timestamp.valueOf(agora)).addValue("motivo", motivoAlta.name())
-                    .addValue("usuario", usuario(ator)));
-            if (finalizados != 1) {
-                status.setRollbackOnly();
-                return Atendimento.Operacao.falha(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
-            }
-            int alterados = jdbc.update("UPDATE agenda.agendamento SET status = 'EXECUTADO', atualizado_em = CURRENT_TIMESTAMP "
-                            + "WHERE id = :id AND conta_id = :conta AND status = 'EM_CONSULTA'",
-                    conta(conta).addValue("id", atendimento.agendamentoId()));
-            if (alterados != 1) {
-                status.setRollbackOnly();
-                return Atendimento.Operacao.falha(CodigoNegocio.ATENDIMENTO_NAO_EM_CONSULTA);
-            }
-            eventoAtendimento(nrAtendimento, "FINALIZADO", ator, motivoAlta.name());
-            eventoAgendamento(atendimento.agendamentoId(), "EXECUTADO", ator, "Atendimento " + nrAtendimento);
+                    SET dt_chamada = :agora, nm_usuario_chamada = :usuario, atualizado_em = CURRENT_TIMESTAMP
+                    WHERE nr_atendimento = :nr AND conta_id = :conta
+                    """, conta(conta).addValue("nr", nrAtendimento)
+                    .addValue("agora", Timestamp.valueOf(LocalDateTime.now(relogio))).addValue("usuario", usuario(ator)));
+            eventoAtendimento(nrAtendimento, "CHAMADO", ator, "");
             return Atendimento.Operacao.sucesso(nrAtendimento);
         });
     }
+
+    @Override
+    public Atendimento.Operacao marcarFalta(String conta, long agendamentoId, String ator) {
+        return transacao.execute(status -> {
+            Optional<AgendamentoTravado> travado = travarAgendamento(conta, agendamentoId);
+            if (travado.isEmpty()) {
+                return Atendimento.Operacao.falha(CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO);
+            }
+            String atual = travado.get().status();
+            if (!"MARCADO".equals(atual) && !"CONFIRMADO".equals(atual)) {
+                return Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_FALTA);
+            }
+            if (travado.get().inicio().isAfter(LocalDateTime.now(relogio))) {
+                return Atendimento.Operacao.falha(CodigoNegocio.FALTA_ANTES_DO_HORARIO);
+            }
+            jdbc.update("UPDATE agenda.agendamento SET status = 'FALTOU', atualizado_em = CURRENT_TIMESTAMP "
+                    + "WHERE id = :id AND conta_id = :conta AND " + ATIVO, conta(conta).addValue("id", agendamentoId));
+            eventoAgendamento(agendamentoId, "FALTOU", ator, "");
+            return Atendimento.Operacao.sucesso(agendamentoId);
+        });
+    }
+
+    /** Volta ao status de antes da falta pelo mesmo critério do desfazer chegada (evento CONFIRMADO). */
+    @Override
+    public Atendimento.Operacao desfazerFalta(String conta, long agendamentoId, String ator) {
+        try {
+            return transacao.execute(status -> {
+                Optional<AgendamentoTravado> travado = travarAgendamento(conta, agendamentoId);
+                if (travado.isEmpty()) {
+                    return Atendimento.Operacao.falha(CodigoNegocio.AGENDAMENTO_NAO_ENCONTRADO);
+                }
+                AgendamentoTravado agendamento = travado.get();
+                if (!"FALTOU".equals(agendamento.status())) {
+                    return Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_FALTA);
+                }
+                Boolean ocupado = jdbc.queryForObject("""
+                        SELECT EXISTS (SELECT 1 FROM agenda.agendamento
+                            WHERE conta_id = :conta AND profissional_id = :profissional AND id <> :id
+                              AND inicio < :fim AND fim > :inicio AND\s""" + OCUPA_HORARIO + ")",
+                        conta(conta).addValue("profissional", agendamento.profissionalId()).addValue("id", agendamentoId)
+                                .addValue("inicio", Timestamp.valueOf(agendamento.inicio()))
+                                .addValue("fim", Timestamp.valueOf(agendamento.fim())), Boolean.class);
+                if (Boolean.TRUE.equals(ocupado)) {
+                    return Atendimento.Operacao.falha(CodigoNegocio.HORARIO_INDISPONIVEL);
+                }
+                Boolean confirmado = jdbc.queryForObject(
+                        "SELECT EXISTS (SELECT 1 FROM agenda.agendamento_evento WHERE agendamento_id = :id AND tipo = 'CONFIRMADO')",
+                        new MapSqlParameterSource("id", agendamentoId), Boolean.class);
+                jdbc.update("UPDATE agenda.agendamento SET status = :anterior, atualizado_em = CURRENT_TIMESTAMP "
+                                + "WHERE id = :id AND conta_id = :conta AND status = 'FALTOU'",
+                        conta(conta).addValue("id", agendamentoId)
+                                .addValue("anterior", Boolean.TRUE.equals(confirmado) ? "CONFIRMADO" : "MARCADO"));
+                eventoAgendamento(agendamentoId, "FALTA_DESFEITA", ator, "");
+                return Atendimento.Operacao.sucesso(agendamentoId);
+            });
+        } catch (DuplicateKeyException ex) {
+            return Atendimento.Operacao.falha(CodigoNegocio.HORARIO_INDISPONIVEL);
+        }
+    }
+
+    @Override
+    public Atendimento.Operacao encaixe(String conta, Atendimento.Encaixe encaixe, int duracaoMin, String ator) {
+        return transacao.execute(status -> {
+            Boolean valido = jdbc.queryForObject("""
+                    SELECT EXISTS (SELECT 1 FROM agenda.profissional p
+                            JOIN agenda.profissional_especialidade pe ON pe.profissional_id = p.id
+                            JOIN agenda.especialidade es ON es.id = pe.especialidade_id
+                            WHERE p.id = :profissional AND p.conta_id = :conta AND p.ativo
+                              AND es.id = :especialidade AND es.conta_id = :conta AND es.ativo)
+                       AND (CAST(:convenio AS BIGINT) IS NULL OR EXISTS (SELECT 1 FROM agenda.convenio c
+                            WHERE c.id = CAST(:convenio AS BIGINT) AND c.conta_id = :conta AND c.ativo))
+                    """, conta(conta).addValue("profissional", encaixe.profissionalId())
+                    .addValue("especialidade", encaixe.especialidadeId()).addValue("convenio", encaixe.convenioId()),
+                    Boolean.class);
+            if (!Boolean.TRUE.equals(valido)) {
+                return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
+            }
+            Long pacienteId = jdbc.queryForObject("""
+                    INSERT INTO agenda.paciente (conta_id, cpf, nascimento, nome, telefone)
+                    VALUES (:conta, :cpf, :nascimento, :nome, :telefone)
+                    ON CONFLICT (conta_id, cpf, nascimento) DO UPDATE SET
+                        telefone = CASE WHEN EXCLUDED.telefone = '' THEN agenda.paciente.telefone ELSE EXCLUDED.telefone END
+                    RETURNING id
+                    """, conta(conta).addValue("cpf", encaixe.cpf())
+                    .addValue("nascimento", java.sql.Date.valueOf(encaixe.nascimento()))
+                    .addValue("nome", encaixe.nome()).addValue("telefone", encaixe.telefone()), Long.class);
+            LocalDateTime agora = LocalDateTime.now(relogio).withNano(0);
+            LocalDateTime inicio = agora;
+            while (Boolean.TRUE.equals(jdbc.queryForObject("""
+                    SELECT EXISTS (SELECT 1 FROM agenda.agendamento
+                        WHERE conta_id = :conta AND profissional_id = :profissional AND inicio = :inicio AND\s"""
+                            + OCUPA_HORARIO + ")", conta(conta).addValue("profissional", encaixe.profissionalId())
+                    .addValue("inicio", Timestamp.valueOf(inicio)), Boolean.class))) {
+                inicio = inicio.plusSeconds(1);
+            }
+            Long agendamentoId = jdbc.queryForObject("""
+                    INSERT INTO agenda.agendamento (conta_id, profissional_id, especialidade_id, convenio_id, paciente_id,
+                                                    inicio, fim, local, status, origem)
+                    VALUES (:conta, :profissional, :especialidade, :convenio, :paciente, :inicio, :fim, '', 'AGUARDANDO',
+                            'RECEPCAO')
+                    RETURNING id
+                    """, conta(conta).addValue("profissional", encaixe.profissionalId())
+                    .addValue("especialidade", encaixe.especialidadeId()).addValue("convenio", encaixe.convenioId())
+                    .addValue("paciente", pacienteId).addValue("inicio", Timestamp.valueOf(inicio))
+                    .addValue("fim", Timestamp.valueOf(inicio.plusMinutes(duracaoMin))), Long.class);
+            Long nrAtendimento = jdbc.queryForObject("""
+                    INSERT INTO atendimento.atendimento_paciente
+                        (conta_id, agendamento_id, paciente_id, profissional_id, especialidade_id, convenio_id,
+                         ie_status_atendimento, dt_entrada, nm_usuario_entrada)
+                    VALUES (:conta, :agendamento, :paciente, :profissional, :especialidade, :convenio,
+                            'AGUARDANDO', :entrada, :usuario)
+                    RETURNING nr_atendimento
+                    """, conta(conta).addValue("agendamento", agendamentoId).addValue("paciente", pacienteId)
+                    .addValue("profissional", encaixe.profissionalId()).addValue("especialidade", encaixe.especialidadeId())
+                    .addValue("convenio", encaixe.convenioId()).addValue("entrada", Timestamp.valueOf(agora))
+                    .addValue("usuario", usuario(ator)), Long.class);
+            long nr = nrAtendimento == null ? 0 : nrAtendimento;
+            eventoAgendamento(agendamentoId == null ? 0 : agendamentoId, "ENCAIXE", ator, "Atendimento " + nr);
+            eventoAtendimento(nr, "CHEGADA", ator, "Encaixe");
+            return Atendimento.Operacao.sucesso(nr);
+        });
+    }
+
+    @Override
+    public Atendimento.CadastrosEncaixe cadastrosEncaixe(String conta) {
+        java.util.Map<Long, String> nomes = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, List<Atendimento.Opcao>> especialidades = new java.util.HashMap<>();
+        jdbc.query("""
+                SELECT p.id, p.nome, es.id AS especialidade_id, es.nome AS especialidade
+                FROM agenda.profissional p
+                JOIN agenda.profissional_especialidade pe ON pe.profissional_id = p.id
+                JOIN agenda.especialidade es ON es.id = pe.especialidade_id AND es.conta_id = p.conta_id AND es.ativo
+                WHERE p.conta_id = :conta AND p.ativo
+                ORDER BY p.nome, p.id, es.nome
+                """, conta(conta), rs -> {
+            long id = rs.getLong("id");
+            nomes.putIfAbsent(id, rs.getString("nome"));
+            especialidades.computeIfAbsent(id, k -> new java.util.ArrayList<>())
+                    .add(new Atendimento.Opcao(rs.getLong("especialidade_id"), rs.getString("especialidade")));
+        });
+        List<Atendimento.ProfissionalEncaixe> profissionais = nomes.entrySet().stream()
+                .map(e -> new Atendimento.ProfissionalEncaixe(e.getKey(), e.getValue(), especialidades.get(e.getKey())))
+                .toList();
+        List<Atendimento.Opcao> convenios = jdbc.query(
+                "SELECT id, nome FROM agenda.convenio WHERE conta_id = :conta AND ativo ORDER BY nome",
+                conta(conta), (rs, i) -> new Atendimento.Opcao(rs.getLong("id"), rs.getString("nome")));
+        return new Atendimento.CadastrosEncaixe(profissionais, convenios);
+    }
+
+    @Override
+    public List<Atendimento.PacienteResumo> buscarPacientes(String conta, String termo, int limite) {
+        String texto = termo == null ? "" : termo.trim();
+        String digitos = texto.replaceAll("[.\\-\\s]", "");
+        boolean porCpf = !digitos.isEmpty() && digitos.chars().allMatch(Character::isDigit);
+        String filtro = porCpf ? "cpf LIKE :valor" : "nome ILIKE :valor";
+        String valor = porCpf ? digitos + "%"
+                : "%" + texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        return jdbc.query("SELECT id, nome, cpf, nascimento, telefone FROM agenda.paciente WHERE conta_id = :conta AND "
+                        + filtro + " ORDER BY nome, nascimento LIMIT :limite",
+                conta(conta).addValue("valor", valor).addValue("limite", limite),
+                (rs, i) -> new Atendimento.PacienteResumo(rs.getLong("id"), rs.getString("nome"), rs.getString("cpf"),
+                        rs.getDate("nascimento").toLocalDate(), rs.getString("telefone")));
+    }
+
+    // ---- favoritos e modelos do profissional ----
+
+    @Override
+    public List<Atendimento.MedicamentoFavorito> favoritos(String conta, long profissionalId) {
+        return jdbc.query("""
+                SELECT id, ds_medicamento, ds_apresentacao, ds_posologia, ie_via_aplicacao, ds_quantidade,
+                       ie_uso_continuo, ds_observacao
+                FROM atendimento.medicamento_favorito
+                WHERE conta_id = :conta AND profissional_id = :profissional
+                ORDER BY lower(ds_medicamento), lower(ds_apresentacao), id
+                """, conta(conta).addValue("profissional", profissionalId), (rs, i) -> new Atendimento.MedicamentoFavorito(
+                rs.getLong("id"), rs.getString("ds_medicamento"), rs.getString("ds_apresentacao"),
+                rs.getString("ds_posologia"), rs.getString("ie_via_aplicacao"), rs.getString("ds_quantidade"),
+                rs.getBoolean("ie_uso_continuo"), rs.getString("ds_observacao")));
+    }
+
+    @Override
+    public long salvarFavorito(String conta, long profissionalId, Atendimento.MedicamentoFavorito favorito) {
+        Long id = jdbc.queryForObject("""
+                INSERT INTO atendimento.medicamento_favorito
+                    (conta_id, profissional_id, ds_medicamento, ds_apresentacao, ds_posologia, ie_via_aplicacao,
+                     ds_quantidade, ie_uso_continuo, ds_observacao)
+                VALUES (:conta, :profissional, :medicamento, :apresentacao, :posologia, :via, :quantidade, :continuo,
+                        :observacao)
+                ON CONFLICT (conta_id, profissional_id, (lower(btrim(ds_medicamento))), (lower(btrim(ds_apresentacao))),
+                             (lower(btrim(ds_posologia))))
+                DO UPDATE SET ie_via_aplicacao = EXCLUDED.ie_via_aplicacao, ds_quantidade = EXCLUDED.ds_quantidade,
+                              ie_uso_continuo = EXCLUDED.ie_uso_continuo, ds_observacao = EXCLUDED.ds_observacao
+                RETURNING id
+                """, conta(conta).addValue("profissional", profissionalId).addValue("medicamento", favorito.medicamento())
+                .addValue("apresentacao", favorito.apresentacao()).addValue("posologia", favorito.posologia())
+                .addValue("via", favorito.via()).addValue("quantidade", favorito.quantidade())
+                .addValue("continuo", favorito.usoContinuo()).addValue("observacao", favorito.observacao()), Long.class);
+        return id == null ? 0 : id;
+    }
+
+    @Override
+    public boolean excluirFavorito(String conta, long profissionalId, long favoritoId) {
+        return jdbc.update("DELETE FROM atendimento.medicamento_favorito "
+                        + "WHERE id = :id AND conta_id = :conta AND profissional_id = :profissional",
+                conta(conta).addValue("id", favoritoId).addValue("profissional", profissionalId)) == 1;
+    }
+
+    @Override
+    public List<Atendimento.ModeloNota> modelos(String conta, long profissionalId) {
+        return jdbc.query("""
+                SELECT id, nm_atalho, ds_titulo, ds_texto FROM atendimento.modelo_nota
+                WHERE conta_id = :conta AND profissional_id = :profissional ORDER BY nm_atalho
+                """, conta(conta).addValue("profissional", profissionalId), (rs, i) -> new Atendimento.ModeloNota(
+                rs.getLong("id"), rs.getString("nm_atalho"), rs.getString("ds_titulo"), rs.getString("ds_texto")));
+    }
+
+    @Override
+    public Atendimento.Operacao salvarModelo(String conta, long profissionalId, Atendimento.ModeloNota modelo) {
+        MapSqlParameterSource params = conta(conta).addValue("profissional", profissionalId)
+                .addValue("atalho", modelo.atalho()).addValue("titulo", modelo.titulo()).addValue("texto", modelo.texto());
+        try {
+            if (modelo.id() == null) {
+                Long id = jdbc.queryForObject("""
+                        INSERT INTO atendimento.modelo_nota (conta_id, profissional_id, nm_atalho, ds_titulo, ds_texto)
+                        VALUES (:conta, :profissional, :atalho, :titulo, :texto)
+                        RETURNING id
+                        """, params, Long.class);
+                return Atendimento.Operacao.sucesso(id);
+            }
+            int alterados = jdbc.update("""
+                    UPDATE atendimento.modelo_nota
+                    SET nm_atalho = :atalho, ds_titulo = :titulo, ds_texto = :texto, atualizado_em = CURRENT_TIMESTAMP
+                    WHERE id = :id AND conta_id = :conta AND profissional_id = :profissional
+                    """, params.addValue("id", modelo.id()));
+            return alterados == 1 ? Atendimento.Operacao.sucesso(modelo.id())
+                    : Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
+        } catch (DuplicateKeyException ex) {
+            return Atendimento.Operacao.falha(CodigoNegocio.ATALHO_DUPLICADO);
+        }
+    }
+
+    @Override
+    public boolean excluirModelo(String conta, long profissionalId, long modeloId) {
+        return jdbc.update("DELETE FROM atendimento.modelo_nota WHERE id = :id AND conta_id = :conta AND profissional_id = :profissional",
+                conta(conta).addValue("id", modeloId).addValue("profissional", profissionalId)) == 1;
+    }
 }
+

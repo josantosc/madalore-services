@@ -25,8 +25,13 @@ public interface ConsultorioUseCase {
             String medicamentosEmUso,
             String alergias,
             String habitos,
-            String exameFisico
+            String exameFisico,
+            String avaliacao,
+            String conduta
     ) {
+    }
+
+    record AlergiaInBound(String descricao) {
     }
 
     record EvolucaoInBound(String texto, BigDecimal pesoKg, BigDecimal alturaCm, LocalDate retornoPrevisto) {
@@ -89,8 +94,35 @@ public interface ConsultorioUseCase {
     /** Só receita liberada. Grava acesso_prontuario. */
     Impressao impressaoReceita(Contexto ctx, long receitaId, String ip);
 
+    /** Folha da consulta finalizada para assinatura manual, só com registros liberados e ativos. Grava acesso_prontuario. */
+    Impressao impressaoConsulta(Contexto ctx, long atendimentoId, String ip);
+
     Atendimento.Operacao finalizar(Contexto ctx, long atendimentoId, FinalizarInBound finalizacao);
+
+    /** Libera de uma vez os rascunhos com conteúdo, descarta os vazios e finaliza. */
+    Atendimento.Operacao finalizarEAssinar(Contexto ctx, long atendimentoId, FinalizarInBound finalizacao);
+
+    Atendimento.Operacao incluirAlergia(Contexto ctx, long atendimentoId, AlergiaInBound alergia);
+
+    Atendimento.Operacao inativarAlergia(Contexto ctx, long atendimentoId, long alergiaId, String justificativa);
 
     /** Atendimentos anteriores do paciente. Grava acesso_prontuario. */
     List<Atendimento.Prontuario> historicoDoPaciente(Contexto ctx, long pacienteId, String ip);
+
+    /** Chama o próprio paciente que aguarda. */
+    Atendimento.Operacao chamar(Contexto ctx, long atendimentoId);
+
+    List<Atendimento.MedicamentoFavorito> favoritos(Contexto ctx);
+
+    /** Mesmo medicamento, apresentação e posologia atualiza o existente. Operacao.id() é o favorito. */
+    Atendimento.Operacao salvarFavorito(Contexto ctx, Atendimento.MedicamentoFavorito favorito);
+
+    boolean excluirFavorito(Contexto ctx, long favoritoId);
+
+    List<Atendimento.ModeloNota> modelos(Contexto ctx);
+
+    /** id nulo cria. Atalho: 2 a 30 letras minúsculas, números, hífen ou sublinhado. */
+    Atendimento.Operacao salvarModelo(Contexto ctx, Atendimento.ModeloNota modelo);
+
+    boolean excluirModelo(Contexto ctx, long modeloId);
 }

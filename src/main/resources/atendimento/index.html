@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Recepção: chegada de pacientes</title>
+  <title>Recepção: quadro do dia</title>
   <link rel="stylesheet" href="/admin/assets/nav.css">
   <script src="/admin/assets/nav.js"></script>
   <style>
@@ -15,7 +15,8 @@
       --marca: #0b5c7a; --marca-hover: #0a536e; --marca-suave: #e7eff2; --marca-texto: #094b64;
       --rubi: #e54666; --rubi-hover: #dc3b5d; --rubi-suave: #feeaed; --rubi-texto: #ca244d;
       --ambar-suave: #fff7c2; --ambar-texto: #ab6400;
-      --verde-suave: #e6f6eb; --verde-texto: #218358;
+      --verde: #30a46c; --verde-suave: #e6f6eb; --verde-texto: #218358;
+      --violeta-suave: #f2effa; --violeta-texto: #5b4c9e;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
@@ -24,10 +25,10 @@
       -webkit-font-smoothing: antialiased; }
 
     main { flex: 1; min-width: 0; overflow-y: auto; }
-    .conteudo { max-width: 1120px; margin: 0 auto; padding: 32px 32px 48px; }
+    .conteudo { max-width: 1440px; margin: 0 auto; padding: 28px 28px 48px; }
     .cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
     h1 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: -.01em; }
-    .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 640px; }
+    .descricao { color: var(--texto-2); margin: 6px 0 0; max-width: 680px; }
     .botoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px;
@@ -39,43 +40,52 @@
     .btn.cinza:hover:not(:disabled) { background: rgba(0, 0, 59, .09); }
     .btn.perigo { background: var(--rubi); color: #fff; }
     .btn.perigo:hover:not(:disabled) { background: var(--rubi-hover); }
+    .btn.fantasma { background: transparent; color: var(--texto-2); }
+    .btn.fantasma:hover:not(:disabled) { background: var(--alpha-2); color: var(--texto); }
     .btn.mini { height: 26px; padding: 0 8px; font-size: 13px; border-radius: 6px; }
 
-    .resumo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 24px; }
-    .indicador { border-radius: 10px; background: var(--alpha-1); outline: 1px solid var(--borda); padding: 10px 12px; }
-    .indicador b { display: block; font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
-    .indicador small { color: var(--texto-2); font-size: 12px; }
-    .indicador.atraso { background: var(--rubi-suave); outline-color: var(--rubi-suave); color: var(--rubi-texto); }
-    .indicador.atraso small { color: var(--rubi-texto); }
-
-    .ferramentas { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 20px 0 8px; }
+    .ferramentas { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 20px 0 14px; }
     input.campo, select.campo, textarea.campo { height: 36px; width: 100%; padding: 0 12px; border-radius: 8px; border: 0; background: var(--alpha-1);
       outline: 1px solid var(--borda); font: inherit; font-size: 14px; color: var(--texto); }
     textarea.campo { height: 72px; padding: 8px 12px; resize: vertical; }
     .ferramentas .campo { width: auto; }
+    .ferramentas #busca { width: 240px; }
     input.campo:focus, select.campo:focus, textarea.campo:focus { outline: 1px solid var(--marca); background: var(--solido); }
+    .aovivo { display: inline-flex; align-items: center; gap: 6px; color: var(--texto-3); font-size: 12px; }
+    .aovivo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--texto-3); }
+    .aovivo.ligado { color: var(--verde-texto); }
+    .aovivo.ligado::before { background: var(--verde); box-shadow: 0 0 0 3px var(--verde-suave); }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    th { text-align: left; font-weight: 500; color: var(--texto-2); padding: 12px 16px 12px 0; font-size: 13px; }
-    td { padding: 10px 16px 10px 0; border-top: 1px solid var(--borda); vertical-align: top; }
-    tr.encerrado td { color: var(--texto-3); }
-    .hora { font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .nome { font-weight: 500; color: var(--texto); }
-    tr.encerrado .nome { color: var(--texto-2); }
+    .quadro { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 12px; align-items: start; overflow-x: auto; padding-bottom: 8px; }
+    .coluna { background: var(--alpha-1); outline: 1px solid var(--borda); border-radius: 12px; padding: 10px; min-height: 160px; }
+    .coluna > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 2px 4px 10px; }
+    .coluna > header h2 { font-size: 13px; font-weight: 500; margin: 0; color: var(--texto-2); text-transform: uppercase; letter-spacing: .04em; }
+    .coluna > header b { font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .coluna > header small { display: block; font-size: 12px; color: var(--texto-3); text-transform: none; letter-spacing: 0; }
+    .coluna.atraso > header small { color: var(--rubi-texto); }
+    .lista { display: grid; gap: 8px; }
+    .cartao { background: var(--solido); border-radius: 10px; padding: 10px 12px; box-shadow: 0 0 0 1px var(--borda), 0 1px 2px rgba(0,0,0,.03); }
+    .cartao.chamado { box-shadow: 0 0 0 1px var(--violeta-texto), 0 1px 2px rgba(0,0,0,.03); }
+    .cartao.encerrado { opacity: .72; }
+    .cartao .topo { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .hora { font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--texto-2); font-size: 13px; }
+    .nome { font-weight: 500; color: var(--texto); display: block; margin-top: 2px; overflow-wrap: anywhere; }
     .sub { color: var(--texto-3); font-size: 12px; display: block; }
+    .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
     .tag { background: var(--alpha-2); color: var(--texto-2); border-radius: 6px; padding: 0 6px; font-size: 12px; line-height: 20px; white-space: nowrap; display: inline-block; }
     .tag.ambar { background: var(--ambar-suave); color: var(--ambar-texto); }
     .tag.verde { background: var(--verde-suave); color: var(--verde-texto); }
     .tag.rubi { background: var(--rubi-suave); color: var(--rubi-texto); }
     .tag.marca { background: var(--marca-suave); color: var(--marca-texto); }
-    .espera { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tag.violeta { background: var(--violeta-suave); color: var(--violeta-texto); }
+    .espera { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
     .espera.ambar { color: var(--ambar-texto); }
     .espera.rubi { color: var(--rubi-texto); }
-    .acoes { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
-    .vazio { text-align: center; color: var(--texto-2); padding: 48px 0; }
-    .vazio strong { display: block; color: var(--texto); font-weight: 500; margin-bottom: 4px; }
+    .acoes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .vazio { text-align: center; color: var(--texto-3); padding: 20px 8px; font-size: 13px; }
+    .separador { font-size: 12px; color: var(--texto-3); margin: 6px 4px 0; }
 
-    dialog { border: 0; padding: 24px; border-radius: 12px; width: min(560px, calc(100vw - 32px)); color: var(--texto);
+    dialog { border: 0; padding: 24px; border-radius: 12px; width: min(600px, calc(100vw - 32px)); color: var(--texto);
       box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
     dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
     dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
@@ -85,6 +95,10 @@
     .form label { display: grid; gap: 6px; font-weight: 500; }
     .form .dica { font-weight: 400; color: var(--texto-3); font-size: 12px; }
     .form .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 13px; }
+    .grade2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .resultados { display: grid; gap: 4px; max-height: 180px; overflow-y: auto; }
+    .resultado { text-align: left; background: var(--alpha-1); border: 0; border-radius: 8px; padding: 8px 10px; font: inherit; cursor: pointer; color: var(--texto); }
+    .resultado:hover, .resultado.escolhido { background: var(--marca-suave); }
     .rodape { display: flex; gap: 12px; margin-top: 22px; }
     .rodape .btn { flex: 1; height: 36px; }
 
@@ -96,8 +110,8 @@
 
     @media (max-width: 860px) {
       .conteudo { padding: 20px 16px 40px; }
-      .resumo { grid-template-columns: repeat(2, 1fr); }
-      .col-opc { display: none; }
+      .ferramentas #busca { width: 100%; }
+      .grade2 { grid-template-columns: 1fr; }
     }
   </style>
   <link rel="stylesheet" href="/admin/assets/tema.css">
@@ -107,20 +121,14 @@
     <div class="conteudo">
       <div class="cabecalho">
         <div>
-          <h1>Chegada de pacientes</h1>
-          <p class="descricao">Consultas do dia. Registre a chegada quando o paciente estiver na recepção: ele entra na fila do médico
-            e o tempo de espera começa a contar.</p>
+          <h1>Recepção</h1>
+          <p class="descricao">Quadro do dia. Registre a chegada, chame o paciente e acompanhe a consulta.
+            O quadro atualiza sozinho quando a recepção ou o médico mudam algo.</p>
         </div>
         <div class="botoes">
-          <a class="btn cinza mini" href="/agenda" id="irAgenda">Abrir agenda</a>
+          <button class="btn solido" type="button" id="abrirEncaixe">+ Encaixe</button>
+          <a class="btn cinza" href="/agenda" id="irAgenda">Abrir agenda</a>
         </div>
-      </div>
-
-      <div class="resumo">
-        <div class="indicador"><b id="nPrevistos">0</b><small>Ainda não chegaram</small></div>
-        <div class="indicador" id="cardAguardando"><b id="nAguardando">0</b><small id="txtAguardando">Aguardando</small></div>
-        <div class="indicador"><b id="nConsulta">0</b><small>Em consulta</small></div>
-        <div class="indicador"><b id="nAtendidos">0</b><small>Atendidos</small></div>
       </div>
 
       <div class="ferramentas">
@@ -128,23 +136,15 @@
         <input class="campo" type="date" id="data">
         <button class="btn cinza" type="button" id="diaSeguinte" title="Dia seguinte">&rarr;</button>
         <button class="btn cinza" type="button" id="hoje">Hoje</button>
+        <input class="campo" type="search" id="busca" placeholder="Buscar por nome ou CPF" autocomplete="off">
         <select class="campo" id="filtroProf"><option value="">Todos os profissionais</option></select>
-        <select class="campo" id="filtroStatus">
-          <option value="">Todas as situações</option>
-          <option value="PREVISTO">Ainda não chegaram</option>
-          <option value="AGUARDANDO">Aguardando</option>
-          <option value="EM_CONSULTA">Em consulta</option>
-          <option value="EXECUTADO">Atendidos</option>
-        </select>
         <span style="flex:1"></span>
+        <span class="aovivo" id="aovivo">Conectando…</span>
         <span class="sub" id="atualizado"></span>
         <button class="btn cinza" type="button" id="atualizar">Atualizar</button>
       </div>
 
-      <table>
-        <thead><tr><th>Hora</th><th>Paciente</th><th class="col-opc">Profissional</th><th>Situação</th><th>Espera</th><th></th></tr></thead>
-        <tbody id="linhas"></tbody>
-      </table>
+      <div class="quadro" id="quadro"></div>
     </div>
   </main>
 
@@ -154,7 +154,7 @@
       <p class="sub" id="dTexto"></p>
       <div class="form">
         <label>Motivo <span class="dica">Ex.: chegada registrada no paciente errado; paciente foi embora antes de ser chamado.</span>
-          <textarea class="campo" id="dMotivo" maxlength="500"></textarea></label>
+          <textarea class="campo" id="dMotivo" maxlength="300"></textarea></label>
         <span class="msg-erro" id="dErro"></span>
       </div>
       <div class="rodape">
@@ -164,19 +164,50 @@
     </form>
   </dialog>
 
+  <dialog id="dlgEncaixe">
+    <form method="dialog" id="formEncaixe" novalidate>
+      <h2>Encaixe</h2>
+      <p class="sub">Paciente sem consulta marcada. O sistema cria a consulta de agora e já registra a chegada.</p>
+      <div class="form">
+        <label>Paciente já cadastrado <span class="dica">Busque por nome ou CPF. Paciente novo: preencha os dados abaixo.</span>
+          <input class="campo" type="search" id="eBusca" placeholder="Nome ou CPF" autocomplete="off"></label>
+        <div class="resultados" id="eResultados"></div>
+        <div class="grade2">
+          <label>CPF <input class="campo" id="eCpf" inputmode="numeric" maxlength="14" autocomplete="off"></label>
+          <label>Nascimento <input class="campo" type="date" id="eNascimento"></label>
+        </div>
+        <label>Nome <input class="campo" id="eNome" maxlength="240" autocomplete="off"></label>
+        <label>Telefone <span class="dica">Opcional.</span> <input class="campo" id="eTelefone" maxlength="40" autocomplete="off"></label>
+        <div class="grade2">
+          <label>Profissional <select class="campo" id="eProfissional"></select></label>
+          <label>Especialidade <select class="campo" id="eEspecialidade"></select></label>
+        </div>
+        <label>Convênio <select class="campo" id="eConvenio"></select></label>
+        <span class="msg-erro" id="eErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="eOk">Registrar encaixe</button>
+      </div>
+    </form>
+  </dialog>
+
   <div id="aviso" role="status"></div>
 
   <script>
     const $ = (id) => document.getElementById(id);
     const fmtHora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    const STATUS = {
-      MARCADO: ["Marcada", "tag"], CONFIRMADO: ["Confirmada", "tag marca"], AGUARDANDO: ["Aguardando", "tag ambar"],
-      EM_CONSULTA: ["Em consulta", "tag verde"], EXECUTADO: ["Atendido", "tag"]
-    };
     const ESPERA_ALERTA_MIN = 15;
     const ESPERA_ATRASO_MIN = 30;
+    const COLUNAS = [
+      { id: "chegar", titulo: "A chegar", vazio: "Ninguém mais previsto." },
+      { id: "aguardando", titulo: "Aguardando", vazio: "Sala de espera vazia." },
+      { id: "chamado", titulo: "Chamado", vazio: "Ninguém chamado agora." },
+      { id: "consulta", titulo: "Em consulta", vazio: "Nenhuma consulta em andamento." },
+      { id: "atendidos", titulo: "Atendidos", vazio: "Nenhum atendimento finalizado." }
+    ];
 
-    const estado = { conta: null, fila: [] };
+    const estado = { conta: null, fila: [], cadastros: null, encaixePacienteId: null };
     const params = new URLSearchParams(location.search);
 
     function el(tag, attrs, ...filhos) {
@@ -209,20 +240,32 @@
     }
 
     const json = (metodo, corpo) => ({ method: metodo, headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+    const post = (caminho, corpo) => api(caminho, corpo === undefined ? { method: "POST" } : json("POST", corpo));
     const hora = (iso) => iso ? String(iso).substring(11, 16) : "";
     const dataIso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
     const deIso = (iso) => { const [a, m, d] = iso.substring(0, 10).split("-").map(Number); return new Date(a, m - 1, d); };
     const somaDias = (iso, n) => { const d = deIso(iso); d.setDate(d.getDate() + n); return dataIso(d); };
     const hoje = () => dataIso(new Date());
+    const ehHoje = () => $("data").value === hoje();
     const previsto = (s) => s === "MARCADO" || s === "CONFIRMADO";
     const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+    const semAcento = (s) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const digitos = (s) => (s || "").replace(/\D/g, "");
+    const horarioPassou = (iso) => new Date(iso) <= new Date();
 
     function duracao(min) {
       if (min < 60) return plural(min, "min", "min");
       return Math.floor(min / 60) + "h" + String(min % 60).padStart(2, "0");
     }
 
-    // ---------- Fila do dia ----------
+    function coluna(f) {
+      if (previsto(f.status) || f.status === "FALTOU") return "chegar";
+      if (f.status === "AGUARDANDO") return f.chamadoEm ? "chamado" : "aguardando";
+      if (f.status === "EM_CONSULTA") return "consulta";
+      return "atendidos";
+    }
+
+    // ---------- Quadro do dia ----------
     async function carregarFila() {
       const data = $("data").value || hoje();
       $("data").value = data;
@@ -231,76 +274,114 @@
         $("atualizado").textContent = "Atualizado às " + fmtHora.format(new Date());
         desenhar();
       } catch (e) {
-        aviso("Não foi possível carregar a fila. " + e.message, true);
+        aviso("Não foi possível carregar o quadro. " + e.message, true);
       }
     }
 
+    function filtrar(fila) {
+      const prof = $("filtroProf").value;
+      const termo = $("busca").value.trim();
+      const nums = digitos(termo);
+      const porCpf = nums.length >= 3 && nums.length === termo.replace(/[.\-\s]/g, "").length;
+      return fila.filter((f) => (!prof || f.profissional === prof)
+        && (!termo || (porCpf ? digitos(f.cpf).startsWith(nums) : semAcento(f.paciente).includes(semAcento(termo)))));
+    }
+
     function desenhar() {
-      const fila = estado.fila;
-      const profs = [...new Set(fila.map((f) => f.profissional))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      const profs = [...new Set(estado.fila.map((f) => f.profissional))].sort((a, b) => a.localeCompare(b, "pt-BR"));
       const profSel = $("filtroProf").value;
       $("filtroProf").replaceChildren(el("option", { value: "" }, "Todos os profissionais"), ...profs.map((p) => el("option", { value: p }, p)));
       $("filtroProf").value = profs.includes(profSel) ? profSel : "";
 
-      const aguardando = fila.filter((f) => f.status === "AGUARDANDO");
-      const maiorEspera = Math.max(0, ...aguardando.map((f) => f.esperaMin || 0));
-      $("nPrevistos").textContent = fila.filter((f) => previsto(f.status)).length;
-      $("nAguardando").textContent = aguardando.length;
-      $("txtAguardando").textContent = aguardando.length ? "Aguardando · maior espera " + duracao(maiorEspera) : "Aguardando";
-      $("cardAguardando").className = "indicador" + (maiorEspera >= ESPERA_ATRASO_MIN ? " atraso" : "");
-      $("nConsulta").textContent = fila.filter((f) => f.status === "EM_CONSULTA").length;
-      $("nAtendidos").textContent = fila.filter((f) => f.status === "EXECUTADO").length;
+      const linhas = filtrar(estado.fila);
+      const porColuna = Object.fromEntries(COLUNAS.map((c) => [c.id, []]));
+      linhas.forEach((f) => porColuna[coluna(f)].push(f));
+      porColuna.chegar.sort((a, b) => (a.status === "FALTOU") - (b.status === "FALTOU") || a.horario.localeCompare(b.horario));
+      porColuna.aguardando.sort((a, b) => (b.esperaMin || 0) - (a.esperaMin || 0));
+      porColuna.chamado.sort((a, b) => String(b.chamadoEm).localeCompare(String(a.chamadoEm)));
 
-      const prof = $("filtroProf").value;
-      const status = $("filtroStatus").value;
-      const linhas = fila.filter((f) => (!prof || f.profissional === prof)
-        && (!status || (status === "PREVISTO" ? previsto(f.status) : f.status === status)));
-      const corpo = $("linhas");
-      corpo.replaceChildren(...linhas.map(linha));
-      if (!linhas.length) {
-        corpo.append(el("tr", {}, el("td", { colSpan: 6, className: "vazio" },
-          el("strong", {}, fila.length ? "Nenhuma consulta com este filtro" : "Nenhuma consulta neste dia"),
-          fila.length ? "Troque o profissional ou a situação." : "As consultas marcadas na agenda aparecem aqui.")));
-      }
+      $("quadro").replaceChildren(...COLUNAS.map((c) => {
+        const itens = porColuna[c.id];
+        const ativos = c.id === "chegar" ? itens.filter((f) => f.status !== "FALTOU") : itens;
+        let resumo = null;
+        let atraso = false;
+        if (c.id === "aguardando" && itens.length) {
+          const maior = Math.max(0, ...itens.map((f) => f.esperaMin || 0));
+          resumo = "maior espera " + duracao(maior);
+          atraso = maior >= ESPERA_ATRASO_MIN;
+        }
+        const faltas = c.id === "chegar" ? itens.length - ativos.length : 0;
+        if (faltas) resumo = plural(faltas, "falta", "faltas");
+        const cartoes = [];
+        itens.forEach((f, i) => {
+          if (c.id === "chegar" && f.status === "FALTOU" && (i === 0 || itens[i - 1].status !== "FALTOU")) {
+            cartoes.push(el("div", { className: "separador" }, "Faltaram"));
+          }
+          cartoes.push(cartao(f, c.id));
+        });
+        return el("section", { className: "coluna" + (atraso ? " atraso" : "") },
+          el("header", {}, el("h2", {}, c.titulo, resumo ? el("small", {}, resumo) : null), el("b", {}, String(ativos.length))),
+          el("div", { className: "lista" }, cartoes.length ? cartoes : el("div", { className: "vazio" }, estado.fila.length ? c.vazio : "Nenhuma consulta neste dia.")));
+      }));
     }
 
-    function linha(f) {
-      const [rotulo, classe] = STATUS[f.status] || [f.status, "tag"];
-      const ehHoje = $("data").value === hoje();
-      let espera = null;
-      if (f.status === "AGUARDANDO" && f.esperaMin !== null && f.esperaMin !== undefined) {
-        const cor = f.esperaMin >= ESPERA_ATRASO_MIN ? " rubi" : f.esperaMin >= ESPERA_ALERTA_MIN ? " ambar" : "";
-        espera = el("span", { className: "espera" + cor }, duracao(f.esperaMin));
-      }
+    function espera(f) {
+      if (f.esperaMin === null || f.esperaMin === undefined) return null;
+      const cor = f.esperaMin >= ESPERA_ATRASO_MIN ? " rubi" : f.esperaMin >= ESPERA_ALERTA_MIN ? " ambar" : "";
+      return el("span", { className: "espera" + cor, title: "Espera desde a chegada" }, duracao(f.esperaMin));
+    }
+
+    function cartao(f, col) {
+      const tags = [];
       const acoes = [];
-      if (previsto(f.status) && ehHoje) {
-        acoes.push(el("button", { className: "btn solido mini", type: "button", onclick: (ev) => chegada(f, ev.currentTarget) }, "Registrar chegada"));
+      const hojeSim = ehHoje();
+      if (f.status === "CONFIRMADO") tags.push(el("span", { className: "tag marca" }, "Confirmada"));
+      if (f.status === "FALTOU") tags.push(el("span", { className: "tag rubi" }, "Faltou"));
+      if (f.chegadaEm && col !== "chegar") tags.push(el("span", { className: "tag" }, "Chegou " + hora(f.chegadaEm)));
+      if (f.chamadoEm) tags.push(el("span", { className: "tag violeta" }, "Chamado " + hora(f.chamadoEm)));
+      if (f.status === "EXECUTADO") tags.push(el("span", { className: "tag verde" }, "Atendido"));
+
+      if (col === "chegar" && previsto(f.status) && hojeSim) {
+        acoes.push(botao("Chegou", "solido", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/chegada",
+          "Chegada de " + f.paciente + " registrada.")));
+        if (horarioPassou(f.horario)) {
+          acoes.push(botao("Faltou", "fantasma", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/falta",
+            f.paciente + " marcado como falta. O horário ficou livre.")));
+        }
+      }
+      if (f.status === "FALTOU") {
+        acoes.push(botao("Desfazer falta", "fantasma", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/desfazer-falta",
+          "Falta desfeita.")));
       }
       if (f.status === "AGUARDANDO" && f.atendimentoId) {
-        acoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: () => abrirDesfazer(f) }, "Desfazer chegada"));
+        acoes.push(botao(f.chamadoEm ? "Chamar de novo" : "Chamar", f.chamadoEm ? "cinza" : "solido",
+          (b) => acao(b, "/atendimento/api/atendimentos/" + f.atendimentoId + "/chamar", f.paciente + " chamado.")));
+        acoes.push(botao("Desfazer chegada", "fantasma", () => abrirDesfazer(f)));
       }
-      return el("tr", { className: f.status === "EXECUTADO" ? "encerrado" : "" },
-        el("td", { className: "hora" }, hora(f.horario)),
-        el("td", {}, el("span", { className: "nome" }, f.paciente || ""),
-          el("span", { className: "sub" }, f.especialidade || "")),
-        el("td", { className: "col-opc" }, f.profissional || ""),
-        el("td", {}, el("span", { className: classe }, rotulo),
-          f.chegadaEm ? el("span", { className: "sub" }, "Chegou às " + hora(f.chegadaEm)) : null),
-        el("td", {}, espera || el("span", { className: "sub" }, "—")),
-        el("td", {}, el("div", { className: "acoes" }, acoes)));
+      return el("article", { className: "cartao" + (col === "chamado" ? " chamado" : "") + (col === "atendidos" || f.status === "FALTOU" ? " encerrado" : "") },
+        el("div", { className: "topo" }, el("span", { className: "hora" }, hora(f.horario)), f.status === "AGUARDANDO" ? espera(f) : null),
+        el("span", { className: "nome" }, f.paciente || ""),
+        el("span", { className: "sub" }, [f.profissional, f.especialidade].filter(Boolean).join(" · ")),
+        tags.length ? el("div", { className: "tags" }, tags) : null,
+        acoes.length ? el("div", { className: "acoes" }, acoes) : null);
     }
 
-    async function chegada(f, botao) {
-      botao.disabled = true;
+    function botao(texto, estilo, onclick) {
+      return el("button", { className: "btn mini " + estilo, type: "button", onclick: (ev) => onclick(ev.currentTarget) }, texto);
+    }
+
+    async function acao(botaoEl, caminho, sucesso) {
+      botaoEl.disabled = true;
       try {
-        await api("/atendimento/api/agendamentos/" + f.agendamentoId + "/chegada", { method: "POST" });
-        aviso("Chegada de " + f.paciente + " registrada. Já está na fila do médico.");
+        await post(caminho);
+        aviso(sucesso);
       } catch (e) {
         aviso(e.message, true);
       }
       await carregarFila();
     }
 
+    // ---------- Desfazer chegada ----------
     let desfazendo = null;
     function abrirDesfazer(f) {
       desfazendo = f;
@@ -319,7 +400,7 @@
       if (!motivo) return $("dErro").textContent = "Informe o motivo.";
       $("dOk").disabled = true;
       try {
-        await api("/atendimento/api/atendimentos/" + desfazendo.atendimentoId + "/desfazer-chegada", json("POST", { motivo }));
+        await post("/atendimento/api/atendimentos/" + desfazendo.atendimentoId + "/desfazer-chegada", { motivo });
         $("dlgDesfazer").close();
         aviso("Chegada desfeita.");
         await carregarFila();
@@ -328,6 +409,113 @@
         $("dOk").disabled = false;
       }
     });
+
+    // ---------- Encaixe ----------
+    async function abrirEncaixe() {
+      ["eBusca", "eCpf", "eNascimento", "eNome", "eTelefone"].forEach((id) => { $(id).value = ""; $(id).readOnly = false; });
+      $("eResultados").replaceChildren();
+      $("eErro").textContent = "";
+      $("eOk").disabled = false;
+      estado.encaixePacienteId = null;
+      try {
+        estado.cadastros = estado.cadastros || await api("/atendimento/api/encaixes/cadastros");
+      } catch (e) {
+        return aviso("Não foi possível carregar profissionais e convênios. " + e.message, true);
+      }
+      const profs = estado.cadastros.profissionais;
+      $("eProfissional").replaceChildren(...profs.map((p) => el("option", { value: p.id }, p.nome)));
+      const filtrado = profs.find((p) => p.nome === $("filtroProf").value);
+      if (filtrado) $("eProfissional").value = filtrado.id;
+      trocarProfissional();
+      $("eConvenio").replaceChildren(el("option", { value: "" }, "Particular / não informado"),
+        ...estado.cadastros.convenios.map((c) => el("option", { value: c.id }, c.nome)));
+      if (!profs.length) $("eErro").textContent = "Nenhum profissional com especialidade cadastrada. Cadastre em \"Cadastros da agenda\".";
+      $("dlgEncaixe").showModal();
+      $("eBusca").focus();
+    }
+
+    function trocarProfissional() {
+      const prof = (estado.cadastros?.profissionais || []).find((p) => String(p.id) === $("eProfissional").value);
+      $("eEspecialidade").replaceChildren(...(prof ? prof.especialidades : []).map((e) => el("option", { value: e.id }, e.nome)));
+    }
+
+    function escolherPaciente(p, botaoEl) {
+      estado.encaixePacienteId = p.id;
+      document.querySelectorAll("#eResultados .resultado").forEach((b) => b.classList.toggle("escolhido", b === botaoEl));
+      $("eCpf").value = p.cpf;
+      $("eNascimento").value = p.nascimento;
+      $("eNome").value = p.nome;
+      $("eTelefone").value = p.telefone || "";
+      ["eCpf", "eNascimento", "eNome"].forEach((id) => $(id).readOnly = true);
+      $("eProfissional").focus();
+    }
+
+    let buscaTimer = null;
+    $("eBusca").addEventListener("input", () => {
+      clearTimeout(buscaTimer);
+      buscaTimer = setTimeout(async () => {
+        const q = $("eBusca").value.trim();
+        if (estado.encaixePacienteId) {
+          estado.encaixePacienteId = null;
+          ["eCpf", "eNascimento", "eNome"].forEach((id) => $(id).readOnly = false);
+        }
+        if (q.length < 2) return $("eResultados").replaceChildren();
+        try {
+          const achados = await api("/atendimento/api/pacientes", null, { q });
+          $("eResultados").replaceChildren(...(achados.length ? achados.map((p) => {
+            const b = el("button", { type: "button", className: "resultado" },
+              el("strong", {}, p.nome), el("span", { className: "sub" }, "CPF " + p.cpf + " · nascimento " + p.nascimento.split("-").reverse().join("/")));
+            b.onclick = () => escolherPaciente(p, b);
+            return b;
+          }) : [el("span", { className: "sub" }, "Nenhum paciente encontrado. Preencha os dados abaixo para cadastrar.")]));
+        } catch (e) {
+          $("eResultados").replaceChildren(el("span", { className: "msg-erro" }, e.message));
+        }
+      }, 300);
+    });
+
+    $("eProfissional").addEventListener("change", trocarProfissional);
+
+    $("formEncaixe").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const corpo = {
+        profissionalId: Number($("eProfissional").value || 0),
+        especialidadeId: Number($("eEspecialidade").value || 0),
+        convenioId: $("eConvenio").value ? Number($("eConvenio").value) : null,
+        cpf: digitos($("eCpf").value),
+        nascimento: $("eNascimento").value || null,
+        nome: $("eNome").value.trim(),
+        telefone: $("eTelefone").value.trim()
+      };
+      if (corpo.cpf.length !== 11) return $("eErro").textContent = "CPF precisa ter 11 dígitos.";
+      if (!corpo.nascimento) return $("eErro").textContent = "Informe a data de nascimento.";
+      if (!corpo.nome) return $("eErro").textContent = "Informe o nome do paciente.";
+      if (!corpo.profissionalId || !corpo.especialidadeId) return $("eErro").textContent = "Escolha o profissional e a especialidade.";
+      $("eOk").disabled = true;
+      try {
+        await post("/atendimento/api/encaixes", corpo);
+        $("dlgEncaixe").close();
+        aviso("Encaixe de " + corpo.nome + " registrado. Já está aguardando.");
+        await carregarFila();
+      } catch (e) {
+        $("eErro").textContent = e.message;
+        $("eOk").disabled = false;
+      }
+    });
+
+    // ---------- Tempo real ----------
+    let recarga = null;
+    function conectarAoVivo() {
+      if (!window.EventSource) return;
+      const fonte = new EventSource(url("/atendimento/api/eventos"));
+      fonte.onopen = () => { $("aovivo").textContent = "Ao vivo"; $("aovivo").className = "aovivo ligado"; };
+      fonte.onerror = () => { $("aovivo").textContent = "Reconectando…"; $("aovivo").className = "aovivo"; };
+      fonte.addEventListener("fila", () => {
+        if (!ehHoje()) return;
+        clearTimeout(recarga);
+        recarga = setTimeout(carregarFila, 400);
+      });
+    }
 
     // ---------- Navegação ----------
     document.querySelectorAll("[data-fechar]").forEach((b) => b.onclick = () => b.closest("dialog").close());
@@ -342,11 +530,18 @@
     $("hoje").onclick = () => { $("data").value = hoje(); carregarFila(); };
     $("atualizar").onclick = carregarFila;
     $("filtroProf").addEventListener("change", desenhar);
-    $("filtroStatus").addEventListener("change", desenhar);
+    $("busca").addEventListener("input", desenhar);
+    $("abrirEncaixe").onclick = abrirEncaixe;
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "/" && !document.querySelector("dialog[open]") && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+        ev.preventDefault();
+        $("busca").focus();
+      }
+    });
 
     setInterval(() => {
       const dialogoAberto = document.querySelector("dialog[open]");
-      if (!document.hidden && !dialogoAberto && $("data").value === hoje()) carregarFila();
+      if (!document.hidden && !dialogoAberto && ehHoje()) carregarFila();
     }, 60000);
 
     (() => {
@@ -356,6 +551,7 @@
       }
       $("data").value = params.get("data") || hoje();
       carregarFila();
+      conectarAoVivo();
     })();
   </script>
 </body>

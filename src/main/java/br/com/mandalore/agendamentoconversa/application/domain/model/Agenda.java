@@ -34,8 +34,9 @@ public final class Agenda {
         EXCLUIDO, DESATIVADO, NAO_ENCONTRADO
     }
 
+    /** FALTOU: o paciente não veio; o horário fica livre. */
     public enum Status {
-        MARCADO, CONFIRMADO, CANCELADO, REMARCADO, AGUARDANDO, EM_CONSULTA, EXECUTADO;
+        MARCADO, CONFIRMADO, CANCELADO, REMARCADO, AGUARDANDO, EM_CONSULTA, EXECUTADO, FALTOU;
 
         /** Ainda dá para confirmar, cancelar ou remarcar: o paciente não chegou. */
         public boolean ativo() {

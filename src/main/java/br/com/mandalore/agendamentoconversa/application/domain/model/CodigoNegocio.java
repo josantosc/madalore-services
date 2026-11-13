@@ -27,6 +27,11 @@ public enum CodigoNegocio {
     RASCUNHO_PENDENTE("rascunho_pendente"),
     DIAGNOSTICO_PRINCIPAL_JA_EXISTE("diagnostico_principal_ja_existe"),
     DIAGNOSTICO_DUPLICADO("diagnostico_duplicado"),
+    ALERGIA_DUPLICADA("alergia_duplicada"),
+    STATUS_INVALIDO_PARA_CHAMADA("status_invalido_para_chamada"),
+    STATUS_INVALIDO_PARA_FALTA("status_invalido_para_falta"),
+    FALTA_ANTES_DO_HORARIO("falta_antes_do_horario"),
+    ATALHO_DUPLICADO("atalho_duplicado"),
     NAO_ENCONTRADO("nao_encontrado");
 
     private final String valor;

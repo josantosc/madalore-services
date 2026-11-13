@@ -69,22 +69,81 @@ public final class Atendimento {
 
     /**
      * Linha da fila da recepção. Sem conteúdo clínico (LGPD). atendimentoId e chegadaEm só existem depois da
-     * chegada; esperaMin é o tempo desde a chegada enquanto o paciente aguarda.
+     * chegada; esperaMin é o tempo desde a chegada enquanto o paciente aguarda; chamadoEm, a última chamada.
      */
     public record FilaItem(
             long agendamentoId,
             Long atendimentoId,
             LocalDateTime horario,
             String paciente,
+            String cpf,
             String profissional,
             String especialidade,
             String status,
             LocalDateTime chegadaEm,
-            Long esperaMin
+            Long esperaMin,
+            LocalDateTime chamadoEm
     ) {
     }
 
-    /** Campos da anamnese por seção ({@code atendimento.anamnese_paciente}). Liberada quando dtLiberacao existe. */
+    /** Paciente que chegou sem agendamento. Paciente novo é cadastrado pelo CPF e nascimento. */
+    public record Encaixe(
+            long profissionalId,
+            long especialidadeId,
+            Long convenioId,
+            String cpf,
+            LocalDate nascimento,
+            String nome,
+            String telefone
+    ) {
+    }
+
+    /** Item de cadastro para os seletores da recepção. */
+    public record Opcao(long id, String nome) {
+    }
+
+    /** Profissional ativo com as especialidades que atende. */
+    public record ProfissionalEncaixe(long id, String nome, List<Opcao> especialidades) {
+
+        public ProfissionalEncaixe {
+            especialidades = especialidades == null ? List.of() : List.copyOf(especialidades);
+        }
+    }
+
+    public record CadastrosEncaixe(List<ProfissionalEncaixe> profissionais, List<Opcao> convenios) {
+
+        public CadastrosEncaixe {
+            profissionais = profissionais == null ? List.of() : List.copyOf(profissionais);
+            convenios = convenios == null ? List.of() : List.copyOf(convenios);
+        }
+    }
+
+    /** Paciente achado na busca da recepção. */
+    public record PacienteResumo(long id, String nome, String cpf, LocalDate nascimento, String telefone) {
+    }
+
+    /** {@code atendimento.medicamento_favorito}: item de receita salvo pelo profissional. */
+    public record MedicamentoFavorito(
+            Long id,
+            String medicamento,
+            String apresentacao,
+            String posologia,
+            String via,
+            String quantidade,
+            boolean usoContinuo,
+            String observacao
+    ) {
+    }
+
+    /** {@code atendimento.modelo_nota}: texto do profissional expandido por {@code .atalho}. */
+    public record ModeloNota(Long id, String atalho, String titulo, String texto) {
+    }
+
+    /**
+     * Nota SOAP da consulta ({@code atendimento.anamnese_paciente}): subjetivo (queixa a hábitos), objetivo (exame
+     * físico), avaliação e conduta. Liberada quando dtLiberacao existe. alergias é legado: a alergia vigente fica em
+     * {@link Alergia}.
+     */
     public record Anamnese(
             Long id,
             long nrAtendimento,
@@ -98,6 +157,8 @@ public final class Atendimento {
             String alergias,
             String habitos,
             String exameFisico,
+            String avaliacao,
+            String conduta,
             LocalDateTime dtRegistro,
             LocalDateTime dtLiberacao,
             boolean ativa,
@@ -210,14 +271,37 @@ public final class Atendimento {
     public record Evento(String tipo, String usuario, String detalhe, Instant em) {
     }
 
-    /** Visão completa do atendimento para o médico. */
+    /** {@code atendimento.alergia_paciente}: vale para todas as consultas do paciente enquanto ativa. */
+    public record Alergia(Long id, long pacienteId, String descricao, LocalDateTime dtRegistro, String usuario) {
+    }
+
+    /**
+     * Faixa fixa do prontuário. alergiasAnteriores é o texto de alergias da última anamnese liberada, de antes do
+     * cadastro de alergias do paciente; vazio quando não houver.
+     */
+    public record CabecalhoPaciente(
+            long pacienteId,
+            String nome,
+            LocalDate nascimento,
+            String convenio,
+            List<Alergia> alergias,
+            String alergiasAnteriores
+    ) {
+
+        public CabecalhoPaciente {
+            alergias = alergias == null ? List.of() : List.copyOf(alergias);
+        }
+    }
+
+    /** Visão completa do atendimento para o médico. paciente vem nulo no histórico. */
     public record Prontuario(
             Ficha atendimento,
             Anamnese anamnese,
             List<Evolucao> evolucoes,
             List<Diagnostico> diagnosticos,
             List<Receita> receitas,
-            Alta alta
+            Alta alta,
+            CabecalhoPaciente paciente
     ) {
 
         public Prontuario {

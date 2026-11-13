@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAcesso;
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAuthFilter;
@@ -31,6 +33,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.exception.Atendim
 import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento;
 import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AtendimentoUseCase;
+import br.com.mandalore.agendamentoconversa.application.domain.service.HabilitacaoAtendimento;
 
 /**
  * API da tela da recepção (/atendimento): fila do dia, chegada e desfazer chegada. Nunca devolve conteúdo clínico.
@@ -42,10 +45,20 @@ public class AtendimentoController {
 
     private final AtendimentoUseCase atendimento;
     private final String contaPadrao;
+    private final FilaAoVivo aoVivo;
+    private final HabilitacaoAtendimento habilitacao;
 
-    public AtendimentoController(AtendimentoUseCase atendimento, @Value("${agenda.conta-padrao:1}") String contaPadrao) {
+    @Autowired
+    public AtendimentoController(AtendimentoUseCase atendimento, @Value("${agenda.conta-padrao:1}") String contaPadrao,
+                                 FilaAoVivo aoVivo, HabilitacaoAtendimento habilitacao) {
         this.atendimento = atendimento;
         this.contaPadrao = contaPadrao == null || contaPadrao.isBlank() ? "1" : contaPadrao.trim();
+        this.aoVivo = aoVivo;
+        this.habilitacao = habilitacao;
+    }
+
+    AtendimentoController(AtendimentoUseCase atendimento, String contaPadrao) {
+        this(atendimento, contaPadrao, null, null);
     }
 
     public record DesfazerRequest(String motivo) {
@@ -94,6 +107,59 @@ public class AtendimentoController {
         return atendimento.eventos(conta(conta, login), id);
     }
 
+    @PostMapping("/atendimento/api/atendimentos/{id}/chamar")
+    public ResponseEntity<Map<String, Object>> chamar(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                      @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(atendimento.chamar(conta(conta, login), id, login.usuario()), "atendimentoId");
+    }
+
+    @PostMapping("/atendimento/api/agendamentos/{id}/falta")
+    public ResponseEntity<Map<String, Object>> falta(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                     @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(atendimento.marcarFalta(conta(conta, login), id, login.usuario()), "agendamentoId");
+    }
+
+    @PostMapping("/atendimento/api/agendamentos/{id}/desfazer-falta")
+    public ResponseEntity<Map<String, Object>> desfazerFalta(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                             @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(atendimento.desfazerFalta(conta(conta, login), id, login.usuario()), "agendamentoId");
+    }
+
+    @PostMapping(value = "/atendimento/api/encaixes", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> encaixe(@RequestParam(required = false) String conta,
+                                                       @RequestBody Atendimento.Encaixe encaixe,
+                                                       @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(atendimento.encaixe(conta(conta, login), encaixe, login.usuario()), "atendimentoId");
+    }
+
+    @GetMapping(value = "/atendimento/api/encaixes/cadastros", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Atendimento.CadastrosEncaixe cadastrosEncaixe(@RequestParam(required = false) String conta,
+                                                         @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return atendimento.cadastrosEncaixe(conta(conta, login));
+    }
+
+    @GetMapping(value = "/atendimento/api/pacientes", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Atendimento.PacienteResumo> pacientes(@RequestParam(required = false) String conta,
+                                                      @RequestParam(required = false) String q,
+                                                      @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return atendimento.buscarPacientes(conta(conta, login), q);
+    }
+
+    /** Avisos da fila em tempo real (só tipo e números, sem dado do paciente). */
+    @GetMapping(value = "/atendimento/api/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter eventosAoVivo(@RequestParam(required = false) String conta,
+                                    @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return assinar(aoVivo, habilitacao, conta(conta, login));
+    }
+
+    static SseEmitter assinar(FilaAoVivo aoVivo, HabilitacaoAtendimento habilitacao, String conta) {
+        if (aoVivo == null || habilitacao == null) {
+            throw new AtendimentoDesabilitadoException();
+        }
+        habilitacao.exigir(conta);
+        return aoVivo.assinar(conta);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> invalido(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(Map.of("erro", ex.getMessage()));
@@ -133,10 +199,16 @@ public class AtendimentoController {
             case REGISTRO_JA_LIBERADO -> "O registro já foi liberado e não pode ser editado. Inative-o com justificativa.";
             case REGISTRO_NAO_LIBERADO -> "Rascunho não se inativa: edite-o ou libere-o.";
             case PROFISSIONAL_SEM_CONSELHO -> "Preencha o número e a UF do conselho no cadastro do profissional antes de liberar a receita.";
-            case SEM_REGISTRO_CLINICO -> "Libere a anamnese ou uma evolução antes de finalizar.";
+            case SEM_REGISTRO_CLINICO -> "Escreva a nota da consulta (queixa principal) ou uma nota complementar antes de finalizar.";
             case RASCUNHO_PENDENTE -> "Há rascunho aberto (anamnese, evolução ou receita). Libere ou descarte antes de finalizar.";
             case DIAGNOSTICO_PRINCIPAL_JA_EXISTE -> "Já existe um diagnóstico principal ativo neste atendimento.";
             case DIAGNOSTICO_DUPLICADO -> "Este CID já está registrado neste atendimento.";
+            case ALERGIA_DUPLICADA -> "Esta alergia já está registrada para o paciente.";
+            case STATUS_INVALIDO_PARA_CHAMADA -> "Só dá para chamar quem está aguardando. Atualize a tela.";
+            case STATUS_INVALIDO_PARA_FALTA -> "Só dá para marcar falta (ou desfazê-la) de consulta que não começou. Atualize a tela.";
+            case FALTA_ANTES_DO_HORARIO -> "O horário da consulta ainda não chegou: não dá para marcar falta.";
+            case HORARIO_INDISPONIVEL -> "O horário já foi ocupado por outra consulta. Remarque pela agenda.";
+            case ATALHO_DUPLICADO -> "Você já tem um modelo com este atalho.";
             default -> "Não foi possível gravar (" + codigo.name() + ").";
         };
     }

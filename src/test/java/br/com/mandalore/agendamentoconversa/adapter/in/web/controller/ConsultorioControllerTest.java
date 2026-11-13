@@ -111,7 +111,7 @@ class ConsultorioControllerTest {
     @Test
     void prontuarioRepassaIpESemCache() throws Exception {
         when(consultorio.prontuario(CTX, 99L, "203.0.113.9"))
-                .thenReturn(new Atendimento.Prontuario(null, null, null, null, null, null));
+                .thenReturn(new Atendimento.Prontuario(null, null, null, null, null, null, null));
 
         mvc.perform(get("/consultorio/api/atendimentos/99")
                         .header("X-Forwarded-For", "203.0.113.9")

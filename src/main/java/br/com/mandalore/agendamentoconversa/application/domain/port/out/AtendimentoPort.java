@@ -17,7 +17,7 @@ public interface AtendimentoPort {
     record ProfissionalClinico(long id, String nome, String conselhoNumero, String conselhoUf) {
     }
 
-    /** Dados da clínica e do paciente para a impressão da receita. */
+    /** Dados da clínica e do paciente para a impressão da receita e da folha da consulta. */
     record CabecalhoReceita(String clinica, String paciente, String cpf) {
     }
 
@@ -41,6 +41,46 @@ public interface AtendimentoPort {
 
     List<Atendimento.Evento> eventos(String conta, long nrAtendimento);
 
+    /**
+     * Chama o paciente AGUARDANDO (grava dt_chamada e o evento CHAMADO; chamar de novo atualiza o horário).
+     * profissionalId preenchido: só atendimento desse profissional. Operacao.id() é o nrAtendimento.
+     */
+    Atendimento.Operacao chamar(String conta, long nrAtendimento, Long profissionalId, String ator);
+
+    /** Agendamento MARCADO ou CONFIRMADO cujo horário já passou vira FALTOU. Operacao.id() é o agendamento. */
+    Atendimento.Operacao marcarFalta(String conta, long agendamentoId, String ator);
+
+    /** FALTOU volta a CONFIRMADO ou MARCADO; horário já ocupado por outra consulta: HORARIO_INDISPONIVEL. */
+    Atendimento.Operacao desfazerFalta(String conta, long agendamentoId, String ator);
+
+    /**
+     * Numa transação: acha ou cadastra o paciente, cria o agendamento de agora já AGUARDANDO (sem checar sobreposição,
+     * é encaixe) e o atendimento. Profissional, especialidade ou convênio fora da conta: NAO_ENCONTRADO.
+     * Operacao.id() é o nrAtendimento.
+     */
+    Atendimento.Operacao encaixe(String conta, Atendimento.Encaixe encaixe, int duracaoMin, String ator);
+
+    Atendimento.CadastrosEncaixe cadastrosEncaixe(String conta);
+
+    /** Por parte do nome ou pelo começo do CPF; no máximo {@code limite}. */
+    List<Atendimento.PacienteResumo> buscarPacientes(String conta, String termo, int limite);
+
+    // ---- favoritos e modelos do profissional ----
+
+    List<Atendimento.MedicamentoFavorito> favoritos(String conta, long profissionalId);
+
+    /** Mesmo medicamento, apresentação e posologia: atualiza o existente. Devolve o id. */
+    long salvarFavorito(String conta, long profissionalId, Atendimento.MedicamentoFavorito favorito);
+
+    boolean excluirFavorito(String conta, long profissionalId, long favoritoId);
+
+    List<Atendimento.ModeloNota> modelos(String conta, long profissionalId);
+
+    /** id nulo cria; id de outro profissional: NAO_ENCONTRADO; atalho repetido: ATALHO_DUPLICADO. */
+    Atendimento.Operacao salvarModelo(String conta, long profissionalId, Atendimento.ModeloNota modelo);
+
+    boolean excluirModelo(String conta, long profissionalId, long modeloId);
+
     // ---- consultório: leitura ----
 
     Optional<ProfissionalClinico> profissionalDoUsuario(String conta, long usuarioId);
@@ -61,6 +101,8 @@ public interface AtendimentoPort {
     Optional<Atendimento.Receita> receita(String conta, long receitaId);
 
     Optional<CabecalhoReceita> cabecalhoReceita(String conta, long receitaId);
+
+    Optional<CabecalhoReceita> cabecalhoAtendimento(String conta, long nrAtendimento);
 
     ContagemClinica contagemParaFinalizar(String conta, long nrAtendimento);
 
@@ -119,4 +161,23 @@ public interface AtendimentoPort {
     /** Seção 9.4: grava a alta, finaliza o atendimento e põe o agendamento em EXECUTADO. */
     Atendimento.Operacao finalizar(String conta, long nrAtendimento, long profissionalId,
                                    Atendimento.MotivoAlta motivoAlta, Atendimento.Alta alta, String ator);
+
+    /**
+     * Numa transação: libera os rascunhos com conteúdo (anamnese, evoluções e receitas, estas com a validade
+     * informada), inativa os rascunhos vazios e finaliza como {@link #finalizar}. Rascunho com conteúdo que não pode ser
+     * liberado lança IllegalArgumentException e nada é gravado.
+     */
+    Atendimento.Operacao finalizarEAssinar(String conta, long nrAtendimento, long profissionalId,
+                                           Atendimento.MotivoAlta motivoAlta, Atendimento.Alta alta,
+                                           LocalDate validadeReceita, String ator);
+
+    // ---- alergias do paciente ----
+
+    /** Inclui a alergia para o paciente do atendimento EM_CONSULTA. Repetida entre as ativas: ALERGIA_DUPLICADA. */
+    Atendimento.Operacao incluirAlergia(String conta, long nrAtendimento, long profissionalId, String descricao,
+                                        String ator);
+
+    /** Inativa alergia ativa do paciente do atendimento EM_CONSULTA, com justificativa. */
+    Atendimento.Operacao inativarAlergia(String conta, long nrAtendimento, long alergiaId, long profissionalId,
+                                         String justificativa, String ator);
 }

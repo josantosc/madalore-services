@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
@@ -16,6 +17,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAcesso;
 import br.com.mandalore.agendamentoconversa.adapter.in.web.admin.AdminAuthFilter;
@@ -33,6 +36,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.exception.Atendim
 import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.Contexto;
+import br.com.mandalore.agendamentoconversa.application.domain.service.HabilitacaoAtendimento;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -45,10 +49,20 @@ public class ConsultorioController {
 
     private final ConsultorioUseCase consultorio;
     private final String contaPadrao;
+    private final FilaAoVivo aoVivo;
+    private final HabilitacaoAtendimento habilitacao;
 
-    public ConsultorioController(ConsultorioUseCase consultorio, @Value("${agenda.conta-padrao:1}") String contaPadrao) {
+    @Autowired
+    public ConsultorioController(ConsultorioUseCase consultorio, @Value("${agenda.conta-padrao:1}") String contaPadrao,
+                                 FilaAoVivo aoVivo, HabilitacaoAtendimento habilitacao) {
         this.consultorio = consultorio;
         this.contaPadrao = contaPadrao == null || contaPadrao.isBlank() ? "1" : contaPadrao.trim();
+        this.aoVivo = aoVivo;
+        this.habilitacao = habilitacao;
+    }
+
+    ConsultorioController(ConsultorioUseCase consultorio, String contaPadrao) {
+        this(consultorio, contaPadrao, null, null);
     }
 
     public record JustificativaRequest(String justificativa) {
@@ -183,7 +197,17 @@ public class ConsultorioController {
     public ResponseEntity<byte[]> impressao(@PathVariable long id, @RequestParam(required = false) String conta,
                                             @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
                                             HttpServletRequest request) {
-        ConsultorioUseCase.Impressao impressao = consultorio.impressaoReceita(contexto(conta, login), id, AdminAcesso.ip(request));
+        return html(consultorio.impressaoReceita(contexto(conta, login), id, AdminAcesso.ip(request)));
+    }
+
+    @GetMapping("/consultorio/api/atendimentos/{id}/impressao")
+    public ResponseEntity<byte[]> impressaoConsulta(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                    @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
+                                                    HttpServletRequest request) {
+        return html(consultorio.impressaoConsulta(contexto(conta, login), id, AdminAcesso.ip(request)));
+    }
+
+    private static ResponseEntity<byte[]> html(ConsultorioUseCase.Impressao impressao) {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
                 .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
@@ -197,11 +221,86 @@ public class ConsultorioController {
         return operacao(consultorio.finalizar(contexto(conta, login), id, finalizacao));
     }
 
+    @PostMapping(value = "/consultorio/api/atendimentos/{id}/finalizar-e-assinar", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> finalizarEAssinar(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                                 @RequestBody ConsultorioUseCase.FinalizarInBound finalizacao,
+                                                                 @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(consultorio.finalizarEAssinar(contexto(conta, login), id, finalizacao));
+    }
+
+    @PostMapping(value = "/consultorio/api/atendimentos/{id}/alergias", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> incluirAlergia(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                              @RequestBody ConsultorioUseCase.AlergiaInBound alergia,
+                                                              @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(consultorio.incluirAlergia(contexto(conta, login), id, alergia));
+    }
+
+    @PostMapping(value = "/consultorio/api/atendimentos/{id}/alergias/{alergiaId}/inativar", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> inativarAlergia(@PathVariable long id, @PathVariable long alergiaId,
+                                                               @RequestParam(required = false) String conta,
+                                                               @RequestBody JustificativaRequest request,
+                                                               @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(consultorio.inativarAlergia(contexto(conta, login), id, alergiaId, request.justificativa()));
+    }
+
     @GetMapping(value = "/consultorio/api/pacientes/{id}/historico", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<Atendimento.Prontuario>> historico(@PathVariable long id, @RequestParam(required = false) String conta,
                                                                   @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
                                                                   HttpServletRequest request) {
         return semCache(consultorio.historicoDoPaciente(contexto(conta, login), id, AdminAcesso.ip(request)));
+    }
+
+    @PostMapping("/consultorio/api/atendimentos/{id}/chamar")
+    public ResponseEntity<Map<String, Object>> chamar(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                      @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(consultorio.chamar(contexto(conta, login), id));
+    }
+
+    @GetMapping(value = "/consultorio/api/favoritos", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Atendimento.MedicamentoFavorito> favoritos(@RequestParam(required = false) String conta,
+                                                           @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return consultorio.favoritos(contexto(conta, login));
+    }
+
+    @PostMapping(value = "/consultorio/api/favoritos", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> salvarFavorito(@RequestParam(required = false) String conta,
+                                                              @RequestBody Atendimento.MedicamentoFavorito favorito,
+                                                              @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(consultorio.salvarFavorito(contexto(conta, login), favorito));
+    }
+
+    @DeleteMapping("/consultorio/api/favoritos/{id}")
+    public ResponseEntity<Void> excluirFavorito(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return consultorio.excluirFavorito(contexto(conta, login), id)
+                ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping(value = "/consultorio/api/modelos", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Atendimento.ModeloNota> modelos(@RequestParam(required = false) String conta,
+                                                @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return consultorio.modelos(contexto(conta, login));
+    }
+
+    @PutMapping(value = "/consultorio/api/modelos", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> salvarModelo(@RequestParam(required = false) String conta,
+                                                            @RequestBody Atendimento.ModeloNota modelo,
+                                                            @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(consultorio.salvarModelo(contexto(conta, login), modelo));
+    }
+
+    @DeleteMapping("/consultorio/api/modelos/{id}")
+    public ResponseEntity<Void> excluirModelo(@PathVariable long id, @RequestParam(required = false) String conta,
+                                              @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return consultorio.excluirModelo(contexto(conta, login), id)
+                ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    /** Avisos da fila em tempo real (só tipo e números); a tela recarrega a própria fila. */
+    @GetMapping(value = "/consultorio/api/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter eventosAoVivo(@RequestParam(required = false) String conta,
+                                    @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return AtendimentoController.assinar(aoVivo, habilitacao, contexto(conta, login).conta());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

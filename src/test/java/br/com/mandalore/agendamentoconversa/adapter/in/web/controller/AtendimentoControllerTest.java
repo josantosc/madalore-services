@@ -50,7 +50,7 @@ class AtendimentoControllerTest {
     void filaUsaAContaDoLoginQuandoNaoInformada() throws Exception {
         LocalDate dia = LocalDate.of(2026, 11, 11);
         when(atendimento.fila("7", dia)).thenReturn(List.of(
-                new Atendimento.FilaItem(5L, null, null, "Maria", "Dr. João", "Clínica geral", "CONFIRMADO", null, null)));
+                new Atendimento.FilaItem(5L, null, null, "Maria", "12345678901", "Dr. João", "Clínica geral", "CONFIRMADO", null, null, null)));
 
         mvc.perform(get("/atendimento/api/fila").param("data", "2026-11-11").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
                 .andExpect(status().isOk())
