@@ -256,7 +256,7 @@ class PostgresAtendimentoAdapterIT {
         // o tipo FilaItem só expõe identificação, horário, status, espera e chamada
         assertThat(Atendimento.FilaItem.class.getRecordComponents()).extracting("name").containsExactly("agendamentoId",
                 "atendimentoId", "horario", "paciente", "cpf", "profissional", "especialidade", "status", "chegadaEm",
-                "esperaMin", "chamadoEm");
+                "esperaMin", "chamadoEm", "localChamada");
     }
 
     @Test
@@ -974,16 +974,17 @@ class PostgresAtendimentoAdapterIT {
         long segundo = novoAgendamento("MARCADO", "2030-01-07 09:30");
         long nrPrimeiro = adapter.registrarChegada(CONTA, primeiro, "recepcao").id();
         long nrSegundo = adapter.registrarChegada(CONTA, segundo, "recepcao").id();
-        adapter.chamar(CONTA, nrPrimeiro, null, "recepcao");
+        adapter.chamar(CONTA, nrPrimeiro, null, null, "recepcao");
         PostgresAtendimentoAdapter depois = new PostgresAtendimentoAdapter(new NamedParameterJdbcTemplate(jdbc),
                 jdbc.getDataSource(), Clock.fixed(Instant.from(relogio.instant().plusSeconds(60)), relogio.getZone()));
-        depois.chamar(CONTA, nrSegundo, null, "recepcao");
+        depois.chamar(CONTA, nrSegundo, null, "Consultório 3", "recepcao");
 
         List<Atendimento.Chamada> chamadas = adapter.chamadas(CONTA, LocalDate.from(AGORA), 6);
 
         assertThat(chamadas).hasSize(2);
         assertThat(chamadas.get(0).chamadoEm()).isAfter(chamadas.get(1).chamadoEm());
         assertThat(chamadas.get(0).paciente()).startsWith("Paciente ");
+        assertThat(chamadas).extracting(Atendimento.Chamada::local).containsExactly("Consultório 3", null);
         assertThat(adapter.chamadas(CONTA, LocalDate.from(AGORA), 1)).hasSize(1);
         assertThat(adapter.chamadas("outra", LocalDate.from(AGORA), 6)).isEmpty();
         assertThat(adapter.chamadas(CONTA, LocalDate.from(AGORA).plusDays(1), 6)).isEmpty();
@@ -1196,6 +1197,71 @@ class PostgresAtendimentoAdapterIT {
     }
 
     @Test
+    void registrarAcessoGravaOMotivoEVazioViraNulo() {
+        Consulta consulta = novaConsultaEmAndamento();
+        long paciente = adapter.atendimento(CONTA, consulta.nrAtendimento()).orElseThrow().pacienteId();
+
+        adapter.registrarAcesso(CONTA, null, paciente, "PRONTUARIO_COMPLETO", "dr", "10.0.0.1", "exame trazido");
+        adapter.registrarAcesso(CONTA, null, paciente, "PRONTUARIO_COMPLETO", "dr", "10.0.0.1", "  ");
+
+        assertThat(jdbc.queryForList("SELECT ds_motivo FROM atendimento.acesso_prontuario WHERE paciente_id = ? ORDER BY id",
+                String.class, paciente)).containsExactly("exame trazido", null);
+    }
+
+    // --- consulta do paciente por CPF ---
+
+    @Test
+    void pacientesPorCpfSoDaConta() {
+        Consulta consulta = novaConsultaEmAndamento();
+        long paciente = adapter.atendimento(CONTA, consulta.nrAtendimento()).orElseThrow().pacienteId();
+        String cpf = jdbc.queryForObject("SELECT cpf FROM agenda.paciente WHERE id = ?", String.class, paciente);
+
+        assertThat(adapter.pacientesPorCpf(CONTA, cpf)).extracting(Atendimento.PacienteResumo::id).containsExactly(paciente);
+        assertThat(adapter.pacientesPorCpf("outra", cpf)).isEmpty();
+        assertThat(adapter.paciente(CONTA, paciente)).map(Atendimento.PacienteResumo::cpf).contains(cpf);
+        assertThat(adapter.paciente("outra", paciente)).isEmpty();
+    }
+
+    @Test
+    void visitasDoPacienteTrazLocalDaChamadaESoMostraEventoClinicoQuandoPedido() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long agendamento = novoAgendamento(profissional, "MARCADO", "2030-01-07 09:00");
+        long atendimento = adapter.registrarChegada(CONTA, agendamento, "recepcao").id();
+        adapter.chamar(CONTA, atendimento, null, "Consultório 3", "recepcao");
+        adapter.iniciarConsulta(CONTA, atendimento, profissional, "dr");
+        Consulta consulta = new Consulta(profissional, atendimento);
+        adapter.salvarRascunhoAnamnese(CONTA, atendimento, profissional, anamnese(consulta, "SIGILOSO", "SIGILOSO"), "dr");
+        long paciente = adapter.atendimento(CONTA, atendimento).orElseThrow().pacienteId();
+
+        List<Atendimento.VisitaPaciente> administrativas = adapter.visitasDoPaciente(CONTA, paciente, false);
+        List<Atendimento.VisitaPaciente> completas = adapter.visitasDoPaciente(CONTA, paciente, true);
+
+        assertThat(administrativas).hasSize(1);
+        Atendimento.VisitaPaciente visita = administrativas.get(0);
+        assertThat(visita.nrAtendimento()).isEqualTo(atendimento);
+        assertThat(visita.localChamada()).isEqualTo("Consultório 3");
+        assertThat(visita.eventos()).extracting(Atendimento.EventoPaciente::tipo)
+                .contains("CHEGADA", "CHAMADO", "CONSULTA_INICIADA")
+                .doesNotContain("ANAMNESE_SALVA", "CHEGOU", "EM_CONSULTA");
+        assertThat(completas.get(0).eventos()).extracting(Atendimento.EventoPaciente::tipo).contains("ANAMNESE_SALVA");
+        assertThat(completas.get(0).eventos()).allSatisfy(e -> assertThat(String.valueOf(e.detalhe())).doesNotContain("SIGILOSO"));
+        assertThat(adapter.visitasDoPaciente("outra", paciente, true)).isEmpty();
+    }
+
+    @Test
+    void temAtendimentoNoDiaSoDoProfissionalENoDia() {
+        Consulta consulta = novaConsultaEmAndamento();
+        definirEntrada(consulta.nrAtendimento(), "2030-01-07 09:05");
+        long paciente = adapter.atendimento(CONTA, consulta.nrAtendimento()).orElseThrow().pacienteId();
+        long outro = novoProfissional(CONTA, null, true);
+
+        assertThat(adapter.temAtendimentoNoDia(CONTA, paciente, consulta.profissionalId(), LocalDate.of(2030, 1, 7))).isTrue();
+        assertThat(adapter.temAtendimentoNoDia(CONTA, paciente, consulta.profissionalId(), LocalDate.of(2030, 1, 8))).isFalse();
+        assertThat(adapter.temAtendimentoNoDia(CONTA, paciente, outro, LocalDate.of(2030, 1, 7))).isFalse();
+        assertThat(adapter.temAtendimentoNoDia("outra", paciente, consulta.profissionalId(), LocalDate.of(2030, 1, 7))).isFalse();
+    }
+
+    @Test
     void eventosSoDaContaENuncaComTextoClinico() {
         Consulta consulta = novaConsultaEmAndamento();
         String sigiloso = "SIGILOSO dor torácica";
@@ -1290,19 +1356,35 @@ class PostgresAtendimentoAdapterIT {
         long agendamento = novoAgendamento(profissional, "MARCADO", "2030-01-07 09:00");
         long nr = adapter.registrarChegada(CONTA, agendamento, "recepcao").id();
 
-        assertThat(adapter.chamar(CONTA, nr, profissional + 1, "x").codigo()).isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
-        assertThat(adapter.chamar("outra", nr, null, "x").codigo()).isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
-        assertThat(adapter.chamar(CONTA, nr, profissional, "dr").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(adapter.chamar(CONTA, nr, profissional + 1, null, "x").codigo()).isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
+        assertThat(adapter.chamar("outra", nr, null, null, "x").codigo()).isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
+        assertThat(adapter.chamar(CONTA, nr, profissional, "Consultório 3", "dr").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
 
         assertThat(adapter.fila(CONTA, AGORA.toLocalDate())).singleElement().satisfies(f -> {
             assertThat(f.chamadoEm()).isEqualTo(AGORA);
             assertThat(f.cpf()).hasSize(11);
             assertThat(f.status()).isEqualTo("AGUARDANDO");
+            assertThat(f.localChamada()).isEqualTo("Consultório 3");
         });
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM atendimento.atendimento_evento WHERE nr_atendimento = ? AND tipo = 'CHAMADO'",
-                Integer.class, nr)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT detalhe FROM atendimento.atendimento_evento WHERE nr_atendimento = ? AND tipo = 'CHAMADO'",
+                String.class, nr)).isEqualTo("Consultório 3");
         adapter.iniciarConsulta(CONTA, nr, profissional, "dr");
-        assertThat(adapter.chamar(CONTA, nr, null, "x").codigo()).isEqualTo(CodigoNegocio.STATUS_INVALIDO_PARA_CHAMADA);
+        assertThat(adapter.chamar(CONTA, nr, null, null, "x").codigo()).isEqualTo(CodigoNegocio.STATUS_INVALIDO_PARA_CHAMADA);
+    }
+
+    @Test
+    void recepcaoChamaPacienteJaAtendidoMasOMedicoNao() {
+        long profissional = novoProfissional(CONTA, null, true);
+        long agendamento = novoAgendamento(profissional, "MARCADO", "2030-01-07 09:00");
+        long nr = adapter.registrarChegada(CONTA, agendamento, "recepcao").id();
+        jdbc.update("UPDATE atendimento.atendimento_paciente SET ie_status_atendimento = 'FINALIZADO', "
+                + "dt_alta = CURRENT_TIMESTAMP, ie_motivo_alta = 'ALTA_MEDICA' WHERE nr_atendimento = ?", nr);
+
+        assertThat(adapter.chamar(CONTA, nr, profissional, "Consultório 3", "dr").codigo())
+                .isEqualTo(CodigoNegocio.STATUS_INVALIDO_PARA_CHAMADA);
+        assertThat(adapter.chamar(CONTA, nr, null, "Financeiro", "recepcao").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(adapter.chamadas(CONTA, AGORA.toLocalDate(), 6)).singleElement()
+                .extracting(Atendimento.Chamada::local).isEqualTo("Financeiro");
     }
 
     @Test

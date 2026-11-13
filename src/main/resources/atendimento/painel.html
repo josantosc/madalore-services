@@ -21,7 +21,8 @@
     @keyframes pisca { 50% { border-color: var(--destaque); background: #213043; } }
     .rotulo { font-size: 3.4vh; color: var(--texto-2); text-transform: uppercase; letter-spacing: .3vh; }
     .nome { font-size: 13vh; font-weight: 700; line-height: 1.1; margin: 2vh 0; word-break: break-word; }
-    .destino { font-size: 5vh; color: var(--marca); font-weight: 600; }
+    .destino { font-size: 7vh; color: var(--marca); font-weight: 700; }
+    .medico { font-size: 3.6vh; color: var(--texto-2); margin-top: 1.5vh; }
     .vazio { font-size: 5vh; color: var(--texto-2); }
     .anteriores { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5vw; }
     .anterior { background: var(--cartao); border-radius: 1.6vh; padding: 2vh 1.2vw; min-width: 0; }
@@ -89,7 +90,8 @@
         osc.stop(agora + atraso + 0.32);
       });
       if ("speechSynthesis" in window) {
-        const fala = new SpeechSynthesisUtterance(chamada.paciente.replace(/\./g, "") + ". " + chamada.profissional);
+        const fala = new SpeechSynthesisUtterance(chamada.paciente.replace(/\./g, "") + ". "
+          + (chamada.local ? "Dirija-se a " + chamada.local : chamada.profissional));
         fala.lang = "pt-BR";
         setTimeout(() => speechSynthesis.speak(fala), 800);
       }
@@ -104,14 +106,15 @@
         caixa.replaceChildren(el("span", "vazio", "Aguarde ser chamado"));
       } else {
         caixa.replaceChildren(el("span", "rotulo", "Chamando"), el("span", "nome", atual.paciente),
-          el("span", "destino", atual.profissional));
+          el("span", "destino", atual.local ? "Dirija-se a: " + atual.local : atual.profissional),
+          atual.local ? el("span", "medico", atual.profissional) : "");
       }
       $("anteriores").replaceChildren(...lista.slice(1, 6).map((c) => {
         const item = el("div", "anterior");
-        item.append(el("b", null, c.paciente), el("span", null, c.profissional + " · " + hora(c.chamadoEm)));
+        item.append(el("b", null, c.paciente), el("span", null, (c.local || c.profissional) + " · " + hora(c.chamadoEm)));
         return item;
       }));
-      const chave = atual ? atual.chamadoEm + "|" + atual.paciente : null;
+      const chave = atual ? atual.chamadoEm + "|" + atual.paciente + "|" + (atual.local || "") : null;
       if (ultima !== null && chave && chave !== ultima) {
         caixa.classList.remove("nova");
         void caixa.offsetWidth;

@@ -109,8 +109,20 @@ public interface ConsultorioUseCase {
     /** Atendimentos anteriores do paciente. Grava acesso_prontuario. */
     List<Atendimento.Prontuario> historicoDoPaciente(Contexto ctx, long pacienteId, String ip);
 
-    /** Chama o próprio paciente que aguarda. */
-    Atendimento.Operacao chamar(Contexto ctx, long atendimentoId);
+    /** Chama o próprio paciente que aguarda para o local informado (opcional, ex.: Consultório 3). */
+    Atendimento.Operacao chamar(Contexto ctx, long atendimentoId, String local);
+
+    /** Locais sugeridos para a chamada na clínica do usuário; vazia quando não configurada. */
+    List<String> locaisDeChamada(Contexto ctx);
+
+    /** Cadastros do CPF, cada um dizendo se o médico precisa informar motivo para abrir o prontuário. */
+    List<Atendimento.PacienteEncontrado> pacientesPorCpf(Contexto ctx, String cpf);
+
+    /**
+     * Prontuário de todos os médicos da clínica (só registros liberados) e a linha do tempo completa. Paciente fora da
+     * fila do médico no dia exige motivo. Grava acesso_prontuario com o motivo.
+     */
+    Atendimento.ProntuarioPaciente prontuarioDoPaciente(Contexto ctx, long pacienteId, String motivo, String ip);
 
     List<Atendimento.MedicamentoFavorito> favoritos(Contexto ctx);
 

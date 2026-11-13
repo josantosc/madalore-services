@@ -69,7 +69,8 @@ public final class Atendimento {
 
     /**
      * Linha da fila da recepção. Sem conteúdo clínico (LGPD). atendimentoId e chegadaEm só existem depois da
-     * chegada; esperaMin é o tempo desde a chegada enquanto o paciente aguarda; chamadoEm, a última chamada.
+     * chegada; esperaMin é o tempo desde a chegada enquanto o paciente aguarda; chamadoEm e localChamada, a última
+     * chamada.
      */
     public record FilaItem(
             long agendamentoId,
@@ -82,12 +83,13 @@ public final class Atendimento {
             String status,
             LocalDateTime chegadaEm,
             Long esperaMin,
-            LocalDateTime chamadoEm
+            LocalDateTime chamadoEm,
+            String localChamada
     ) {
     }
 
     /** Chamada no painel da sala de espera. paciente sai abreviado do service (Maria S. O.), nunca o nome completo. */
-    public record Chamada(String paciente, String profissional, LocalDateTime chamadoEm) {
+    public record Chamada(String paciente, String profissional, String local, LocalDateTime chamadoEm) {
     }
 
     /** Paciente que chegou sem agendamento. Paciente novo é cadastrado pelo CPF e nascimento. */
@@ -136,6 +138,17 @@ public final class Atendimento {
             String quantidade,
             boolean usoContinuo,
             String observacao
+    ) {
+    }
+
+    /** {@code atendimento.medicamento_rotina}: sugestão de item de receita para todos os médicos da clínica. */
+    public record MedicamentoRotina(
+            Long id,
+            String medicamento,
+            String apresentacao,
+            String posologia,
+            String via,
+            boolean usoContinuo
     ) {
     }
 
@@ -273,6 +286,50 @@ public final class Atendimento {
 
     /** Histórico do atendimento. Nunca guarda conteúdo clínico, só tipo, usuário e um detalhe curto. */
     public record Evento(String tipo, String usuario, String detalhe, Instant em) {
+    }
+
+    /** Evento da agenda ou do atendimento na linha do tempo do paciente. Detalhe curto, sem conteúdo clínico. */
+    public record EventoPaciente(Instant em, String tipo, String usuario, String detalhe) {
+    }
+
+    /** Um agendamento do paciente, com o atendimento (quando houve chegada) e os eventos dos dois em ordem. */
+    public record VisitaPaciente(
+            long agendamentoId,
+            LocalDateTime inicio,
+            String profissional,
+            String especialidade,
+            String convenio,
+            String statusAgendamento,
+            String origem,
+            Long nrAtendimento,
+            String statusAtendimento,
+            String localChamada,
+            List<EventoPaciente> eventos
+    ) {
+        public VisitaPaciente {
+            eventos = eventos == null ? List.of() : List.copyOf(eventos);
+        }
+    }
+
+    /** O que a recepção vê do paciente: cadastro e linha do tempo administrativa. */
+    public record FichaPaciente(PacienteResumo paciente, List<VisitaPaciente> visitas) {
+        public FichaPaciente {
+            visitas = visitas == null ? List.of() : List.copyOf(visitas);
+        }
+    }
+
+    /** Prontuário de todos os médicos da clínica, só com registros liberados, mais a linha do tempo completa. */
+    public record ProntuarioPaciente(PacienteResumo paciente, List<Alergia> alergias, List<Prontuario> atendimentos,
+                                     List<VisitaPaciente> visitas) {
+        public ProntuarioPaciente {
+            alergias = alergias == null ? List.of() : List.copyOf(alergias);
+            atendimentos = atendimentos == null ? List.of() : List.copyOf(atendimentos);
+            visitas = visitas == null ? List.of() : List.copyOf(visitas);
+        }
+    }
+
+    /** Cadastro achado pelo CPF. exigeMotivo: o paciente não está na fila do médico no dia. */
+    public record PacienteEncontrado(PacienteResumo paciente, boolean exigeMotivo) {
     }
 
     /** {@code atendimento.alergia_paciente}: vale para todas as consultas do paciente enquanto ativa. */

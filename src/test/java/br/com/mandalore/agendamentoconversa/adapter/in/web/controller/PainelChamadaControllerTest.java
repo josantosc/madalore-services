@@ -42,14 +42,15 @@ class PainelChamadaControllerTest {
     @Test
     void chaveCertaDevolveChamadasComNomeDaClinicaSemRastro() throws Exception {
         when(atendimento.chamadasDoPainel("7")).thenReturn(List.of(
-                new Atendimento.Chamada("Maria S. O.", "Dra. Ana", LocalDateTime.of(2026, 11, 13, 9, 30))));
+                new Atendimento.Chamada("Maria S. O.", "Dra. Ana", "Consultório 3", LocalDateTime.of(2026, 11, 13, 9, 30))));
 
         mvc.perform(get("/atendimento/painel/api/chamadas").param("conta", "7").param("chave", CHAVE))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Referrer-Policy", "no-referrer"))
                 .andExpect(jsonPath("$.clinica").value("Clínica Bio"))
                 .andExpect(jsonPath("$.chamadas[0].paciente").value("Maria S. O."))
-                .andExpect(jsonPath("$.chamadas[0].profissional").value("Dra. Ana"));
+                .andExpect(jsonPath("$.chamadas[0].profissional").value("Dra. Ana"))
+                .andExpect(jsonPath("$.chamadas[0].local").value("Consultório 3"));
     }
 
     @Test

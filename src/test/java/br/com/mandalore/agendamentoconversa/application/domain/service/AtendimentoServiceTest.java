@@ -54,10 +54,10 @@ class AtendimentoServiceTest {
     void painelMostraSoONomeAbreviadoDasChamadasDeHoje() {
         LocalDateTime chamada = AGORA.plusMinutes(5);
         when(port.chamadas("1", LocalDate.of(2026, 11, 10), AtendimentoService.PAINEL_LIMITE)).thenReturn(List.of(
-                new Atendimento.Chamada("MARIA DA SILVA OLIVEIRA", "Dra. Ana", chamada)));
+                new Atendimento.Chamada("MARIA DA SILVA OLIVEIRA", "Dra. Ana", "Consultório 3", chamada)));
 
         assertThat(service.chamadasDoPainel("1"))
-                .containsExactly(new Atendimento.Chamada("Maria S. O.", "Dra. Ana", chamada));
+                .containsExactly(new Atendimento.Chamada("Maria S. O.", "Dra. Ana", "Consultório 3", chamada));
         verify(habilitacao).exigir("1");
     }
 
@@ -121,9 +121,29 @@ class AtendimentoServiceTest {
         };
         AtendimentoService comAviso = new AtendimentoService(port, habilitacao,
                 Clock.fixed(AGORA.atZone(SP).toInstant(), SP), aviso);
-        when(port.chamar("1", 5L, null, "ana")).thenReturn(Atendimento.Operacao.sucesso(5L));
+        when(port.chamar("1", 5L, null, "Financeiro", "ana")).thenReturn(Atendimento.Operacao.sucesso(5L));
 
-        assertThat(comAviso.chamar("1", 5L, "ana").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(comAviso.chamar("1", 5L, "Financeiro", "ana").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+    }
+
+    @Test
+    void localDaChamadaLimpaEspacosEAceitaAte60Caracteres() {
+        assertThat(AtendimentoService.localChamada("  Consultório   3 ")).isEqualTo("Consultório 3");
+        assertThat(AtendimentoService.localChamada("   ")).isNull();
+        assertThat(AtendimentoService.localChamada(null)).isNull();
+        assertThat(AtendimentoService.localChamada("a".repeat(60))).hasSize(60);
+        assertThatThrownBy(() -> AtendimentoService.localChamada("a".repeat(61)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void locaisDeChamadaVemDaConfiguracaoDaConta() {
+        AtendimentoService comLocais = new AtendimentoService(port, habilitacao,
+                Clock.fixed(AGORA.atZone(SP).toInstant(), SP), AvisoFilaPort.NENHUM,
+                conta -> List.of("Recepção", "Financeiro"));
+
+        assertThat(comLocais.locaisDeChamada("1")).containsExactly("Recepção", "Financeiro");
+        verify(habilitacao).exigir("1");
     }
 
     @Test
@@ -159,5 +179,40 @@ class AtendimentoServiceTest {
         assertThat(service.buscarPacientes("1", " a ")).isEmpty();
 
         verify(port, never()).buscarPacientes(anyString(), anyString(), anyInt());
+    }
+
+    @Test
+    void pacientesPorCpfAceitaPontuacao() {
+        service.pacientesPorCpf("1", " 123.456.789-01 ");
+
+        verify(port).pacientesPorCpf("1", "12345678901");
+    }
+
+    @Test
+    void pacientesPorCpfIncompletoLancaIllegalArgument() {
+        assertThatThrownBy(() -> service.pacientesPorCpf("1", "123.456"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("11 dígitos");
+        verify(port, never()).pacientesPorCpf(anyString(), anyString());
+    }
+
+    @Test
+    void fichaDoPacienteTrazSoEventosAdministrativosERegistraOAcesso() {
+        Atendimento.PacienteResumo maria = new Atendimento.PacienteResumo(77L, "Maria", "12345678901", null, null);
+        when(port.paciente("1", 77L)).thenReturn(java.util.Optional.of(maria));
+
+        Atendimento.FichaPaciente ficha = service.fichaDoPaciente("1", 77L, "recepcao", "10.0.0.2");
+
+        assertThat(ficha.paciente()).isEqualTo(maria);
+        verify(port).visitasDoPaciente("1", 77L, false);
+        verify(port, never()).visitasDoPaciente("1", 77L, true);
+        verify(port).registrarAcesso("1", null, 77L, AtendimentoService.ACAO_FICHA, "recepcao", "10.0.0.2");
+    }
+
+    @Test
+    void fichaDePacienteDeOutraContaLancaIllegalArgument() {
+        when(port.paciente("1", 77L)).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> service.fichaDoPaciente("1", 77L, "recepcao", "ip")).isInstanceOf(IllegalArgumentException.class);
+        verify(port, never()).visitasDoPaciente(anyString(), anyLong(), any(Boolean.class));
     }
 }

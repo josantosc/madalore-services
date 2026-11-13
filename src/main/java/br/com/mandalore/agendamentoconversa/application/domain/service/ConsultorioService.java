@@ -24,6 +24,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.port.in.Consultor
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AtendimentoPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AtendimentoPort.ProfissionalClinico;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AvisoFilaPort;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.LocaisChamadaPort;
 
 /**
  * Consultório do médico. Regras aqui: posse do profissional, estado do atendimento e validações de liberação.
@@ -45,6 +46,8 @@ public class ConsultorioService implements ConsultorioUseCase {
     static final String ACAO_HISTORICO = "HISTORICO";
     static final String ACAO_IMPRESSAO = "IMPRESSAO_RECEITA";
     static final String ACAO_IMPRESSAO_CONSULTA = "IMPRESSAO_CONSULTA";
+    static final String ACAO_PRONTUARIO_COMPLETO = "PRONTUARIO_COMPLETO";
+    static final int MOTIVO_ACESSO_MAX = 500;
 
     static final Pattern ATALHO = Pattern.compile("^[a-z0-9_-]{2,30}$");
     static final int MODELO_TEXTO_MAX = 4000;
@@ -54,15 +57,18 @@ public class ConsultorioService implements ConsultorioUseCase {
     private final int validadeDias;
     private final HabilitacaoAtendimento habilitacao;
     private final AvisoFilaPort aviso;
+    private LocaisChamadaPort locais = LocaisChamadaPort.NENHUM;
 
     @Autowired
     public ConsultorioService(
             AtendimentoPort atendimentos,
             HabilitacaoAtendimento habilitacao,
             @Value("${atendimento.receita.validade-dias:30}") int validadeDias,
-            AvisoFilaPort aviso
+            AvisoFilaPort aviso,
+            LocaisChamadaPort locais
     ) {
         this(atendimentos, habilitacao, Clock.system(ZONA), validadeDias, aviso);
+        this.locais = locais;
     }
 
     public ConsultorioService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, int validadeDias) {
@@ -107,14 +113,21 @@ public class ConsultorioService implements ConsultorioUseCase {
     }
 
     @Override
-    public Atendimento.Operacao chamar(Contexto ctx, long atendimentoId) {
+    public Atendimento.Operacao chamar(Contexto ctx, long atendimentoId, String local) {
         exigirHabilitada(ctx);
+        String limpo = AtendimentoService.localChamada(local);
         ProfissionalClinico prof = profissional(ctx);
         if (fichaPropria(ctx, prof, atendimentoId).isEmpty()) {
             return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
         }
-        return avisar(ctx, atendimentos.chamar(ctx.conta(), atendimentoId, prof.id(), ctx.ator()), "CHAMADO",
+        return avisar(ctx, atendimentos.chamar(ctx.conta(), atendimentoId, prof.id(), limpo, ctx.ator()), "CHAMADO",
                 atendimentoId);
+    }
+
+    @Override
+    public List<String> locaisDeChamada(Contexto ctx) {
+        exigirHabilitada(ctx);
+        return locais.locais(ctx.conta());
     }
 
     @Override
@@ -138,6 +151,52 @@ public class ConsultorioService implements ConsultorioUseCase {
                 .toList();
         atendimentos.registrarAcesso(ctx.conta(), null, pacienteId, ACAO_HISTORICO, ctx.ator(), ip);
         return proprios;
+    }
+
+    // ---- consulta do paciente por CPF ----
+
+    @Override
+    public List<Atendimento.PacienteEncontrado> pacientesPorCpf(Contexto ctx, String cpf) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        LocalDate hoje = LocalDate.now(relogio);
+        return atendimentos.pacientesPorCpf(ctx.conta(), AtendimentoService.cpfInformado(cpf)).stream()
+                .map(p -> new Atendimento.PacienteEncontrado(p,
+                        !atendimentos.temAtendimentoNoDia(ctx.conta(), p.id(), prof.id(), hoje)))
+                .toList();
+    }
+
+    @Override
+    public Atendimento.ProntuarioPaciente prontuarioDoPaciente(Contexto ctx, long pacienteId, String motivo, String ip) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        Atendimento.PacienteResumo paciente = atendimentos.paciente(ctx.conta(), pacienteId)
+                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado"));
+        String limpo = limitado(motivo, MOTIVO_ACESSO_MAX, "O motivo");
+        if (limpo.isEmpty() && !atendimentos.temAtendimentoNoDia(ctx.conta(), pacienteId, prof.id(), LocalDate.now(relogio))) {
+            throw new IllegalArgumentException("Informe o motivo para abrir o prontuário de paciente que não está na sua fila hoje");
+        }
+        List<Atendimento.Prontuario> consultas = atendimentos.historicoDoPaciente(ctx.conta(), pacienteId).stream()
+                .map(ConsultorioService::soLiberado)
+                .toList();
+        Atendimento.ProntuarioPaciente prontuario = new Atendimento.ProntuarioPaciente(paciente,
+                atendimentos.alergiasDoPaciente(ctx.conta(), pacienteId), consultas,
+                atendimentos.visitasDoPaciente(ctx.conta(), pacienteId, true));
+        atendimentos.registrarAcesso(ctx.conta(), null, pacienteId, ACAO_PRONTUARIO_COMPLETO, ctx.ator(), ip,
+                limpo.isEmpty() ? null : limpo);
+        return prontuario;
+    }
+
+    /** Rascunho é do médico que escreve: no prontuário de outros médicos só entra o que foi liberado e está ativo. */
+    static Atendimento.Prontuario soLiberado(Atendimento.Prontuario p) {
+        Atendimento.Anamnese anamnese = p.anamnese() != null && p.anamnese().ativa() && p.anamnese().liberada()
+                ? p.anamnese() : null;
+        return new Atendimento.Prontuario(p.atendimento(), anamnese,
+                p.evolucoes().stream().filter(e -> e.ativa() && e.liberada()).toList(),
+                p.diagnosticos().stream().filter(Atendimento.Diagnostico::ativo).toList(),
+                p.receitas().stream().filter(r -> r.ativa() && r.liberada()).toList(),
+                p.alta() != null && p.alta().dtLiberacao() != null ? p.alta() : null,
+                p.paciente());
     }
 
     // ---- anamnese ----
@@ -855,9 +914,9 @@ public class ConsultorioService implements ConsultorioUseCase {
         }
 
         Atendimento.Anamnese a = p.anamnese() != null && p.anamnese().ativa() && p.anamnese().liberada() ? p.anamnese() : null;
-        h.append("<h2>S &middot; Subjetivo</h2>");
+        h.append("<h2>Queixa e história</h2>");
         if (a == null) {
-            h.append("<p class=\"texto\">Sem nota SOAP liberada.</p>");
+            h.append("<p class=\"texto\">Sem nota da consulta liberada.</p>");
         } else {
             campo(h, "Queixa principal", a.queixaPrincipal());
             campo(h, "História da doença atual", a.historiaDoencaAtual());
@@ -865,11 +924,11 @@ public class ConsultorioService implements ConsultorioUseCase {
             campo(h, "Antecedentes pessoais", a.antecedentesPessoais());
             campo(h, "Antecedentes familiares", a.antecedentesFamiliares());
             campo(h, "Hábitos", a.habitos());
-            h.append("<h2>O &middot; Objetivo</h2>");
+            h.append("<h2>Exame físico</h2>");
             campo(h, "Exame físico", a.exameFisico());
         }
 
-        h.append("<h2>A &middot; Avaliação</h2>");
+        h.append("<h2>Avaliação e diagnóstico</h2>");
         if (a != null) {
             campo(h, "Impressão clínica", a.avaliacao());
         }
@@ -884,7 +943,7 @@ public class ConsultorioService implements ConsultorioUseCase {
             h.append("</ul>");
         }
 
-        h.append("<h2>P &middot; Plano</h2>");
+        h.append("<h2>Conduta e prescrição</h2>");
         if (a != null) {
             campo(h, "Conduta", a.conduta());
         }

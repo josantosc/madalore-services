@@ -253,8 +253,41 @@ public class ConsultorioController {
 
     @PostMapping("/consultorio/api/atendimentos/{id}/chamar")
     public ResponseEntity<Map<String, Object>> chamar(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                      @RequestBody(required = false) AtendimentoController.ChamarRequest request,
                                                       @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
-        return operacao(consultorio.chamar(contexto(conta, login), id));
+        return operacao(consultorio.chamar(contexto(conta, login), id, request == null ? null : request.local()));
+    }
+
+    @GetMapping(value = "/consultorio/api/locais", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<String> locais(@RequestParam(required = false) String conta,
+                               @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return consultorio.locaisDeChamada(contexto(conta, login));
+    }
+
+    public record MotivoRequest(String motivo) {
+    }
+
+    @GetMapping("/consultorio/paciente")
+    public ResponseEntity<byte[]> paginaPaciente() throws IOException {
+        return AtendimentoController.paginaDoPaciente();
+    }
+
+    @PostMapping(value = "/consultorio/api/pacientes/cpf", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Atendimento.PacienteEncontrado>> pacientesPorCpf(
+            @RequestParam(required = false) String conta,
+            @RequestBody(required = false) AtendimentoController.CpfRequest request,
+            @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return semCache(consultorio.pacientesPorCpf(contexto(conta, login), request == null ? null : request.cpf()));
+    }
+
+    @PostMapping(value = "/consultorio/api/pacientes/{id}/prontuario", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Atendimento.ProntuarioPaciente> prontuarioDoPaciente(
+            @PathVariable long id, @RequestParam(required = false) String conta,
+            @RequestBody(required = false) MotivoRequest request,
+            @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login, HttpServletRequest http) {
+        return semCache(consultorio.prontuarioDoPaciente(contexto(conta, login), id,
+                request == null ? null : request.motivo(), AdminAcesso.ip(http)));
     }
 
     @GetMapping(value = "/consultorio/api/favoritos", produces = MediaType.APPLICATION_JSON_VALUE)

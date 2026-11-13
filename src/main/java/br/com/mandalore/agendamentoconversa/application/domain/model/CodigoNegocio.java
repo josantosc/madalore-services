@@ -32,6 +32,7 @@ public enum CodigoNegocio {
     STATUS_INVALIDO_PARA_FALTA("status_invalido_para_falta"),
     FALTA_ANTES_DO_HORARIO("falta_antes_do_horario"),
     ATALHO_DUPLICADO("atalho_duplicado"),
+    MEDICAMENTO_DUPLICADO("medicamento_duplicado"),
     NAO_ENCONTRADO("nao_encontrado");
 
     private final String valor;

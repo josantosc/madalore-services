@@ -53,11 +53,18 @@ agendamento sem atendimento e libera o horário.
 4. **Chamar:** com o paciente `AGUARDANDO`, a recepção ou o médico (só nos atendimentos do próprio
    profissional) registra a chamada. O cartão passa para a coluna Chamado com a hora. Chamar de novo
    atualiza a hora. A chamada não muda o status: a consulta começa quando o médico inicia.
+   Ao chamar, escolha o local para onde o paciente vai (`Consultório 3`, `Recepção`, `Financeiro`...). As
+   opções vêm de `mandalore.clientes.<id>.painel.locais`; também dá para digitar outro local, com até 60
+   caracteres, ou chamar sem local. A tela lembra o último local usado no navegador: no consultório,
+   o botão "Chamar · Consultório 3" chama direto e "▾" troca o local. A recepção também chama o paciente
+   já atendido no dia, por exemplo para o financeiro; o médico só chama quem está `AGUARDANDO`.
    **Painel da TV:** a sala de espera abre `/atendimento/painel?conta=<id>&chave=<chave>` em tela cheia.
    Não exige login: vale a chave da clínica em `mandalore.clientes.<id>.painel.chave` (mínimo de 16
-   caracteres). Sem a propriedade, ou com chave errada, a resposta é 404. O painel mostra a chamada atual em
+   caracteres), no `clientes.properties`. Não use variável de ambiente `MANDALORE_CLIENTES_*`: o Spring a
+   lê como cadastro de conta. Sem a propriedade, ou com chave errada, a resposta é 404. O painel mostra a chamada atual em
    destaque, com aviso sonoro e leitura em voz, e as cinco anteriores do dia. O paciente aparece com o
-   primeiro nome e as iniciais (`Maria S. O.`), mais o nome do profissional e a hora; CPF, especialidade e
+   primeiro nome e as iniciais (`Maria S. O.`), mais "Dirija-se a: <local>" (também lido em voz), o nome
+   do profissional e a hora. Chamada sem local mostra só o profissional. CPF, especialidade e
    nome completo não saem do servidor. No primeiro acesso, um toque na tela ativa o som e a tela cheia
    (exigência do navegador). Para trocar a chave, mude a propriedade e atualize o link da TV.
 5. **Falta:** no agendamento `MARCADO` ou `CONFIRMADO` cujo horário já começou, marque a falta. O
@@ -72,6 +79,15 @@ agendamento sem atendimento e libera o horário.
 
 Cada passo grava quem fez e quando, no atendimento e no agendamento. O histórico de eventos da recepção e do
 gestor traz o tipo do evento, o usuário e o horário.
+
+**Consultar paciente:** o botão "Consultar paciente" abre `/atendimento/paciente`. Informe o CPF (com ou sem
+pontuação) e o sistema mostra todos os agendamentos do paciente na clínica, do mais recente ao mais antigo:
+data, profissional, especialidade, convênio, situação (marcado, confirmado, cancelado, faltou, atendido),
+número do atendimento, local da última chamada e o histórico de cada um (marcação, confirmação, remarcação,
+chegada, chamada, início e fim da consulta, falta), com usuário e horário. A recepção e o gestor não veem
+conteúdo clínico: nem nota, nem CID, nem receita, nem os eventos clínicos. Um CPF com mais de um cadastro
+(nascimentos diferentes) lista os cadastros para escolher. O CPF vai no corpo da requisição, nunca na URL.
+Cada abertura fica na auditoria (`FICHA_PACIENTE`).
 
 ## Rotina do médico
 
@@ -91,6 +107,22 @@ via, quantidade, uso contínuo e observação nos favoritos do médico. Favorita
 apresentação e posologia atualiza o favorito. "★ Favoritos" abre a lista com filtro para incluir o item na
 receita em rascunho.
 
+**Busca de medicamento na receita:** a partir de duas letras no campo "Medicamento", aparecem até oito
+sugestões. A busca ignora acentos e aceita partes de palavras ("dipi gotas"). Os favoritos do médico vêm
+primeiro, marcados com ★, e depois os medicamentos de rotina da clínica. Escolher uma sugestão (clique, ou
+setas e Enter) preenche medicamento, apresentação, posologia, via e uso contínuo. Os favoritos preenchem
+também quantidade e observação. A posologia sugerida fica destacada em amarelo até o médico editá-la: é uma
+dose usual de adulto, e o médico confere antes de liberar a receita.
+
+**Medicamentos de rotina:** a lista é da clínica e vale para todos os médicos. O gestor a mantém em
+`/consultorio/medicamentos` (tela "Medicamentos de rotina"), que o perfil Gestor já recebe. Para outro
+usuário, inclua a tela nas telas extras em Usuários. No primeiro acesso, a conta recebe a lista padrão do
+sistema (`db/atendimento/medicamentos-rotina.csv`): cerca de 130 genéricos comuns da atenção primária, com
+apresentação, posologia usual de adulto e via. A lista padrão não traz controlados como benzodiazepínicos e
+opioides, nem doses pediátricas por peso. A clínica inclui, altera ou exclui itens. Medicamento e
+apresentação não se repetem. "Restaurar lista padrão" inclui de novo os itens padrão que faltam, sem mexer nos
+alterados. Excluir todos os itens não faz a lista padrão voltar sozinha.
+
 Enquanto o atendimento está `EM_CONSULTA`, o registro nasce como rascunho e passa a valer ao liberar.
 Rascunho se altera até a liberação. Registro liberado se corrige por inativação, com justificativa, e
 continua no histórico. Fora de `EM_CONSULTA` o sistema recusa gravar anamnese, evolução, CID ou receita.
@@ -99,9 +131,10 @@ continua no histórico. Fora de `EM_CONSULTA` o sistema recusa gravar anamnese, 
    horário de início e o usuário, e o agendamento também passa a `EM_CONSULTA`. O médico inicia o atendimento
    do próprio profissional. Com outra consulta desse profissional ainda `EM_CONSULTA`, o sistema recusa até
    ela terminar.
-2. **Nota da consulta (SOAP):** a tela organiza a anamnese em quatro blocos. Subjetivo: queixa principal,
-   história da doença atual, medicamentos em uso, antecedentes e hábitos. Objetivo: exame físico.
-   Avaliação: impressão clínica e CID. Plano: conduta, receitas e nota complementar. O rascunho grava
+2. **Nota da consulta:** a tela organiza a anamnese em quatro blocos, na ordem do método SOAP, com nomes do
+   dia a dia. "Queixa e história": queixa principal, história da doença atual, medicamentos em uso,
+   antecedentes e hábitos. "Exame físico". "Avaliação e diagnóstico": impressão clínica e CID. "Conduta e
+   prescrição": conduta, receitas e nota complementar. A impressão da consulta usa os mesmos títulos. O rascunho grava
    sozinho enquanto o médico digita. Liberar exige a queixa principal. Cada atendimento tem no máximo uma
    anamnese ativa. Para corrigir uma liberada, inative com justificativa e crie outra. A inativada continua
    visível no histórico. A coluna de histórico mostra as consultas finalizadas anteriores na ordem de
@@ -146,6 +179,16 @@ continua no histórico. Fora de `EM_CONSULTA` o sistema recusa gravar anamnese, 
 
 A leitura do prontuário e do histórico do paciente também fica na auditoria.
 
+**Prontuário completo do paciente:** "Consultar paciente" na fila do consultório abre `/consultorio/paciente`,
+e "Prontuário completo" na coluna de consultas anteriores abre a mesma tela já no paciente. A busca é pelo CPF.
+A tela mostra as alergias e todos os atendimentos do paciente na clínica, de todos os médicos: nota da
+consulta, CIDs, notas complementares, receitas e alta, junto com a linha do tempo da recepção (agendamentos,
+chegadas, chamadas com o local, faltas) e os eventos clínicos. Só entram registros liberados e ativos; o
+rascunho de outro médico não aparece. A coluna de consultas anteriores do prontuário continua mostrando só as
+consultas do próprio médico. Paciente que não tem atendimento com o médico no dia pede o motivo do acesso
+(até 500 caracteres). O motivo fica na auditoria (`PRONTUARIO_COMPLETO`, coluna `ds_motivo`) com usuário,
+IP e horário. Paciente da fila do dia abre sem motivo.
+
 ## Propriedades
 
 | Propriedade | Padrão | Uso |
@@ -155,6 +198,7 @@ A leitura do prontuário e do histórico do paciente também fica na auditoria.
 | `mandalore.clientes.<id>.agenda` | já existe | `mandalore` habilita chegada e consultório na conta. Outro valor: as rotas dessa conta respondem 404 |
 | `mandalore.clientes.<id>.nome` | `admin.nome` | Nome da clínica na impressão da receita e no painel da TV. Sem esta propriedade, usa `admin.nome` |
 | `mandalore.clientes.<id>.painel.chave` | vazio | Chave do painel de chamada da TV, com no mínimo 16 caracteres. Vazia: o painel não existe na conta |
+| `mandalore.clientes.<id>.painel.locais` | vazio | Locais oferecidos ao chamar, separados por vírgula (ex.: `Consultório 1,Consultório 2,Recepção,Financeiro`). Item com mais de 60 caracteres é ignorado. Vazio: a tela só oferece digitar o local |
 
 Por clínica, no `clientes.properties`: `mandalore.clientes.<id>.agenda` e `mandalore.clientes.<id>.nome`.
 
@@ -175,7 +219,10 @@ adicionado à mão no proxy não pode valer para `/atendimento/api/eventos` e `/
 - O texto clínico fica de fora dos logs, dos eventos de histórico, da fila da recepção e do OpenClaw. Os
   eventos de liberação, descarte e alergia levam só o tipo e o identificador do registro.
 - Cada leitura do prontuário, do histórico do paciente e da impressão da receita grava auditoria: usuário,
-  atendimento, ação, IP e horário.
+  atendimento, ação, IP e horário. A consulta pelo CPF grava `FICHA_PACIENTE` (recepção) ou
+  `PRONTUARIO_COMPLETO` (médico, com o motivo quando o paciente não está na fila dele no dia).
+- A consulta pelo CPF da recepção traz só a linha do tempo administrativa. O prontuário de todos os médicos é
+  só para usuário vinculado a profissional, e só com registros liberados.
 - Nenhuma rotina apaga prontuário sozinha. A guarda é decisão da clínica, alinhada com o jurídico antes do
   uso em produção.
 - "Finalizar e assinar" identifica o médico pelo login. Não é assinatura digital ICP-Brasil nem sistema
@@ -191,9 +238,11 @@ adicionado à mão no proxy não pode valer para `/atendimento/api/eventos` e `/
    conta. Sem o vínculo, o consultório avisa e a fila do médico fica vazia.
 3. Preencha o número do conselho e a UF nesse profissional. Os dois entram na liberação da receita e na
    impressão.
-4. Ligue `atendimento.enabled=true` depois do vínculo e do conselho. Com `false`, chegada e consultório
+4. Peça a um médico da clínica para revisar a lista em `/consultorio/medicamentos` (posologias e
+   apresentações) antes do uso.
+5. Ligue `atendimento.enabled=true` depois do vínculo e do conselho. Com `false`, chegada e consultório
    permanecem desligados e a agenda atual segue sem este fluxo.
-5. Treine a recepção na fila, na chegada e no desfazer, e o médico em iniciar, registrar, imprimir e
+6. Treine a recepção na fila, na chegada e no desfazer, e o médico em iniciar, registrar, imprimir e
    finalizar. A receita e a folha da consulta desta versão seguem para impressão e assinatura manual, e a
    clínica guarda as vias assinadas.
 

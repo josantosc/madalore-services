@@ -1,0 +1,131 @@
+medicamento;apresentacao;posologia;via;uso_continuo
+Dipirona;500 mg comprimido;1 comprimido de 6/6 horas se dor ou febre;Oral;N
+Dipirona;1 g comprimido;1 comprimido de 6/6 horas se dor ou febre;Oral;N
+Dipirona;500 mg/mL solução oral (gotas);20 a 40 gotas de 6/6 horas se dor ou febre;Oral;N
+Paracetamol;500 mg comprimido;1 comprimido de 6/6 horas se dor ou febre (máximo 4 g por dia);Oral;N
+Paracetamol;750 mg comprimido;1 comprimido de 8/8 horas se dor ou febre;Oral;N
+Paracetamol;200 mg/mL solução oral (gotas);35 a 55 gotas de 6/6 horas se dor ou febre;Oral;N
+Ibuprofeno;400 mg comprimido;1 comprimido de 8/8 horas por até 5 dias, após as refeições;Oral;N
+Ibuprofeno;600 mg comprimido;1 comprimido de 8/8 horas por até 5 dias, após as refeições;Oral;N
+Nimesulida;100 mg comprimido;1 comprimido de 12/12 horas por até 5 dias, após as refeições;Oral;N
+Diclofenaco de potássio;50 mg comprimido;1 comprimido de 8/8 horas por até 5 dias, após as refeições;Oral;N
+Diclofenaco sódico;50 mg comprimido;1 comprimido de 8/8 horas por até 5 dias, após as refeições;Oral;N
+Naproxeno;500 mg comprimido;1 comprimido de 12/12 horas por até 5 dias, após as refeições;Oral;N
+Cetoprofeno;100 mg comprimido;1 comprimido de 12/12 horas por até 5 dias, após as refeições;Oral;N
+Meloxicam;15 mg comprimido;1 comprimido 1 vez ao dia por até 7 dias, após uma refeição;Oral;N
+Diclofenaco dietilamônio;10 mg/g gel;Aplicar no local 3 a 4 vezes ao dia;Tópica;N
+Butilbrometo de escopolamina;10 mg comprimido;1 comprimido de 8/8 horas se cólica;Oral;N
+Butilbrometo de escopolamina + dipirona;10 mg + 250 mg comprimido;1 a 2 comprimidos de 8/8 horas se cólica;Oral;N
+Orfenadrina + dipirona + cafeína;35 mg + 300 mg + 50 mg comprimido;1 a 2 comprimidos de 8/8 horas se dor;Oral;N
+Ciclobenzaprina;5 mg comprimido;1 comprimido de 8/8 horas por até 7 dias (pode dar sono);Oral;N
+Sumatriptana;50 mg comprimido;1 comprimido no início da crise, podendo repetir após 2 horas (máximo 4 por dia);Oral;N
+Amoxicilina;500 mg cápsula;1 cápsula de 8/8 horas por 7 dias;Oral;N
+Amoxicilina + clavulanato de potássio;875 mg + 125 mg comprimido;1 comprimido de 12/12 horas por 7 dias;Oral;N
+Azitromicina;500 mg comprimido;1 comprimido 1 vez ao dia por 3 dias;Oral;N
+Claritromicina;500 mg comprimido;1 comprimido de 12/12 horas por 7 dias;Oral;N
+Cefalexina;500 mg cápsula;1 cápsula de 6/6 horas por 7 dias;Oral;N
+Ciprofloxacino;500 mg comprimido;1 comprimido de 12/12 horas por 7 dias;Oral;N
+Levofloxacino;500 mg comprimido;1 comprimido 1 vez ao dia por 7 dias;Oral;N
+Nitrofurantoína;100 mg cápsula;1 cápsula de 6/6 horas por 7 dias;Oral;N
+Fosfomicina trometamol;3 g granulado (envelope);Dissolver 1 envelope em meio copo de água e tomar em dose única, à noite, com a bexiga vazia;Oral;N
+Sulfametoxazol + trimetoprima;800 mg + 160 mg comprimido;1 comprimido de 12/12 horas por 7 dias;Oral;N
+Metronidazol;400 mg comprimido;1 comprimido de 12/12 horas por 7 dias (não ingerir bebida alcoólica);Oral;N
+Doxiciclina;100 mg comprimido;1 comprimido de 12/12 horas por 7 dias;Oral;N
+Clindamicina;300 mg cápsula;1 cápsula de 8/8 horas por 7 dias;Oral;N
+Benzilpenicilina benzatina;1.200.000 UI pó para suspensão injetável;Aplicar 1.200.000 UI via intramuscular em dose única;Intramuscular;N
+Fluconazol;150 mg cápsula;1 cápsula em dose única;Oral;N
+Nistatina;100.000 UI/mL suspensão oral;5 mL 4 vezes ao dia por 7 dias, bochechar e engolir;Oral;N
+Miconazol;20 mg/g creme vaginal;1 aplicador cheio à noite por 7 dias;Vaginal;N
+Metronidazol;100 mg/g gel vaginal;1 aplicador cheio à noite por 7 dias;Vaginal;N
+Cetoconazol;20 mg/g creme;Aplicar na área afetada 1 vez ao dia por 2 a 4 semanas;Tópica;N
+Clotrimazol;10 mg/g creme;Aplicar na área afetada 2 vezes ao dia por 2 a 4 semanas;Tópica;N
+Terbinafina;10 mg/g creme;Aplicar na área afetada 1 a 2 vezes ao dia por 1 a 2 semanas;Tópica;N
+Albendazol;400 mg comprimido;1 comprimido em dose única;Oral;N
+Ivermectina;6 mg comprimido;Dose única conforme o peso (cerca de 200 mcg/kg, ex.: 2 comprimidos de 51 a 65 kg);Oral;N
+Secnidazol;1.000 mg comprimido;2 comprimidos em dose única, após uma refeição (não ingerir bebida alcoólica);Oral;N
+Nitazoxanida;500 mg comprimido;1 comprimido de 12/12 horas por 3 dias, com alimento;Oral;N
+Permetrina;50 mg/mL loção;Aplicar do pescoço para baixo à noite e retirar no banho após 8 a 12 horas, e repetir após 7 dias;Tópica;N
+Aciclovir;400 mg comprimido;1 comprimido de 8/8 horas por 7 dias;Oral;N
+Aciclovir;50 mg/g creme;Aplicar na lesão 5 vezes ao dia por 5 dias;Tópica;N
+Mupirocina;20 mg/g pomada;Aplicar na lesão 3 vezes ao dia por 7 dias;Tópica;N
+Neomicina + bacitracina;5 mg + 250 UI/g pomada;Aplicar na lesão 2 a 3 vezes ao dia por 7 dias;Tópica;N
+Loratadina;10 mg comprimido;1 comprimido 1 vez ao dia;Oral;N
+Desloratadina;5 mg comprimido;1 comprimido 1 vez ao dia;Oral;N
+Cetirizina;10 mg comprimido;1 comprimido 1 vez ao dia (pode dar sono);Oral;N
+Fexofenadina;180 mg comprimido;1 comprimido 1 vez ao dia;Oral;N
+Dexclorfeniramina;2 mg comprimido;1 comprimido de 8/8 horas (pode dar sono);Oral;N
+Hidroxizina;25 mg comprimido;1 comprimido de 8/8 horas se coceira (pode dar sono);Oral;N
+Prometazina;25 mg comprimido;1 comprimido à noite (pode dar sono);Oral;N
+Prednisona;20 mg comprimido;1 comprimido pela manhã, após o café, por 5 dias;Oral;N
+Prednisona;5 mg comprimido;1 comprimido pela manhã, após o café;Oral;N
+Dexametasona;4 mg comprimido;1 comprimido pela manhã por 3 dias;Oral;N
+Dexametasona;1 mg/g creme;Aplicar fina camada na área afetada 2 vezes ao dia por até 7 dias;Tópica;N
+Acetato de hidrocortisona;10 mg/g creme;Aplicar fina camada na área afetada 2 vezes ao dia por até 7 dias;Tópica;N
+Valerato de betametasona;1 mg/g creme;Aplicar fina camada na área afetada 2 vezes ao dia por até 7 dias;Tópica;N
+Salbutamol;100 mcg/dose aerossol;2 jatos de 4/4 horas se falta de ar ou chiado, com espaçador;Inalatória;N
+Formoterol + budesonida;6 mcg + 200 mcg pó para inalação;1 inalação de 12/12 horas;Inalatória;S
+Brometo de ipratrópio;0,25 mg/mL solução para nebulização;40 gotas em 3 a 5 mL de soro fisiológico, nebulizar de 6/6 horas;Inalatória;N
+Budesonida;64 mcg/dose spray nasal;2 jatos em cada narina 1 vez ao dia;Nasal;N
+Furoato de mometasona;50 mcg/dose spray nasal;2 jatos em cada narina 1 vez ao dia;Nasal;N
+Cloreto de sódio;0,9% solução nasal;2 a 4 gotas ou jatos em cada narina várias vezes ao dia;Nasal;N
+Montelucaste;10 mg comprimido;1 comprimido à noite;Oral;S
+Acetilcisteína;600 mg granulado (envelope);1 envelope dissolvido em água 1 vez ao dia;Oral;N
+Ambroxol;30 mg/5 mL xarope adulto;5 mL de 8/8 horas;Oral;N
+Omeprazol;20 mg cápsula;1 cápsula em jejum, 30 minutos antes do café;Oral;N
+Omeprazol;40 mg cápsula;1 cápsula em jejum, 30 minutos antes do café;Oral;N
+Pantoprazol;40 mg comprimido;1 comprimido em jejum, 30 minutos antes do café;Oral;N
+Esomeprazol;40 mg comprimido;1 comprimido em jejum, 30 minutos antes do café;Oral;N
+Hidróxido de alumínio + hidróxido de magnésio + simeticona;suspensão oral;10 mL após as refeições e ao deitar se azia;Oral;N
+Ondansetrona;4 mg comprimido orodispersível;1 comprimido sobre a língua de 8/8 horas se náusea ou vômito;Oral;N
+Ondansetrona;8 mg comprimido orodispersível;1 comprimido sobre a língua de 12/12 horas se náusea ou vômito;Oral;N
+Metoclopramida;10 mg comprimido;1 comprimido de 8/8 horas se náusea, 30 minutos antes das refeições;Oral;N
+Bromoprida;10 mg cápsula;1 cápsula de 8/8 horas se náusea;Oral;N
+Dimenidrinato + piridoxina;50 mg + 10 mg comprimido;1 comprimido de 6/6 horas se náusea ou tontura (pode dar sono);Oral;N
+Simeticona;125 mg cápsula;1 cápsula de 8/8 horas, após as refeições, se gases;Oral;N
+Sais para reidratação oral;envelope;Dissolver 1 envelope em 1 litro de água filtrada e tomar aos poucos ao longo do dia e após cada evacuação líquida;Oral;N
+Loperamida;2 mg comprimido;2 comprimidos na primeira dose e 1 após cada evacuação líquida (máximo 8 por dia);Oral;N
+Saccharomyces boulardii;200 mg cápsula;1 cápsula de 12/12 horas por 5 dias;Oral;N
+Lactulose;667 mg/mL xarope;15 mL 1 vez ao dia, ajustando conforme o funcionamento do intestino;Oral;N
+Losartana potássica;50 mg comprimido;1 comprimido 1 vez ao dia;Oral;S
+Enalapril;10 mg comprimido;1 comprimido de 12/12 horas;Oral;S
+Captopril;25 mg comprimido;1 comprimido de 12/12 horas;Oral;S
+Anlodipino;5 mg comprimido;1 comprimido 1 vez ao dia;Oral;S
+Hidroclorotiazida;25 mg comprimido;1 comprimido pela manhã;Oral;S
+Clortalidona;25 mg comprimido;1 comprimido pela manhã;Oral;S
+Furosemida;40 mg comprimido;1 comprimido pela manhã;Oral;S
+Espironolactona;25 mg comprimido;1 comprimido pela manhã;Oral;S
+Atenolol;50 mg comprimido;1 comprimido 1 vez ao dia;Oral;S
+Propranolol;40 mg comprimido;1 comprimido de 12/12 horas;Oral;S
+Carvedilol;6,25 mg comprimido;1 comprimido de 12/12 horas, com alimento;Oral;S
+Succinato de metoprolol;50 mg comprimido de liberação prolongada;1 comprimido 1 vez ao dia;Oral;S
+Ácido acetilsalicílico;100 mg comprimido;1 comprimido 1 vez ao dia, após o almoço;Oral;S
+Clopidogrel;75 mg comprimido;1 comprimido 1 vez ao dia;Oral;S
+Sinvastatina;20 mg comprimido;1 comprimido à noite;Oral;S
+Sinvastatina;40 mg comprimido;1 comprimido à noite;Oral;S
+Atorvastatina;20 mg comprimido;1 comprimido 1 vez ao dia;Oral;S
+Rosuvastatina;10 mg comprimido;1 comprimido 1 vez ao dia;Oral;S
+Metformina;500 mg comprimido;1 comprimido de 12/12 horas, junto às refeições;Oral;S
+Metformina;850 mg comprimido;1 comprimido de 12/12 horas, junto às refeições;Oral;S
+Metformina;500 mg comprimido de liberação prolongada;1 comprimido no jantar;Oral;S
+Glibenclamida;5 mg comprimido;1 comprimido antes do café da manhã;Oral;S
+Gliclazida;30 mg comprimido de liberação modificada;1 comprimido no café da manhã;Oral;S
+Insulina humana NPH;100 UI/mL suspensão injetável;Aplicar via subcutânea ___ UI antes do café e ___ UI antes de dormir;Subcutânea;S
+Levotiroxina sódica;25 mcg comprimido;1 comprimido em jejum, 30 minutos antes do café;Oral;S
+Levotiroxina sódica;50 mcg comprimido;1 comprimido em jejum, 30 minutos antes do café;Oral;S
+Levotiroxina sódica;75 mcg comprimido;1 comprimido em jejum, 30 minutos antes do café;Oral;S
+Levotiroxina sódica;100 mcg comprimido;1 comprimido em jejum, 30 minutos antes do café;Oral;S
+Alopurinol;100 mg comprimido;1 comprimido 1 vez ao dia, após uma refeição;Oral;S
+Fluoxetina;20 mg cápsula;1 cápsula pela manhã;Oral;S
+Sertralina;50 mg comprimido;1 comprimido pela manhã;Oral;S
+Escitalopram;10 mg comprimido;1 comprimido 1 vez ao dia;Oral;S
+Amitriptilina;25 mg comprimido;1 comprimido à noite;Oral;S
+Betaistina;16 mg comprimido;1 comprimido de 8/8 horas;Oral;N
+Tansulosina;0,4 mg cápsula;1 cápsula 1 vez ao dia, após o café;Oral;S
+Fenazopiridina;200 mg comprimido;1 comprimido de 8/8 horas por até 2 dias (a urina fica alaranjada);Oral;N
+Sulfato ferroso;40 mg de ferro elementar comprimido;1 comprimido 1 vez ao dia, 30 minutos antes do almoço;Oral;N
+Ácido fólico;5 mg comprimido;1 comprimido 1 vez ao dia;Oral;N
+Colecalciferol (vitamina D3);1.000 UI cápsula;1 cápsula 1 vez ao dia, junto a uma refeição;Oral;S
+Colecalciferol (vitamina D3);50.000 UI cápsula;1 cápsula 1 vez por semana por 8 semanas;Oral;N
+Tobramicina;3 mg/mL colírio;1 gota no olho afetado de 4/4 horas por 7 dias;Oftálmica;N
+Carmelose sódica (lágrima artificial);5 mg/mL colírio;1 a 2 gotas em cada olho quando sentir os olhos secos;Oftálmica;N
+Ciprofloxacino + hidrocortisona;2 mg/mL + 10 mg/mL suspensão otológica;3 gotas no ouvido afetado de 12/12 horas por 7 dias;Otológica;N

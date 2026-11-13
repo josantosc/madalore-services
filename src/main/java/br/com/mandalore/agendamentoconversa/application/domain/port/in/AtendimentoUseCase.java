@@ -23,8 +23,14 @@ public interface AtendimentoUseCase {
     /** Histórico do atendimento (tipo, usuário, detalhe curto). */
     List<Atendimento.Evento> eventos(String conta, long atendimentoId);
 
-    /** Chama o paciente que aguarda. Chamar de novo atualiza o horário da chamada. */
-    Atendimento.Operacao chamar(String conta, long atendimentoId, String ator);
+    /**
+     * Chama o paciente que aguarda, ou o já atendido (ex.: financeiro), para o local informado (opcional). Chamar de
+     * novo atualiza horário e local.
+     */
+    Atendimento.Operacao chamar(String conta, long atendimentoId, String local, String ator);
+
+    /** Locais sugeridos para a chamada (mandalore.clientes.&lt;id&gt;.painel.locais); vazia quando não configurada. */
+    List<String> locaisDeChamada(String conta);
 
     /** Consulta marcada ou confirmada cujo horário já passou. Operacao.id() é o agendamento. */
     Atendimento.Operacao marcarFalta(String conta, long agendamentoId, String ator);
@@ -39,4 +45,10 @@ public interface AtendimentoUseCase {
 
     /** Por nome ou CPF; termo com menos de 2 caracteres devolve vazio. */
     List<Atendimento.PacienteResumo> buscarPacientes(String conta, String termo);
+
+    /** CPF com 11 dígitos (pontuação é ignorada). Mais de um cadastro quando o CPF tem nascimentos diferentes. */
+    List<Atendimento.PacienteResumo> pacientesPorCpf(String conta, String cpf);
+
+    /** Cadastro e linha do tempo administrativa, sem conteúdo clínico. Grava acesso_prontuario. */
+    Atendimento.FichaPaciente fichaDoPaciente(String conta, long pacienteId, String ator, String ip);
 }

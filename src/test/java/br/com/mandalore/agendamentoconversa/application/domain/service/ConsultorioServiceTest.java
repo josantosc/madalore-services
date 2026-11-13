@@ -411,11 +411,20 @@ class ConsultorioServiceTest {
     void chamarRestringeAoProfissionalDoUsuario() {
         profissional();
         when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.AGUARDANDO, PROF)));
-        when(port.chamar(CONTA, ATEND, PROF, "dr")).thenReturn(Atendimento.Operacao.sucesso(ATEND));
+        when(port.chamar(CONTA, ATEND, PROF, "Consultório 3", "dr")).thenReturn(Atendimento.Operacao.sucesso(ATEND));
 
-        assertThat(service.chamar(CTX, ATEND).codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(service.chamar(CTX, ATEND, "  Consultório   3 ").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
 
-        verify(port).chamar(CONTA, ATEND, PROF, "dr");
+        verify(port).chamar(CONTA, ATEND, PROF, "Consultório 3", "dr");
+    }
+
+    @Test
+    void chamarSemLocalGravaNulo() {
+        profissional();
+        when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.AGUARDANDO, PROF)));
+        when(port.chamar(CONTA, ATEND, PROF, null, "dr")).thenReturn(Atendimento.Operacao.sucesso(ATEND));
+
+        assertThat(service.chamar(CTX, ATEND, " ").codigo()).isEqualTo(CodigoNegocio.SUCESSO);
     }
 
     @Test
@@ -423,9 +432,9 @@ class ConsultorioServiceTest {
         profissional();
         when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.AGUARDANDO, 99L)));
 
-        assertThatThrownBy(() -> service.chamar(CTX, ATEND)).isInstanceOf(AcessoNegadoException.class);
+        assertThatThrownBy(() -> service.chamar(CTX, ATEND, null)).isInstanceOf(AcessoNegadoException.class);
 
-        verify(port, never()).chamar(anyString(), anyLong(), any(), anyString());
+        verify(port, never()).chamar(anyString(), anyLong(), any(), any(), anyString());
     }
 
     @Test
@@ -465,6 +474,83 @@ class ConsultorioServiceTest {
 
         verify(port).salvarFavorito(CONTA, PROF, new Atendimento.MedicamentoFavorito(null, "Dipirona", "500 mg",
                 "1 cp 6/6h", "", "", false, ""));
+    }
+
+    // ---- consulta do paciente por CPF ----
+
+    private static final Atendimento.PacienteResumo MARIA =
+            new Atendimento.PacienteResumo(PACIENTE, "Maria", "12345678901", LocalDate.of(1980, 1, 2), null);
+
+    @Test
+    void pacientesPorCpfMarcaQuemNaoEstaNaAgendaDeHojeComoExigeMotivo() {
+        profissional();
+        Atendimento.PacienteResumo homonimo = new Atendimento.PacienteResumo(88L, "Maria", "12345678901", LocalDate.of(1990, 5, 6), null);
+        when(port.pacientesPorCpf(CONTA, "12345678901")).thenReturn(List.of(MARIA, homonimo));
+        when(port.temAtendimentoNoDia(CONTA, PACIENTE, PROF, AGORA.toLocalDate())).thenReturn(true);
+
+        List<Atendimento.PacienteEncontrado> achados = service.pacientesPorCpf(CTX, "123.456.789-01");
+
+        assertThat(achados).extracting(Atendimento.PacienteEncontrado::exigeMotivo).containsExactly(false, true);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "123", "1234567890a", "123456789012"})
+    void pacientesPorCpfSemOnzeDigitosLancaIllegalArgument(String cpf) {
+        profissional();
+
+        assertThatThrownBy(() -> service.pacientesPorCpf(CTX, cpf)).isInstanceOf(IllegalArgumentException.class);
+        verify(port, never()).pacientesPorCpf(anyString(), anyString());
+    }
+
+    @Test
+    void prontuarioForaDaAgendaSemMotivoLancaENaoRegistraAcesso() {
+        profissional();
+        when(port.paciente(CONTA, PACIENTE)).thenReturn(Optional.of(MARIA));
+
+        assertThatThrownBy(() -> service.prontuarioDoPaciente(CTX, PACIENTE, "  ", "10.0.0.1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("motivo");
+        verify(port, never()).historicoDoPaciente(anyString(), anyLong());
+        verify(port, never()).registrarAcesso(anyString(), any(), anyLong(), anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void prontuarioComMotivoTrazTodosOsMedicosSoComRegistroLiberadoEAuditaOMotivo() {
+        profissional();
+        when(port.paciente(CONTA, PACIENTE)).thenReturn(Optional.of(MARIA));
+        Atendimento.Prontuario deOutroMedico = new Atendimento.Prontuario(ficha(Atendimento.Status.FINALIZADO, 99L),
+                anamnese("rascunho", null), List.of(evolucao("liberada", AGORA), evolucao("rascunho", null)), List.of(),
+                List.of(receita(AGORA, item("Dipirona", "1 cp")), receita(null, item("Rascunho", ""))), null, null);
+        when(port.historicoDoPaciente(CONTA, PACIENTE)).thenReturn(List.of(deOutroMedico));
+
+        Atendimento.ProntuarioPaciente p = service.prontuarioDoPaciente(CTX, PACIENTE, " exame trazido ", "10.0.0.1");
+
+        Atendimento.Prontuario consulta = p.atendimentos().get(0);
+        assertThat(consulta.anamnese()).isNull();
+        assertThat(consulta.evolucoes()).extracting(Atendimento.Evolucao::texto).containsExactly("liberada");
+        assertThat(consulta.receitas()).hasSize(1);
+        verify(port).visitasDoPaciente(CONTA, PACIENTE, true);
+        verify(port).registrarAcesso(CONTA, null, PACIENTE, ConsultorioService.ACAO_PRONTUARIO_COMPLETO, "dr", "10.0.0.1",
+                "exame trazido");
+    }
+
+    @Test
+    void prontuarioDePacienteDaAgendaDeHojeDispensaMotivo() {
+        profissional();
+        when(port.paciente(CONTA, PACIENTE)).thenReturn(Optional.of(MARIA));
+        when(port.temAtendimentoNoDia(CONTA, PACIENTE, PROF, AGORA.toLocalDate())).thenReturn(true);
+
+        service.prontuarioDoPaciente(CTX, PACIENTE, null, "10.0.0.1");
+
+        verify(port).registrarAcesso(CONTA, null, PACIENTE, ConsultorioService.ACAO_PRONTUARIO_COMPLETO, "dr", "10.0.0.1", null);
+    }
+
+    @Test
+    void prontuarioComMotivoLongoDemaisLancaIllegalArgument() {
+        profissional();
+        when(port.paciente(CONTA, PACIENTE)).thenReturn(Optional.of(MARIA));
+
+        assertThatThrownBy(() -> service.prontuarioDoPaciente(CTX, PACIENTE, "x".repeat(501), "ip"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     private void profissional(ProfissionalClinico prof) {

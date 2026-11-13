@@ -3,12 +3,14 @@ package br.com.mandalore.agendamentoconversa.adapter.in.web.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -50,7 +52,7 @@ class AtendimentoControllerTest {
     void filaUsaAContaDoLoginQuandoNaoInformada() throws Exception {
         LocalDate dia = LocalDate.of(2026, 11, 11);
         when(atendimento.fila("7", dia)).thenReturn(List.of(
-                new Atendimento.FilaItem(5L, null, null, "Maria", "12345678901", "Dr. João", "Clínica geral", "CONFIRMADO", null, null, null)));
+                new Atendimento.FilaItem(5L, null, null, "Maria", "12345678901", "Dr. João", "Clínica geral", "CONFIRMADO", null, null, null, null)));
 
         mvc.perform(get("/atendimento/api/fila").param("data", "2026-11-11").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
                 .andExpect(status().isOk())
@@ -125,10 +127,65 @@ class AtendimentoControllerTest {
     }
 
     @Test
+    void chamarRepassaOLocalEFuncionaSemCorpo() throws Exception {
+        when(atendimento.chamar("7", 99L, "Financeiro", "recepcao@clinica")).thenReturn(Atendimento.Operacao.sucesso(99L));
+        when(atendimento.chamar("7", 98L, null, "recepcao@clinica")).thenReturn(Atendimento.Operacao.sucesso(98L));
+
+        mvc.perform(post("/atendimento/api/atendimentos/99/chamar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"local\":\"Financeiro\"}")
+                        .requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.atendimentoId").value(99));
+        mvc.perform(post("/atendimento/api/atendimentos/98/chamar").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void locaisDaContaDoLogin() throws Exception {
+        when(atendimento.locaisDeChamada("7")).thenReturn(List.of("Recepção", "Consultório 3"));
+
+        mvc.perform(get("/atendimento/api/locais").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[1]").value("Consultório 3"));
+    }
+
+    @Test
     void contaNaoHabilitadaDevolve404() throws Exception {
         when(atendimento.registrarChegada(anyString(), anyLong(), anyString())).thenThrow(new AtendimentoDesabilitadoException());
 
         mvc.perform(post("/atendimento/api/agendamentos/5/chegada").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void pacientesPorCpfLeOCpfDoCorpoSemCache() throws Exception {
+        when(atendimento.pacientesPorCpf("7", "123.456.789-01")).thenReturn(List.of(
+                new Atendimento.PacienteResumo(77L, "Maria", "12345678901", LocalDate.of(1980, 1, 2), null)));
+
+        mvc.perform(post("/atendimento/api/pacientes/cpf").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cpf\":\"123.456.789-01\"}").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$[0].id").value(77));
+    }
+
+    @Test
+    void fichaDoPacienteRepassaUsuarioEIp() throws Exception {
+        Atendimento.PacienteResumo maria = new Atendimento.PacienteResumo(77L, "Maria", "12345678901", null, null);
+        when(atendimento.fichaDoPaciente(eq("7"), eq(77L), eq("recepcao@clinica"), anyString()))
+                .thenReturn(new Atendimento.FichaPaciente(maria, List.of()));
+
+        mvc.perform(get("/atendimento/api/pacientes/77/ficha").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paciente.nome").value("Maria"))
+                .andExpect(jsonPath("$.visitas").isArray());
+    }
+
+    @Test
+    void fichaDeOutraContaEProibida() throws Exception {
+        mvc.perform(get("/atendimento/api/pacientes/77/ficha").param("conta", "8").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isForbidden());
+        verify(atendimento, never()).fichaDoPaciente(anyString(), anyLong(), anyString(), any());
     }
 }

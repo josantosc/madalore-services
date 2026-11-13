@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento
 import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AtendimentoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.service.HabilitacaoAtendimento;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
@@ -63,6 +65,10 @@ public class AtendimentoController {
     }
 
     public record DesfazerRequest(String motivo) {
+    }
+
+    /** Local para onde o paciente é chamado (opcional). */
+    public record ChamarRequest(String local) {
     }
 
     static final class Proibido extends RuntimeException {
@@ -110,8 +116,16 @@ public class AtendimentoController {
 
     @PostMapping("/atendimento/api/atendimentos/{id}/chamar")
     public ResponseEntity<Map<String, Object>> chamar(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                      @RequestBody(required = false) ChamarRequest request,
                                                       @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
-        return operacao(atendimento.chamar(conta(conta, login), id, login.usuario()), "atendimentoId");
+        return operacao(atendimento.chamar(conta(conta, login), id, request == null ? null : request.local(),
+                login.usuario()), "atendimentoId");
+    }
+
+    @GetMapping(value = "/atendimento/api/locais", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<String> locais(@RequestParam(required = false) String conta,
+                               @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return atendimento.locaisDeChamada(conta(conta, login));
     }
 
     @PostMapping("/atendimento/api/agendamentos/{id}/falta")
@@ -144,6 +158,41 @@ public class AtendimentoController {
                                                       @RequestParam(required = false) String q,
                                                       @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
         return atendimento.buscarPacientes(conta(conta, login), q);
+    }
+
+    /** CPF no corpo, e não na URL, para não ir para log de acesso e histórico do navegador. */
+    public record CpfRequest(String cpf) {
+    }
+
+    /** Consulta do paciente: a mesma página serve a recepção (/atendimento) e o médico (/consultorio). */
+    @GetMapping("/atendimento/paciente")
+    public ResponseEntity<byte[]> paginaPaciente() throws IOException {
+        return paginaDoPaciente();
+    }
+
+    static ResponseEntity<byte[]> paginaDoPaciente() throws IOException {
+        try (InputStream html = new ClassPathResource("atendimento/paciente.html").getInputStream()) {
+            return ResponseEntity.ok()
+                    .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
+                    .body(html.readAllBytes());
+        }
+    }
+
+    @PostMapping(value = "/atendimento/api/pacientes/cpf", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Atendimento.PacienteResumo>> pacientesPorCpf(
+            @RequestParam(required = false) String conta, @RequestBody(required = false) CpfRequest request,
+            @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(atendimento.pacientesPorCpf(conta(conta, login), request == null ? null : request.cpf()));
+    }
+
+    @GetMapping(value = "/atendimento/api/pacientes/{id}/ficha", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Atendimento.FichaPaciente> ficha(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                           @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
+                                                           HttpServletRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(atendimento.fichaDoPaciente(conta(conta, login), id, login.usuario(), AdminAcesso.ip(request)));
     }
 
     /** Avisos da fila em tempo real (só tipo e números, sem dado do paciente). */
@@ -210,11 +259,12 @@ public class AtendimentoController {
             case DIAGNOSTICO_PRINCIPAL_JA_EXISTE -> "Já existe um diagnóstico principal ativo neste atendimento.";
             case DIAGNOSTICO_DUPLICADO -> "Este CID já está registrado neste atendimento.";
             case ALERGIA_DUPLICADA -> "Esta alergia já está registrada para o paciente.";
-            case STATUS_INVALIDO_PARA_CHAMADA -> "Só dá para chamar quem está aguardando. Atualize a tela.";
+            case STATUS_INVALIDO_PARA_CHAMADA -> "Só dá para chamar quem está aguardando (a recepção também chama quem já foi atendido). Atualize a tela.";
             case STATUS_INVALIDO_PARA_FALTA -> "Só dá para marcar falta (ou desfazê-la) de consulta que não começou. Atualize a tela.";
             case FALTA_ANTES_DO_HORARIO -> "O horário da consulta ainda não chegou: não dá para marcar falta.";
             case HORARIO_INDISPONIVEL -> "O horário já foi ocupado por outra consulta. Remarque pela agenda.";
             case ATALHO_DUPLICADO -> "Você já tem um modelo com este atalho.";
+            case MEDICAMENTO_DUPLICADO -> "Este medicamento, com esta apresentação, já está na lista.";
             default -> "Não foi possível gravar (" + codigo.name() + ").";
         };
     }

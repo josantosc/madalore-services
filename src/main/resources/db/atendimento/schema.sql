@@ -49,6 +49,8 @@ CREATE INDEX IF NOT EXISTS idx_atendimento_paciente
 -- Chamada do paciente na sala de espera. O status continua AGUARDANDO até o médico iniciar.
 ALTER TABLE atendimento.atendimento_paciente ADD COLUMN IF NOT EXISTS dt_chamada TIMESTAMP;
 ALTER TABLE atendimento.atendimento_paciente ADD COLUMN IF NOT EXISTS nm_usuario_chamada VARCHAR(100);
+-- Para onde o paciente foi chamado (Consultório 3, Financeiro...); aparece no painel da sala de espera.
+ALTER TABLE atendimento.atendimento_paciente ADD COLUMN IF NOT EXISTS ds_local_chamada VARCHAR(60);
 
 -- AGENDA_CONS_LOG_STATUS / ATEND_PACIENTE_HIST. Nunca guarda conteúdo clínico.
 CREATE TABLE IF NOT EXISTS atendimento.atendimento_evento (
@@ -216,6 +218,8 @@ CREATE TABLE IF NOT EXISTS atendimento.acesso_prontuario (
     criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_acesso_prontuario ON atendimento.acesso_prontuario (conta_id, paciente_id, criado_em);
+-- Motivo informado pelo médico ao abrir o prontuário de paciente que não está na fila dele no dia.
+ALTER TABLE atendimento.acesso_prontuario ADD COLUMN IF NOT EXISTS ds_motivo VARCHAR(500);
 
 -- Medicamentos favoritos do profissional, para montar a receita com um clique. Não é dado de paciente.
 CREATE TABLE IF NOT EXISTS atendimento.medicamento_favorito (
@@ -234,6 +238,28 @@ CREATE TABLE IF NOT EXISTS atendimento.medicamento_favorito (
 CREATE UNIQUE INDEX IF NOT EXISTS uk_medicamento_favorito
     ON atendimento.medicamento_favorito (conta_id, profissional_id, lower(btrim(ds_medicamento)),
                                          lower(btrim(ds_apresentacao)), lower(btrim(ds_posologia)));
+
+-- Medicamentos de rotina da clínica: sugestões na receita de todos os médicos, mantidas pelo gestor.
+-- Começa com a lista padrão do sistema (medicamentos-rotina.csv). Não é dado de paciente.
+CREATE TABLE IF NOT EXISTS atendimento.medicamento_rotina (
+    id BIGSERIAL PRIMARY KEY,
+    conta_id VARCHAR(40) NOT NULL,
+    ds_medicamento VARCHAR(300) NOT NULL CHECK (btrim(ds_medicamento) <> ''),
+    ds_apresentacao VARCHAR(200) NOT NULL DEFAULT '',
+    ds_posologia VARCHAR(500) NOT NULL DEFAULT '',
+    ie_via_aplicacao VARCHAR(60) NOT NULL DEFAULT '',
+    ie_uso_continuo BOOLEAN NOT NULL DEFAULT FALSE,
+    atualizado_por VARCHAR(150) NOT NULL DEFAULT 'sistema',
+    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_medicamento_rotina
+    ON atendimento.medicamento_rotina (conta_id, lower(btrim(ds_medicamento)), lower(btrim(ds_apresentacao)));
+
+-- Contas que já receberam a lista padrão: excluir todos os itens não traz a lista de volta sozinho.
+CREATE TABLE IF NOT EXISTS atendimento.medicamento_rotina_conta (
+    conta_id VARCHAR(40) PRIMARY KEY,
+    semeado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Modelos de texto do profissional. Digitar .atalho num campo da nota expande o texto.
 CREATE TABLE IF NOT EXISTS atendimento.modelo_nota (

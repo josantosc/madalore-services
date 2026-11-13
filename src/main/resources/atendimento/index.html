@@ -97,6 +97,8 @@
     .form .msg-erro { font-weight: 400; color: var(--rubi-texto); font-size: 13px; }
     .grade2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .resultados { display: grid; gap: 4px; max-height: 180px; overflow-y: auto; }
+    .locais { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+    .locais:empty { display: none; }
     .resultado { text-align: left; background: var(--alpha-1); border: 0; border-radius: 8px; padding: 8px 10px; font: inherit; cursor: pointer; color: var(--texto); }
     .resultado:hover, .resultado.escolhido { background: var(--marca-suave); }
     .rodape { display: flex; gap: 12px; margin-top: 22px; }
@@ -127,6 +129,7 @@
         </div>
         <div class="botoes">
           <button class="btn solido" type="button" id="abrirEncaixe">+ Encaixe</button>
+          <a class="btn cinza" href="/atendimento/paciente" id="irPaciente">Consultar paciente</a>
           <a class="btn cinza" href="/agenda" id="irAgenda">Abrir agenda</a>
         </div>
       </div>
@@ -160,6 +163,23 @@
       <div class="rodape">
         <button class="btn cinza" type="button" data-fechar>Voltar</button>
         <button class="btn perigo" type="submit" id="dOk">Desfazer chegada</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgChamar">
+    <form method="dialog" id="formChamar" novalidate>
+      <h2>Chamar para onde?</h2>
+      <p class="sub" id="cTexto"></p>
+      <div class="locais" id="cLocais"></div>
+      <div class="form">
+        <label>Outro local <span class="dica">Aparece no painel da TV. Ex.: Consultório 3, Financeiro, Recepção.</span>
+          <input class="campo" id="cLocal" maxlength="60" autocomplete="off"></label>
+        <span class="msg-erro" id="cErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="cOk">Chamar</button>
       </div>
     </form>
   </dialog>
@@ -207,7 +227,7 @@
       { id: "atendidos", titulo: "Atendidos", vazio: "Nenhum atendimento finalizado." }
     ];
 
-    const estado = { conta: null, fila: [], cadastros: null, encaixePacienteId: null };
+    const estado = { conta: null, fila: [], cadastros: null, encaixePacienteId: null, locais: null };
     const params = new URLSearchParams(location.search);
 
     function el(tag, attrs, ...filhos) {
@@ -338,7 +358,8 @@
       if (f.status === "CONFIRMADO") tags.push(el("span", { className: "tag marca" }, "Confirmada"));
       if (f.status === "FALTOU") tags.push(el("span", { className: "tag rubi" }, "Faltou"));
       if (f.chegadaEm && col !== "chegar") tags.push(el("span", { className: "tag" }, "Chegou " + hora(f.chegadaEm)));
-      if (f.chamadoEm) tags.push(el("span", { className: "tag violeta" }, "Chamado " + hora(f.chamadoEm)));
+      if (f.chamadoEm) tags.push(el("span", { className: "tag violeta" },
+        "Chamado " + hora(f.chamadoEm) + (f.localChamada ? " · " + f.localChamada : "")));
       if (f.status === "EXECUTADO") tags.push(el("span", { className: "tag verde" }, "Atendido"));
 
       if (col === "chegar" && previsto(f.status) && hojeSim) {
@@ -354,9 +375,11 @@
           "Falta desfeita.")));
       }
       if (f.status === "AGUARDANDO" && f.atendimentoId) {
-        acoes.push(botao(f.chamadoEm ? "Chamar de novo" : "Chamar", f.chamadoEm ? "cinza" : "solido",
-          (b) => acao(b, "/atendimento/api/atendimentos/" + f.atendimentoId + "/chamar", f.paciente + " chamado.")));
+        acoes.push(botao(f.chamadoEm ? "Chamar de novo" : "Chamar", f.chamadoEm ? "cinza" : "solido", () => abrirChamar(f)));
         acoes.push(botao("Desfazer chegada", "fantasma", () => abrirDesfazer(f)));
+      }
+      if (f.status === "EXECUTADO" && f.atendimentoId && hojeSim) {
+        acoes.push(botao("Chamar", "fantasma", () => abrirChamar(f)));
       }
       return el("article", { className: "cartao" + (col === "chamado" ? " chamado" : "") + (col === "atendidos" || f.status === "FALTOU" ? " encerrado" : "") },
         el("div", { className: "topo" }, el("span", { className: "hora" }, hora(f.horario)), f.status === "AGUARDANDO" ? espera(f) : null),
@@ -380,6 +403,46 @@
       }
       await carregarFila();
     }
+
+    // ---------- Chamar ----------
+    const LOCAL_SALVO = "mandalore.recepcao.localChamada";
+    let chamando = null;
+
+    async function abrirChamar(f) {
+      chamando = f;
+      if (!estado.locais) {
+        try { estado.locais = await api("/atendimento/api/locais"); } catch (e) { estado.locais = []; }
+      }
+      const ultimo = localStorage.getItem(LOCAL_SALVO) || "";
+      $("cTexto").textContent = f.paciente + (f.status === "EXECUTADO" ? ", consulta já finalizada." : ", aguardando " + f.profissional + ".");
+      $("cLocais").replaceChildren(...estado.locais.map((l) => el("button", {
+        className: "btn " + (l === ultimo ? "solido" : "cinza"), type: "button", onclick: () => chamar(l) }, l)));
+      $("cLocal").value = estado.locais.includes(ultimo) ? "" : ultimo;
+      $("cErro").textContent = "";
+      $("cOk").disabled = false;
+      $("dlgChamar").showModal();
+      $("cLocal").focus();
+    }
+
+    async function chamar(local) {
+      const limpo = (local || "").trim();
+      $("cOk").disabled = true;
+      try {
+        await post("/atendimento/api/atendimentos/" + chamando.atendimentoId + "/chamar", { local: limpo || null });
+        if (limpo) localStorage.setItem(LOCAL_SALVO, limpo);
+        $("dlgChamar").close();
+        aviso(chamando.paciente + " chamado" + (limpo ? " para " + limpo : "") + ".");
+        await carregarFila();
+      } catch (e) {
+        $("cErro").textContent = e.message;
+        $("cOk").disabled = false;
+      }
+    }
+
+    $("formChamar").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      chamar($("cLocal").value);
+    });
 
     // ---------- Desfazer chegada ----------
     let desfazendo = null;
@@ -548,6 +611,7 @@
       if (params.get("conta")) {
         estado.conta = params.get("conta");
         $("irAgenda").href = "/agenda?conta=" + encodeURIComponent(estado.conta);
+        $("irPaciente").href = "/atendimento/paciente?conta=" + encodeURIComponent(estado.conta);
       }
       $("data").value = params.get("data") || hoje();
       carregarFila();

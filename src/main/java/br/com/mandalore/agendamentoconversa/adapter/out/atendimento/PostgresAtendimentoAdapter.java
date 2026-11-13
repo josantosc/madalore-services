@@ -84,6 +84,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
 
     static final String CLINICA_PADRAO = "Clínica";
     private static final int IP_MAX = 64;
+    private static final int MOTIVO_ACESSO_MAX = 500;
 
     private final NamedParameterJdbcTemplate jdbc;
     private final TransactionTemplate transacao;
@@ -288,7 +289,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         LocalDateTime agora = LocalDateTime.now(relogio);
         return jdbc.query("""
                 SELECT a.id AS agendamento_id, a.inicio, a.status, pa.nome AS paciente, pa.cpf, p.nome AS profissional,
-                       e.nome AS especialidade, at.nr_atendimento, at.dt_entrada, at.dt_chamada
+                       e.nome AS especialidade, at.nr_atendimento, at.dt_entrada, at.dt_chamada, at.ds_local_chamada
                 FROM agenda.agendamento a
                 JOIN agenda.paciente pa ON pa.id = a.paciente_id
                 JOIN agenda.profissional p ON p.id = a.profissional_id
@@ -307,7 +308,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
     @Override
     public List<Atendimento.Chamada> chamadas(String conta, LocalDate dia, int limite) {
         return jdbc.query("""
-                SELECT pa.nome AS paciente, p.nome AS profissional, at.dt_chamada
+                SELECT pa.nome AS paciente, p.nome AS profissional, at.ds_local_chamada, at.dt_chamada
                 FROM atendimento.atendimento_paciente at
                 JOIN agenda.paciente pa ON pa.id = at.paciente_id
                 JOIN agenda.profissional p ON p.id = at.profissional_id
@@ -318,7 +319,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                 """, conta(conta).addValue("de", Timestamp.valueOf(dia.atStartOfDay()))
                         .addValue("ate", Timestamp.valueOf(dia.plusDays(1).atStartOfDay())).addValue("limite", limite),
                 (rs, i) -> new Atendimento.Chamada(rs.getString("paciente"), rs.getString("profissional"),
-                        rs.getTimestamp("dt_chamada").toLocalDateTime()));
+                        rs.getString("ds_local_chamada"), rs.getTimestamp("dt_chamada").toLocalDateTime()));
     }
 
     /** Mapeia uma linha da fila (colunas da fila da recepção); espera só para status AGUARDANDO. */
@@ -332,7 +333,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         return new Atendimento.FilaItem(rs.getLong("agendamento_id"), longOuNulo(rs, "nr_atendimento"),
                 rs.getTimestamp("inicio").toLocalDateTime(), rs.getString("paciente"), rs.getString("cpf"),
                 rs.getString("profissional"), rs.getString("especialidade"), status, chegada, espera,
-                data(rs, "dt_chamada"));
+                data(rs, "dt_chamada"), rs.getString("ds_local_chamada"));
     }
 
     // ---- tarefa 6.1 ----
@@ -344,7 +345,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         return jdbc.query("""
                 SELECT a.id AS agendamento_id, a.inicio, at.ie_status_atendimento AS status, pa.nome AS paciente,
                        pa.cpf, p.nome AS profissional, e.nome AS especialidade, at.nr_atendimento, at.dt_entrada,
-                       at.dt_chamada
+                       at.dt_chamada, at.ds_local_chamada
                 FROM agenda.agendamento a
                 JOIN agenda.paciente pa ON pa.id = a.paciente_id
                 JOIN agenda.profissional p ON p.id = a.profissional_id
@@ -602,13 +603,16 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
 
     /** PEP_ACESSO. Grava só quem, o quê e de onde; nunca o conteúdo lido. */
     @Override
-    public void registrarAcesso(String conta, Long nrAtendimento, long pacienteId, String acao, String usuario, String ip) {
+    public void registrarAcesso(String conta, Long nrAtendimento, long pacienteId, String acao, String usuario, String ip,
+                                String motivo) {
         jdbc.update("""
-                INSERT INTO atendimento.acesso_prontuario (conta_id, nr_atendimento, paciente_id, acao, usuario, ip)
-                VALUES (:conta, :nr, :paciente, :acao, :usuario, :ip)
+                INSERT INTO atendimento.acesso_prontuario (conta_id, nr_atendimento, paciente_id, acao, usuario, ip, ds_motivo)
+                VALUES (:conta, :nr, :paciente, :acao, :usuario, :ip, :motivo)
                 """, conta(conta).addValue("nr", nrAtendimento).addValue("paciente", pacienteId).addValue("acao", acao)
                 .addValue("usuario", usuario(usuario))
-                .addValue("ip", ip == null ? null : ip.length() > IP_MAX ? ip.substring(0, IP_MAX) : ip));
+                .addValue("ip", ip == null ? null : ip.length() > IP_MAX ? ip.substring(0, IP_MAX) : ip)
+                .addValue("motivo", motivo == null || motivo.isBlank() ? null
+                        : motivo.length() > MOTIVO_ACESSO_MAX ? motivo.substring(0, MOTIVO_ACESSO_MAX) : motivo));
     }
 
     // ---- tarefa 6.2 ----
@@ -1699,7 +1703,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
     private static final String OCUPA_HORARIO = "status IN ('MARCADO', 'CONFIRMADO', 'AGUARDANDO', 'EM_CONSULTA', 'EXECUTADO')";
 
     @Override
-    public Atendimento.Operacao chamar(String conta, long nrAtendimento, Long profissionalId, String ator) {
+    public Atendimento.Operacao chamar(String conta, long nrAtendimento, Long profissionalId, String local, String ator) {
         return transacao.execute(status -> {
             List<String> situacao = jdbc.queryForList("""
                     SELECT ie_status_atendimento FROM atendimento.atendimento_paciente
@@ -1710,16 +1714,19 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
             if (situacao.isEmpty()) {
                 return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
             }
-            if (!"AGUARDANDO".equals(situacao.get(0))) {
+            String atual = situacao.get(0);
+            boolean recepcaoAposConsulta = profissionalId == null && "FINALIZADO".equals(atual);
+            if (!"AGUARDANDO".equals(atual) && !recepcaoAposConsulta) {
                 return Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_CHAMADA);
             }
             jdbc.update("""
                     UPDATE atendimento.atendimento_paciente
-                    SET dt_chamada = :agora, nm_usuario_chamada = :usuario, atualizado_em = CURRENT_TIMESTAMP
+                    SET dt_chamada = :agora, nm_usuario_chamada = :usuario, ds_local_chamada = :local,
+                        atualizado_em = CURRENT_TIMESTAMP
                     WHERE nr_atendimento = :nr AND conta_id = :conta
-                    """, conta(conta).addValue("nr", nrAtendimento)
+                    """, conta(conta).addValue("nr", nrAtendimento).addValue("local", local)
                     .addValue("agora", Timestamp.valueOf(LocalDateTime.now(relogio))).addValue("usuario", usuario(ator)));
-            eventoAtendimento(nrAtendimento, "CHAMADO", ator, "");
+            eventoAtendimento(nrAtendimento, "CHAMADO", ator, local == null ? "" : local);
             return Atendimento.Operacao.sucesso(nrAtendimento);
         });
     }
@@ -1885,6 +1892,95 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                 conta(conta).addValue("valor", valor).addValue("limite", limite),
                 (rs, i) -> new Atendimento.PacienteResumo(rs.getLong("id"), rs.getString("nome"), rs.getString("cpf"),
                         rs.getDate("nascimento").toLocalDate(), rs.getString("telefone")));
+    }
+
+    // ---- consulta do paciente ----
+
+    /** Eventos do atendimento que a recepção vê. Os demais (nota, CID, receita, alergia) são do médico. */
+    static final List<String> EVENTOS_ADMINISTRATIVOS =
+            List.of("CHEGADA", "CHEGADA_DESFEITA", "CHAMADO", "CONSULTA_INICIADA", "FINALIZADO");
+
+    /** Eventos que o atendimento repete na agenda; a linha do tempo mostra só a versão do atendimento. */
+    private static final List<String> ESPELHOS_NA_AGENDA = List.of("CHEGOU", "CHEGADA_DESFEITA", "EM_CONSULTA", "EXECUTADO");
+
+    @Override
+    public List<Atendimento.PacienteResumo> pacientesPorCpf(String conta, String cpf) {
+        return jdbc.query("SELECT id, nome, cpf, nascimento, telefone FROM agenda.paciente "
+                        + "WHERE conta_id = :conta AND cpf = :cpf ORDER BY nascimento, id",
+                conta(conta).addValue("cpf", cpf), (rs, i) -> new Atendimento.PacienteResumo(rs.getLong("id"),
+                        rs.getString("nome"), rs.getString("cpf"), rs.getDate("nascimento").toLocalDate(),
+                        rs.getString("telefone")));
+    }
+
+    @Override
+    public Optional<Atendimento.PacienteResumo> paciente(String conta, long pacienteId) {
+        return jdbc.query("SELECT id, nome, cpf, nascimento, telefone FROM agenda.paciente WHERE conta_id = :conta AND id = :id",
+                conta(conta).addValue("id", pacienteId), (rs, i) -> new Atendimento.PacienteResumo(rs.getLong("id"),
+                        rs.getString("nome"), rs.getString("cpf"), rs.getDate("nascimento").toLocalDate(),
+                        rs.getString("telefone"))).stream().findFirst();
+    }
+
+    @Override
+    public List<Atendimento.VisitaPaciente> visitasDoPaciente(String conta, long pacienteId, boolean eventosClinicos) {
+        MapSqlParameterSource params = conta(conta).addValue("paciente", pacienteId)
+                .addValue("espelhos", ESPELHOS_NA_AGENDA).addValue("administrativos", EVENTOS_ADMINISTRATIVOS)
+                .addValue("clinicos", eventosClinicos);
+        java.util.Map<Long, List<Atendimento.EventoPaciente>> eventos = new java.util.HashMap<>();
+        jdbc.query("""
+                SELECT ev.agendamento_id AS agendamento, ev.id, ev.criado_em, ev.tipo, ev.usuario, ev.detalhe, 0 AS fonte
+                FROM agenda.agendamento_evento ev
+                JOIN agenda.agendamento ag ON ag.id = ev.agendamento_id
+                WHERE ag.conta_id = :conta AND ag.paciente_id = :paciente AND ev.tipo NOT IN (:espelhos)
+                UNION ALL
+                SELECT at.agendamento_id, ev.id, ev.criado_em, ev.tipo, ev.usuario, ev.detalhe, 1
+                FROM atendimento.atendimento_evento ev
+                JOIN atendimento.atendimento_paciente at ON at.nr_atendimento = ev.nr_atendimento
+                WHERE at.conta_id = :conta AND at.paciente_id = :paciente AND (:clinicos OR ev.tipo IN (:administrativos))
+                ORDER BY 1, 3, 7, 2
+                """, params, rs -> {
+            eventos.computeIfAbsent(rs.getLong("agendamento"), k -> new java.util.ArrayList<>())
+                    .add(new Atendimento.EventoPaciente(rs.getTimestamp("criado_em").toInstant(), rs.getString("tipo"),
+                            rs.getString("usuario"), rs.getString("detalhe")));
+        });
+        return jdbc.query("""
+                SELECT ag.id, ag.inicio, p.nome AS profissional, e.nome AS especialidade, c.nome AS convenio, ag.status,
+                       ag.origem, at.nr_atendimento, at.ie_status_atendimento, at.ds_local_chamada
+                FROM agenda.agendamento ag
+                JOIN agenda.profissional p ON p.id = ag.profissional_id
+                JOIN agenda.especialidade e ON e.id = ag.especialidade_id
+                LEFT JOIN agenda.convenio c ON c.id = ag.convenio_id
+                LEFT JOIN LATERAL (
+                    SELECT a.nr_atendimento, a.ie_status_atendimento, a.ds_local_chamada
+                    FROM atendimento.atendimento_paciente a
+                    WHERE a.agendamento_id = ag.id AND a.conta_id = ag.conta_id
+                    ORDER BY (a.ie_status_atendimento = 'CANCELADO'), a.nr_atendimento DESC
+                    LIMIT 1
+                ) at ON TRUE
+                WHERE ag.conta_id = :conta AND ag.paciente_id = :paciente
+                ORDER BY ag.inicio DESC, ag.id DESC
+                """, params, (rs, i) -> new Atendimento.VisitaPaciente(rs.getLong("id"), data(rs, "inicio"),
+                rs.getString("profissional"), rs.getString("especialidade"), rs.getString("convenio"),
+                rs.getString("status"), rs.getString("origem"), longOuNulo(rs, "nr_atendimento"),
+                rs.getString("ie_status_atendimento"), rs.getString("ds_local_chamada"),
+                eventos.getOrDefault(rs.getLong("id"), List.of())));
+    }
+
+    @Override
+    public boolean temAtendimentoNoDia(String conta, long pacienteId, long profissionalId, LocalDate dia) {
+        Boolean tem = jdbc.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1 FROM atendimento.atendimento_paciente
+                    WHERE conta_id = :conta AND paciente_id = :paciente AND profissional_id = :profissional
+                      AND ie_status_atendimento <> 'CANCELADO'
+                      AND dt_entrada >= :dia AND dt_entrada < :diaSeguinte)
+                """, conta(conta).addValue("paciente", pacienteId).addValue("profissional", profissionalId)
+                .addValue("dia", dia.atStartOfDay()).addValue("diaSeguinte", dia.plusDays(1).atStartOfDay()), Boolean.class);
+        return Boolean.TRUE.equals(tem);
+    }
+
+    @Override
+    public List<Atendimento.Alergia> alergiasDoPaciente(String conta, long pacienteId) {
+        return alergiasAtivas(conta, pacienteId);
     }
 
     // ---- favoritos e modelos do profissional ----

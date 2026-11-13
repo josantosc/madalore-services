@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -106,8 +105,10 @@ public class PainelChamadaController {
     }
 
     @ExceptionHandler({ChaveInvalida.class, AtendimentoDesabilitadoException.class})
-    public ResponseEntity<Map<String, Object>> naoEncontrado(RuntimeException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("erro", "Painel não encontrado"));
+    public ResponseEntity<String> naoEncontrado(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
+                .body("Painel não encontrado. Confira o link da TV.");
     }
 
     private void conferir(String conta, String chave) {

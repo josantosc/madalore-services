@@ -77,6 +77,8 @@
     .aovivo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--texto-3); }
     .aovivo.ligado { color: var(--verde-texto); }
     .aovivo.ligado::before { background: #30a46c; box-shadow: 0 0 0 3px var(--verde-suave); }
+    .opcoes-locais { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .opcoes-locais:empty { display: none; }
     .opcoes { display: grid; gap: 6px; max-height: 320px; overflow-y: auto; margin-top: 12px; }
     .opcao { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; background: var(--alpha-1);
       border-radius: 8px; padding: 8px 10px; }
@@ -123,9 +125,7 @@
     .secao { background: var(--solido); outline: 1px solid var(--borda); border-radius: 12px; padding: 0; }
     .secao > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 12px 16px; user-select: none; }
     .secao > summary::-webkit-details-marker { display: none; }
-    .secao > summary .letra { width: 26px; height: 26px; border-radius: 7px; background: var(--marca-suave); color: var(--marca-texto);
-      display: inline-flex; align-items: center; justify-content: center; font-weight: 600; flex: none; }
-    .secao > summary .titulo { font-weight: 500; }
+    .secao > summary .titulo { font-weight: 600; flex: none; }
     .secao > summary .resumo-secao { color: var(--texto-3); font-size: 13px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .secao > summary .atalho { color: var(--texto-3); font-size: 11px; border: 1px solid var(--borda); border-radius: 4px; padding: 0 4px; }
     .secao[open] > summary { border-bottom: 1px solid var(--borda); }
@@ -146,6 +146,17 @@
     .texto { white-space: pre-wrap; margin: 0; }
     .item { display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 6px; padding: 8px 0; border-top: 1px solid var(--borda); align-items: center; }
     .item .linha2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 6px; align-items: center; }
+    .busca-med { position: relative; min-width: 0; }
+    .sugestoes { position: absolute; left: 0; top: calc(100% + 4px); z-index: 20; width: max(100%, 460px); max-width: calc(100vw - 32px);
+      background: var(--solido); border-radius: 10px; box-shadow: 0 0 0 1px var(--borda), 0 12px 32px rgba(0, 0, 0, .14);
+      padding: 4px; max-height: 340px; overflow-y: auto; }
+    .sugestao { display: block; width: 100%; text-align: left; border: 0; background: none; font: inherit; color: var(--texto);
+      padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+    .sugestao.ativa, .sugestao:hover { background: var(--marca-suave); }
+    .sugestao .previa { display: block; color: var(--texto-3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sugestao .origem { float: right; margin-left: 8px; font-size: 11px; color: var(--texto-3); }
+    .sugestoes .rodape-sug { color: var(--texto-3); font-size: 12px; padding: 6px 10px 4px; border-top: 1px solid var(--borda); margin-top: 4px; }
+    input.campo.sugerido { outline: 1px solid var(--ambar-texto); background: var(--ambar-suave); }
     .check { display: flex !important; align-items: center; gap: 8px; font-weight: 400 !important; white-space: nowrap; }
     .aviso-lib { background: var(--ambar-suave); color: var(--ambar-texto); border-radius: 8px; padding: 8px 12px; font-size: 13px;
       display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -212,6 +223,7 @@
         <span class="aovivo" id="aovivo">Conectando…</span>
         <span class="sub" id="atualizado"></span>
         <button class="btn cinza" type="button" id="atualizar">Atualizar</button>
+        <a class="btn cinza" href="/consultorio/paciente" id="irPaciente" title="Consultar o prontuário completo pelo CPF">Consultar paciente</a>
       </div>
 
       <table>
@@ -247,7 +259,7 @@
           <p class="fim" id="pFim" hidden></p>
 
           <details class="secao" data-secao="S" open>
-            <summary><span class="letra">S</span><span class="titulo">Subjetivo</span>
+            <summary><span class="titulo">Queixa e história</span>
               <span class="resumo-secao" id="resumoS"></span><span class="atalho">Alt+1</span></summary>
             <div class="corpo">
               <div class="aviso-lib" id="aLiberada" hidden>
@@ -272,7 +284,7 @@
           </details>
 
           <details class="secao" data-secao="O" open>
-            <summary><span class="letra">O</span><span class="titulo">Objetivo</span>
+            <summary><span class="titulo">Exame físico</span>
               <span class="resumo-secao" id="resumoO"></span><span class="atalho">Alt+2</span></summary>
             <div class="corpo">
               <label>Exame físico
@@ -281,7 +293,7 @@
           </details>
 
           <details class="secao" data-secao="A" open>
-            <summary><span class="letra">A</span><span class="titulo">Avaliação</span>
+            <summary><span class="titulo">Avaliação e diagnóstico</span>
               <span class="resumo-secao" id="resumoA"></span><span class="atalho">Alt+3</span></summary>
             <div class="corpo">
               <label>Avaliação <span class="dica">Raciocínio clínico e hipóteses</span>
@@ -306,7 +318,7 @@
           </details>
 
           <details class="secao" data-secao="P" open>
-            <summary><span class="letra">P</span><span class="titulo">Plano</span>
+            <summary><span class="titulo">Conduta e prescrição</span>
               <span class="resumo-secao" id="resumoP"></span><span class="atalho">Alt+4</span></summary>
             <div class="corpo">
               <label>Conduta <span class="dica">Exames solicitados, encaminhamentos e orientações</span>
@@ -386,6 +398,23 @@
       <div class="rodape">
         <button class="btn cinza" type="button" data-fechar>Voltar</button>
         <button class="btn solido" type="submit" id="alOk">Registrar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgChamar">
+    <form method="dialog" id="formChamar" novalidate>
+      <h2>Chamar para onde?</h2>
+      <p class="sub" id="cTexto"></p>
+      <div class="opcoes-locais" id="cLocais"></div>
+      <div class="form">
+        <label>Outro local <span class="dica">Aparece no painel da TV. Ex.: Consultório 3.</span>
+          <input class="campo" id="cLocal" maxlength="60" autocomplete="off"></label>
+        <span class="msg-erro" id="cErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit">Chamar</button>
       </div>
     </form>
   </dialog>
@@ -481,7 +510,7 @@
     const estado = {
       conta: null, fila: [], atendimentoId: null, prontuario: null,
       receitaId: null, receitaNova: false, evolucaoId: null, historico: [],
-      favoritos: null, modelos: null, modeloId: null, ultimoCampo: null
+      favoritos: null, modelos: null, modeloId: null, ultimoCampo: null, locais: null, rotina: null
     };
     const params = new URLSearchParams(location.search);
     let ocupado = false;
@@ -657,8 +686,15 @@
       }
       const acoes = [];
       if (f.atendimentoId && f.status === "AGUARDANDO") {
-        acoes.push(el("button", { className: "btn cinza mini", type: "button", onclick: (ev) => chamar(f, ev.currentTarget) },
-          f.chamadoEm ? "Chamar de novo" : "Chamar"));
+        const meuLocal = localStorage.getItem(LOCAL_SALVO);
+        acoes.push(el("button", { className: "btn cinza mini", type: "button",
+          title: meuLocal ? "Chamar para " + meuLocal : "Escolher o local e chamar",
+          onclick: (ev) => meuLocal ? chamar(f, ev.currentTarget, meuLocal) : abrirChamar(f) },
+          (f.chamadoEm ? "Chamar de novo" : "Chamar") + (meuLocal ? " · " + meuLocal : "")));
+        if (meuLocal) {
+          acoes.push(el("button", { className: "btn cinza mini", type: "button", title: "Trocar o local da chamada",
+            onclick: () => abrirChamar(f) }, "▾"));
+        }
         acoes.push(el("button", { className: "btn solido mini", type: "button", onclick: (ev) => iniciar(f, ev.currentTarget) }, "Iniciar"));
       }
       if (f.atendimentoId && (f.status === "EM_CONSULTA" || f.status === "FINALIZADO")) {
@@ -670,20 +706,51 @@
         el("td", {}, el("span", { className: "nome" }, f.paciente || ""),
           el("span", { className: "sub" }, f.especialidade || "")),
         el("td", {}, el("span", { className: classe }, rotulo),
-          f.status === "AGUARDANDO" && f.chamadoEm ? el("span", { className: "tag violeta", style: "margin-left:4px" }, "Chamado " + hora(f.chamadoEm)) : null),
+          f.status === "AGUARDANDO" && f.chamadoEm ? el("span", { className: "tag violeta", style: "margin-left:4px" },
+            "Chamado " + hora(f.chamadoEm) + (f.localChamada ? " · " + f.localChamada : "")) : null),
         el("td", {}, espera || el("span", { className: "sub" }, "—")),
         el("td", {}, el("div", { className: "acoes" }, acoes)));
     }
 
-    async function chamar(f, botao) {
-      botao.disabled = true;
+    const LOCAL_SALVO = "mandalore.consultorio.localChamada";
+    let chamando = null;
+
+    async function chamar(f, botao, local) {
+      if (botao) botao.disabled = true;
       try {
-        await api("/consultorio/api/atendimentos/" + f.atendimentoId + "/chamar", { method: "POST" });
-        aviso((f.paciente || "Paciente") + " chamado. A recepção vê a chamada no quadro.");
+        await api("/consultorio/api/atendimentos/" + f.atendimentoId + "/chamar", json("POST", { local: local || null }));
+        aviso((f.paciente || "Paciente") + " chamado" + (local ? " para " + local : "") + ". Aparece no painel da TV e no quadro da recepção.");
+        return true;
       } catch (e) {
         aviso(e.message, true);
+        return false;
+      } finally {
+        await carregarFila();
       }
-      await carregarFila();
+    }
+
+    async function abrirChamar(f) {
+      chamando = f;
+      if (!estado.locais) {
+        try { estado.locais = await api("/consultorio/api/locais"); } catch (e) { estado.locais = []; }
+      }
+      const meu = localStorage.getItem(LOCAL_SALVO) || "";
+      $("cTexto").textContent = (f.paciente || "Paciente") + ". O local fica salvo neste computador para as próximas chamadas.";
+      $("cLocais").replaceChildren(...estado.locais.map((l) => el("button", {
+        className: "btn " + (l === meu ? "solido" : "cinza"), type: "button", onclick: () => confirmarChamada(l) }, l)));
+      $("cLocal").value = estado.locais.includes(meu) ? "" : meu;
+      $("cErro").textContent = "";
+      $("dlgChamar").showModal();
+      $("cLocal").focus();
+    }
+
+    async function confirmarChamada(local) {
+      const limpo = (local || "").trim();
+      if (limpo.length > 60) return $("cErro").textContent = "O local aceita até 60 caracteres.";
+      if (limpo) localStorage.setItem(LOCAL_SALVO, limpo);
+      else localStorage.removeItem(LOCAL_SALVO);
+      $("dlgChamar").close();
+      await chamar(chamando, null, limpo);
     }
 
     async function iniciar(f, botao) {
@@ -913,7 +980,7 @@
 
     function adicionarItem(item) {
       const campo = (ph, max, valor) => el("input", { className: "campo", maxLength: max, placeholder: ph, value: valor || "" });
-      const med = campo("Medicamento", 300, item && item.medicamento);
+      const med = campo("Medicamento (digite para buscar)", 300, item && item.medicamento);
       const apres = campo("Apresentação (ex.: 500 mg cp)", 200, item && item.apresentacao);
       const pos = campo("Posologia (ex.: 1 cp de 6/6h por 5 dias)", 500, item && item.posologia);
       const via = campo("Via", 60, item && item.via);
@@ -926,9 +993,13 @@
         onclick: () => { box.remove(); if (!$("rItens").children.length) adicionarItem(); agendarReceita(); } }, "Remover");
       const favoritar = el("button", { className: "btn link", type: "button", title: "Salvar este item nos seus favoritos",
         onclick: () => executar(() => favoritarItem(box)) }, "Favoritar");
-      box.append(med, apres, pos, el("div", { className: "botoes" }, favoritar, remover),
+      const sugestoes = el("div", { className: "sugestoes", role: "listbox", hidden: true });
+      med.setAttribute("autocomplete", "off");
+      box.append(el("div", { className: "busca-med" }, med, sugestoes), apres, pos, el("div", { className: "botoes" }, favoritar, remover),
         el("div", { className: "linha2" }, via, qtd, obs, el("label", { className: "check" }, uso, "Uso contínuo")));
       box._c = { med, apres, pos, via, qtd, uso, obs };
+      ligarBuscaMedicamento(box, sugestoes);
+      pos.addEventListener("input", () => pos.classList.remove("sugerido"));
       box.addEventListener("input", agendarReceita);
       box.addEventListener("change", agendarReceita);
       $("rItens").append(box);
@@ -998,6 +1069,101 @@
       $("formReceita").scrollIntoView({ behavior: "smooth", block: "center" });
       agendarReceita();
       aviso("Receita copiada. Revise antes de finalizar.");
+    }
+
+    // ---------- Busca de medicamento: favoritos do médico e medicamentos de rotina da clínica ----------
+    const SUGESTOES_MAX = 8;
+    const normal = (t) => (t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim().replace(/\s+/g, " ");
+
+    async function carregarSugestoes() {
+      const [favoritos, rotina] = await Promise.all([
+        estado.favoritos ? estado.favoritos : api("/consultorio/api/favoritos").catch(() => []),
+        estado.rotina ? estado.rotina : api("/consultorio/api/medicamentos-rotina").catch(() => [])
+      ]);
+      estado.favoritos = favoritos;
+      estado.rotina = rotina;
+    }
+
+    function sugestoesPara(texto) {
+      const termos = normal(texto).split(" ").filter(Boolean);
+      if (!termos.length || termos.join("").length < 2) return [];
+      const chave = (i) => normal(i.medicamento) + "|" + normal(i.apresentacao);
+      const vistos = new Set();
+      const candidatos = [
+        ...(estado.favoritos || []).map((i) => ({ ...i, origem: "favorito" })),
+        ...(estado.rotina || []).map((i) => ({ ...i, origem: "rotina" }))
+      ].filter((i) => {
+        const alvo = normal(i.medicamento + " " + i.apresentacao);
+        if (!termos.every((t) => alvo.includes(t)) || vistos.has(chave(i))) return false;
+        vistos.add(chave(i));
+        return true;
+      });
+      const comeca = (i) => normal(i.medicamento).startsWith(termos[0]) ? 0 : 1;
+      return candidatos
+        .map((i, ordem) => ({ i, ordem }))
+        .sort((a, b) => comeca(a.i) - comeca(b.i) || a.ordem - b.ordem)
+        .map((x) => x.i);
+    }
+
+    function ligarBuscaMedicamento(box, lista) {
+      const med = box._c.med;
+      let opcoes = [];
+      let ativa = -1;
+
+      const fechar = () => { lista.hidden = true; opcoes = []; ativa = -1; };
+      const marcar = (n) => {
+        ativa = n;
+        [...lista.querySelectorAll(".sugestao")].forEach((b, k) => b.classList.toggle("ativa", k === ativa));
+        lista.querySelectorAll(".sugestao")[ativa]?.scrollIntoView({ block: "nearest" });
+      };
+      const desenhar = () => {
+        const todas = sugestoesPara(med.value);
+        opcoes = todas.slice(0, SUGESTOES_MAX);
+        if (!opcoes.length) return fechar();
+        lista.replaceChildren(...opcoes.map((s, k) => el("button", {
+          className: "sugestao", type: "button", role: "option", tabIndex: -1,
+          onmousedown: (ev) => ev.preventDefault(),
+          onclick: () => escolher(s),
+          onmouseenter: () => marcar(k)
+        }, el("span", { className: "origem" }, s.origem === "favorito" ? "★ favorito" : "rotina"),
+          el("b", {}, s.medicamento), s.apresentacao ? " " + s.apresentacao : "",
+          el("span", { className: "previa" }, [s.posologia, s.usoContinuo ? "uso contínuo" : ""].filter(Boolean).join(" · ")))),
+          todas.length > SUGESTOES_MAX
+            ? el("div", { className: "rodape-sug" }, "Mais " + (todas.length - SUGESTOES_MAX) + " resultados: continue digitando para filtrar.")
+            : null);
+        lista.hidden = false;
+        marcar(0);
+      };
+      const escolher = (s) => {
+        const c = box._c;
+        c.med.value = s.medicamento || "";
+        c.apres.value = s.apresentacao || "";
+        c.pos.value = s.posologia || "";
+        c.via.value = s.via || "";
+        if (s.quantidade) c.qtd.value = s.quantidade;
+        if (s.observacao) c.obs.value = s.observacao;
+        c.uso.checked = !!s.usoContinuo;
+        fechar();
+        c.pos.classList.toggle("sugerido", !!s.posologia);
+        c.pos.title = s.posologia ? "Posologia sugerida: revise antes de liberar a receita" : "";
+        agendarReceita();
+        c.pos.focus();
+        c.pos.select();
+      };
+
+      med.addEventListener("focus", () => { carregarSugestoes().catch(() => {}); });
+      med.addEventListener("input", async () => {
+        if (!estado.rotina) await carregarSugestoes().catch(() => {});
+        desenhar();
+      });
+      med.addEventListener("blur", () => setTimeout(fechar, 150));
+      med.addEventListener("keydown", (ev) => {
+        if (lista.hidden || !opcoes.length) return;
+        if (ev.key === "ArrowDown") { ev.preventDefault(); marcar((ativa + 1) % opcoes.length); }
+        else if (ev.key === "ArrowUp") { ev.preventDefault(); marcar((ativa - 1 + opcoes.length) % opcoes.length); }
+        else if (ev.key === "Enter" && ativa >= 0) { ev.preventDefault(); escolher(opcoes[ativa]); }
+        else if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); fechar(); }
+      });
     }
 
     // ---------- Favoritos de medicamento ----------
@@ -1281,8 +1447,13 @@
           detalhes.length ? el("details", {}, el("summary", {}, "Ver nota completa"),
             ...detalhes.map(([rotulo, valor]) => el("p", { className: "texto", style: "margin:6px 0 0" }, el("b", {}, rotulo + ": "), valor))) : null);
       });
+      const pac = estado.prontuario && estado.prontuario.atendimento;
+      const completo = pac ? el("a", { className: "btn link", target: "_blank", rel: "noopener",
+        title: "Todas as consultas na clínica, de todos os médicos",
+        href: "/consultorio/paciente?paciente=" + pac.pacienteId + (estado.conta ? "&conta=" + encodeURIComponent(estado.conta) : "") },
+        "Prontuário completo") : null;
       caixa.replaceChildren(el("h3", {}, "Consultas anteriores"),
-        ...(itens.length ? itens : [el("p", { className: "sub" }, "Primeira consulta com você.")]));
+        ...(itens.length ? itens : [el("p", { className: "sub" }, "Primeira consulta com você.")]), completo);
     }
 
     // ---------- Diálogos ----------
@@ -1345,6 +1516,10 @@
     $("rObs").addEventListener("input", agendarReceita);
     $("rAdd").onclick = () => adicionarItem().querySelector("input").focus();
     $("rFavoritos").onclick = abrirFavoritos;
+    $("formChamar").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      confirmarChamada($("cLocal").value);
+    });
     $("favBusca").addEventListener("input", desenharFavoritos);
     $("btnModelos").onclick = abrirModelos;
     $("modNovo").onclick = limparModelo;
@@ -1484,7 +1659,10 @@
     }
 
     (() => {
-      if (params.get("conta")) estado.conta = params.get("conta");
+      if (params.get("conta")) {
+        estado.conta = params.get("conta");
+        $("irPaciente").href = "/consultorio/paciente?conta=" + encodeURIComponent(estado.conta);
+      }
       $("data").value = params.get("data") || hoje();
       const id = Number(params.get("atendimento"));
       if (Number.isFinite(id) && id > 0) abrir(id);

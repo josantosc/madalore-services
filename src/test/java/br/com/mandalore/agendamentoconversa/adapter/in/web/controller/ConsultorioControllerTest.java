@@ -201,4 +201,48 @@ class ConsultorioControllerTest {
         mvc.perform(get("/consultorio/api/fila").requestAttr(AdminAuthFilter.LOGIN, MEDICO))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void paginaDoPacienteServeAMesmaTelaDaRecepcao() throws Exception {
+        mvc.perform(get("/consultorio/paciente"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/api/pacientes/cpf")));
+    }
+
+    @Test
+    void pacientesPorCpfDevolveSeExigeMotivo() throws Exception {
+        Atendimento.PacienteResumo maria = new Atendimento.PacienteResumo(77L, "Maria", "12345678901", null, null);
+        when(consultorio.pacientesPorCpf(CTX, "12345678901"))
+                .thenReturn(java.util.List.of(new Atendimento.PacienteEncontrado(maria, true)));
+
+        mvc.perform(post("/consultorio/api/pacientes/cpf").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cpf\":\"12345678901\"}").requestAttr(AdminAuthFilter.LOGIN, MEDICO))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$[0].exigeMotivo").value(true))
+                .andExpect(jsonPath("$[0].paciente.nome").value("Maria"));
+    }
+
+    @Test
+    void prontuarioSemMotivoDevolve400ComAMensagem() throws Exception {
+        when(consultorio.prontuarioDoPaciente(eq(CTX), eq(77L), eq(null), any()))
+                .thenThrow(new IllegalArgumentException("Informe o motivo para abrir o prontuário"));
+
+        mvc.perform(post("/consultorio/api/pacientes/77/prontuario").requestAttr(AdminAuthFilter.LOGIN, MEDICO))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value("Informe o motivo para abrir o prontuário"));
+    }
+
+    @Test
+    void prontuarioRepassaOMotivo() throws Exception {
+        Atendimento.PacienteResumo maria = new Atendimento.PacienteResumo(77L, "Maria", "12345678901", null, null);
+        when(consultorio.prontuarioDoPaciente(eq(CTX), eq(77L), eq("exame"), any()))
+                .thenReturn(new Atendimento.ProntuarioPaciente(maria, null, null, null));
+
+        mvc.perform(post("/consultorio/api/pacientes/77/prontuario").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"exame\"}").requestAttr(AdminAuthFilter.LOGIN, MEDICO))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.paciente.id").value(77));
+    }
 }

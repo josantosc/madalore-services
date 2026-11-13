@@ -16,6 +16,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegoc
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AtendimentoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AtendimentoPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.AvisoFilaPort;
+import br.com.mandalore.agendamentoconversa.application.domain.port.out.LocaisChamadaPort;
 
 /** Recepção: fila do dia, chegada, chamada, falta e encaixe. Não lida com conteúdo clínico. */
 @Service
@@ -27,6 +28,8 @@ public class AtendimentoService implements AtendimentoUseCase {
     static final int ENCAIXE_DURACAO_MIN = 15;
     static final int BUSCA_LIMITE = 10;
     static final int PAINEL_LIMITE = 6;
+    static final int LOCAL_MAX = 60;
+    static final String ACAO_FICHA = "FICHA_PACIENTE";
     private static final Set<String> PARTICULAS = Set.of("da", "de", "do", "das", "dos", "e");
     private static final int NOME_MAX = 240;
     private static final int TELEFONE_MAX = 40;
@@ -35,10 +38,12 @@ public class AtendimentoService implements AtendimentoUseCase {
     private final Clock relogio;
     private final HabilitacaoAtendimento habilitacao;
     private final AvisoFilaPort aviso;
+    private final LocaisChamadaPort locais;
 
     @Autowired
-    public AtendimentoService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, AvisoFilaPort aviso) {
-        this(atendimentos, habilitacao, Clock.system(ZONA), aviso);
+    public AtendimentoService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, AvisoFilaPort aviso,
+                              LocaisChamadaPort locais) {
+        this(atendimentos, habilitacao, Clock.system(ZONA), aviso, locais);
     }
 
     AtendimentoService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, Clock relogio) {
@@ -47,10 +52,16 @@ public class AtendimentoService implements AtendimentoUseCase {
 
     AtendimentoService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, Clock relogio,
                        AvisoFilaPort aviso) {
+        this(atendimentos, habilitacao, relogio, aviso, LocaisChamadaPort.NENHUM);
+    }
+
+    AtendimentoService(AtendimentoPort atendimentos, HabilitacaoAtendimento habilitacao, Clock relogio,
+                       AvisoFilaPort aviso, LocaisChamadaPort locais) {
         this.atendimentos = atendimentos;
         this.habilitacao = habilitacao;
         this.relogio = relogio;
         this.aviso = aviso;
+        this.locais = locais;
     }
 
     @Override
@@ -63,8 +74,26 @@ public class AtendimentoService implements AtendimentoUseCase {
     public List<Atendimento.Chamada> chamadasDoPainel(String conta) {
         exigirHabilitada(conta);
         return atendimentos.chamadas(conta, LocalDate.now(relogio), PAINEL_LIMITE).stream()
-                .map(c -> new Atendimento.Chamada(nomePublico(c.paciente()), c.profissional(), c.chamadoEm()))
+                .map(c -> new Atendimento.Chamada(nomePublico(c.paciente()), c.profissional(), c.local(), c.chamadoEm()))
                 .toList();
+    }
+
+    @Override
+    public List<String> locaisDeChamada(String conta) {
+        exigirHabilitada(conta);
+        return locais.locais(conta);
+    }
+
+    /** Local da chamada sem espaços sobrando; vazio vira null (o painel mostra o profissional). */
+    static String localChamada(String local) {
+        if (local == null || local.isBlank()) {
+            return null;
+        }
+        String limpo = local.strip().replaceAll("\\s+", " ");
+        if (limpo.length() > LOCAL_MAX) {
+            throw new IllegalArgumentException("O local da chamada aceita até " + LOCAL_MAX + " caracteres");
+        }
+        return limpo;
     }
 
     /** "MARIA DA SILVA OLIVEIRA" vira "Maria S. O.": primeiro nome e iniciais, sem partículas (da, de, dos...). */
@@ -112,10 +141,11 @@ public class AtendimentoService implements AtendimentoUseCase {
     }
 
     @Override
-    public Atendimento.Operacao chamar(String conta, long atendimentoId, String ator) {
+    public Atendimento.Operacao chamar(String conta, long atendimentoId, String local, String ator) {
         exigirHabilitada(conta);
         exigirAtor(ator);
-        return avisar(conta, atendimentos.chamar(conta, atendimentoId, null, ator), "CHAMADO", null, atendimentoId);
+        String limpo = localChamada(local);
+        return avisar(conta, atendimentos.chamar(conta, atendimentoId, null, limpo, ator), "CHAMADO", null, atendimentoId);
     }
 
     @Override
@@ -181,6 +211,32 @@ public class AtendimentoService implements AtendimentoUseCase {
             return List.of();
         }
         return atendimentos.buscarPacientes(conta, texto, BUSCA_LIMITE);
+    }
+
+    @Override
+    public List<Atendimento.PacienteResumo> pacientesPorCpf(String conta, String cpf) {
+        exigirHabilitada(conta);
+        return atendimentos.pacientesPorCpf(conta, cpfInformado(cpf));
+    }
+
+    @Override
+    public Atendimento.FichaPaciente fichaDoPaciente(String conta, long pacienteId, String ator, String ip) {
+        exigirHabilitada(conta);
+        exigirAtor(ator);
+        Atendimento.PacienteResumo paciente = atendimentos.paciente(conta, pacienteId)
+                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado"));
+        List<Atendimento.VisitaPaciente> visitas = atendimentos.visitasDoPaciente(conta, pacienteId, false);
+        atendimentos.registrarAcesso(conta, null, pacienteId, ACAO_FICHA, ator, ip);
+        return new Atendimento.FichaPaciente(paciente, visitas);
+    }
+
+    /** Só os 11 dígitos; pontos, traço e espaços são ignorados. */
+    public static String cpfInformado(String cpf) {
+        String digitos = cpf == null ? "" : cpf.replaceAll("[.\\-\\s]", "");
+        if (!digitos.matches("\\d{11}")) {
+            throw new IllegalArgumentException("Informe o CPF com 11 dígitos");
+        }
+        return digitos;
     }
 
     /** O aviso é só para as telas recarregarem; falhar nele não desfaz a operação já gravada. */

@@ -24,7 +24,9 @@ public enum Modulo {
     ATENDIMENTO("/atendimento", "Atendimento da recepção",
             "Fila do dia, chegada do paciente e desfazer chegada, sem conteúdo clínico."),
     CONSULTORIO("/consultorio", "Consultório",
-            "Fila do médico, início da consulta, anamnese, evolução, diagnóstico, receita e finalização.");
+            "Fila do médico, início da consulta, anamnese, evolução, diagnóstico, receita e finalização."),
+    MEDICAMENTOS_ROTINA("/consultorio/medicamentos", "Medicamentos de rotina",
+            "Lista de medicamentos com apresentação e posologia usual que os médicos buscam ao montar a receita.");
 
     private final String caminho;
     private final String titulo;

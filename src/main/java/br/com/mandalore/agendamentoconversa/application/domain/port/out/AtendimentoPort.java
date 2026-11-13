@@ -42,10 +42,12 @@ public interface AtendimentoPort {
     List<Atendimento.Evento> eventos(String conta, long nrAtendimento);
 
     /**
-     * Chama o paciente AGUARDANDO (grava dt_chamada e o evento CHAMADO; chamar de novo atualiza o horário).
-     * profissionalId preenchido: só atendimento desse profissional. Operacao.id() é o nrAtendimento.
+     * Chama o paciente AGUARDANDO para o local informado (grava dt_chamada, o local e o evento CHAMADO; chamar de
+     * novo atualiza horário e local). profissionalId preenchido: só atendimento desse profissional. Sem
+     * profissional (recepção), também chama o atendimento FINALIZADO, por exemplo para o financeiro.
+     * Operacao.id() é o nrAtendimento.
      */
-    Atendimento.Operacao chamar(String conta, long nrAtendimento, Long profissionalId, String ator);
+    Atendimento.Operacao chamar(String conta, long nrAtendimento, Long profissionalId, String local, String ator);
 
     /** Agendamento MARCADO ou CONFIRMADO cujo horário já passou vira FALTOU. Operacao.id() é o agendamento. */
     Atendimento.Operacao marcarFalta(String conta, long agendamentoId, String ator);
@@ -64,6 +66,24 @@ public interface AtendimentoPort {
 
     /** Por parte do nome ou pelo começo do CPF; no máximo {@code limite}. */
     List<Atendimento.PacienteResumo> buscarPacientes(String conta, String termo, int limite);
+
+    // ---- consulta do paciente ----
+
+    /** CPF exato (11 dígitos). Pode haver mais de um cadastro: a chave é CPF e nascimento. */
+    List<Atendimento.PacienteResumo> pacientesPorCpf(String conta, String cpf);
+
+    Optional<Atendimento.PacienteResumo> paciente(String conta, long pacienteId);
+
+    /**
+     * Agendamentos do paciente, do mais recente ao mais antigo, com os eventos da agenda e do atendimento. Sem
+     * {@code eventosClinicos}, ficam só os eventos administrativos (chegada, chamada, início, fim).
+     */
+    List<Atendimento.VisitaPaciente> visitasDoPaciente(String conta, long pacienteId, boolean eventosClinicos);
+
+    /** Atendimento não cancelado do paciente com o profissional, com chegada no dia. */
+    boolean temAtendimentoNoDia(String conta, long pacienteId, long profissionalId, LocalDate dia);
+
+    List<Atendimento.Alergia> alergiasDoPaciente(String conta, long pacienteId);
 
     // ---- favoritos e modelos do profissional ----
 
@@ -110,7 +130,13 @@ public interface AtendimentoPort {
     ContagemClinica contagemParaFinalizar(String conta, long nrAtendimento);
 
     /** PEP_ACESSO. nrAtendimento pode ser nulo (histórico do paciente). */
-    void registrarAcesso(String conta, Long nrAtendimento, long pacienteId, String acao, String usuario, String ip);
+    default void registrarAcesso(String conta, Long nrAtendimento, long pacienteId, String acao, String usuario, String ip) {
+        registrarAcesso(conta, nrAtendimento, pacienteId, acao, usuario, ip, null);
+    }
+
+    /** Com o motivo que o usuário informou para abrir o prontuário. */
+    void registrarAcesso(String conta, Long nrAtendimento, long pacienteId, String acao, String usuario, String ip,
+                         String motivo);
 
     // ---- consultório: transições ----
 

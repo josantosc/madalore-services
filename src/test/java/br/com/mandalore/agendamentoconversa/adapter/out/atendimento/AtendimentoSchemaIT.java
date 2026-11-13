@@ -60,7 +60,7 @@ class AtendimentoSchemaIT {
         assertThatCode(() -> subirSchemas(ds)).doesNotThrowAnyException();
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'atendimento'", Integer.class))
-                .isEqualTo(12);
+                .isEqualTo(14);
     }
 
     @Test
