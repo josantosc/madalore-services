@@ -53,7 +53,39 @@
     .cadastro:hover, .cadastro.escolhido { background: var(--marca-suave); }
 
     .cartao { background: var(--solido); border-radius: 12px; padding: 14px 16px; box-shadow: 0 0 0 1px var(--borda), 0 1px 2px rgba(0,0,0,.03); }
-    .paciente { display: grid; gap: 6px; margin-bottom: 16px; }
+    .resumo { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 12px; }
+    .monograma { width: 56px; height: 56px; border-radius: 14px; flex: none; display: grid; place-items: center; background: var(--marca-suave);
+      color: var(--marca-texto); font-size: 20px; font-weight: 600; letter-spacing: .02em; }
+    .resumo-dados { display: grid; gap: 6px; min-width: 0; }
+    .resumo .nome { font-size: 18px; font-weight: 500; }
+    .resumo .fatos { color: var(--texto-2); font-size: 13px; white-space: pre-wrap; }
+    .indicadores { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .indicador { text-align: left; background: var(--alpha-1); border: 0; outline: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px;
+      font: inherit; color: var(--texto-2); cursor: pointer; display: grid; gap: 2px; }
+    .indicador:hover { background: var(--marca-suave); }
+    .indicador b { font-size: 22px; font-weight: 500; color: var(--texto); font-variant-numeric: tabular-nums; line-height: 1.2; }
+    .indicador.alerta b { color: var(--rubi-texto); }
+    .indicador span { font-size: 12px; }
+    .proximos { display: grid; gap: 6px; margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; background: var(--marca-suave); }
+    .proximos h2 { font-size: 13px; color: var(--marca-texto); }
+    .proximo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+    .proximo .data { font-weight: 500; font-variant-numeric: tabular-nums; }
+    .barra-abas { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 12px;
+      border-bottom: 1px solid var(--borda); }
+    .abas { display: flex; gap: 4px; flex-wrap: wrap; }
+    .aba { border: 0; background: transparent; font: inherit; font-weight: 500; color: var(--texto-2); padding: 8px 10px; cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .aba:hover { color: var(--texto); }
+    .aba.ativa { color: var(--marca-texto); border-bottom-color: var(--marca); }
+    .barra-abas #buscaHistorico { width: 240px; margin-bottom: 6px; }
+    .tabela-agenda { background: var(--solido); border-radius: 12px; box-shadow: 0 0 0 1px var(--borda); overflow: hidden; }
+    .linha-agenda { display: grid; grid-template-columns: 130px minmax(120px, 1fr) minmax(140px, 1.2fr) auto; gap: 12px; align-items: center;
+      padding: 9px 14px; border-top: 1px solid var(--borda); font-size: 13px; }
+    .linha-agenda:first-child, .filtro-ativo + .linha-agenda { border-top: 0; }
+    .linha-agenda .data { font-weight: 500; font-variant-numeric: tabular-nums; }
+    .filtro-ativo { display: flex; gap: 8px; align-items: center; padding: 8px 14px; background: var(--alpha-1); font-size: 13px; color: var(--texto-2); }
+    .itens-receita { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 4px; }
+    .btn.mini { height: 26px; padding: 0 8px; font-size: 13px; border-radius: 6px; }
     .paciente .nome { font-size: 18px; font-weight: 500; }
     .sub { color: var(--texto-3); font-size: 12px; }
     .tags { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -103,6 +135,9 @@
     @media (max-width: 860px) {
       .conteudo { padding: 20px 16px 40px; }
       .ferramentas #cpf { width: 100%; }
+      .barra-abas #buscaHistorico { width: 100%; }
+      .linha-agenda { grid-template-columns: 1fr auto; }
+      .linha-agenda > :nth-child(2), .linha-agenda > :nth-child(3) { grid-column: 1; }
     }
   </style>
   <link rel="stylesheet" href="/admin/assets/tema.css">
@@ -209,6 +244,7 @@
       body: JSON.stringify(corpo || {}) });
     const vazio = (s) => s === null || s === undefined || String(s).trim() === "";
     const digitos = (s) => (s || "").replace(/\D/g, "");
+    const semAcento = (s) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const fmtCpf = (c) => { const d = digitos(c); return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : (c || ""); };
     const dataBr = (iso) => iso ? String(iso).substring(0, 10).split("-").reverse().join("/") : "";
     const dataHoraBr = (iso) => iso ? dataBr(iso) + " " + String(iso).substring(11, 16) : "";
@@ -293,36 +329,154 @@
     }
 
     // ---------- Desenho ----------
+    const futura = (v) => (v.statusAgendamento === "MARCADO" || v.statusAgendamento === "CONFIRMADO") && new Date(v.inicio) > new Date();
+    const INDICADORES = [
+      { id: "realizadas", titulo: "Consultas realizadas", filtro: (v) => v.statusAgendamento === "EXECUTADO" },
+      { id: "proximas", titulo: "Próximas", filtro: futura },
+      { id: "faltas", titulo: "Faltas", filtro: (v) => v.statusAgendamento === "FALTOU", alerta: true },
+      { id: "cancelados", titulo: "Cancelados", filtro: (v) => v.statusAgendamento === "CANCELADO" }
+    ];
+
     function desenhar(dados) {
+      estado.dados = dados;
+      estado.aba = "linha";
+      estado.indicador = null;
+      $("resultado").replaceChildren(resumo(dados), indicadores(dados), proximos(dados),
+        el("div", { className: "barra-abas" },
+          el("div", { className: "abas", role: "tablist" }, abasDisponiveis().map(([id, titulo]) =>
+            el("button", { type: "button", className: "aba", role: "tab", onclick: () => trocarAba(id) }, titulo))),
+          el("input", { className: "campo", type: "search", id: "buscaHistorico", placeholder: "Buscar no histórico", autocomplete: "off",
+            oninput: filtrarHistorico })),
+        el("div", { id: "conteudo" }));
+      document.querySelectorAll(".aba").forEach((b, i) => b.dataset.aba = abasDisponiveis()[i][0]);
+      trocarAba("linha");
+    }
+
+    function abasDisponiveis() {
+      return MEDICO
+        ? [["linha", "Linha do tempo"], ["consultas", "Consultas"], ["receitas", "Receitas"], ["agendamentos", "Agendamentos"]]
+        : [["linha", "Linha do tempo"], ["agendamentos", "Agendamentos"]];
+    }
+
+    function iniciais(nome) {
+      const partes = (nome || "").trim().split(/\s+/).filter((s) => s.length > 2 || /^[A-ZÁ-Ú]/.test(s));
+      return ((partes[0] || "")[0] || "") + (partes.length > 1 ? partes[partes.length - 1][0] : "");
+    }
+
+    function resumo(dados) {
       const p = dados.paciente;
-      const consultas = new Map((dados.atendimentos || []).map((c) => [c.atendimento.nrAtendimento, c]));
-      const alergias = dados.alergias || [];
       const visitas = dados.visitas || [];
-      const usados = new Set();
+      const ultimaComConvenio = visitas.find((v) => v.convenio);
+      const ultimoAtendido = visitas.find((v) => v.statusAgendamento === "EXECUTADO");
+      const fatos = [p.nascimento ? idade(p.nascimento) + " · nasc. " + dataBr(p.nascimento) : "", "CPF " + fmtCpf(p.cpf),
+        p.telefone ? "Tel. " + p.telefone : "", ultimaComConvenio ? ultimaComConvenio.convenio : "Particular"].filter(Boolean);
+      const etiquetas = [];
+      if (MEDICO) {
+        const alergias = dados.alergias || [];
+        if (alergias.length) alergias.forEach((a) => etiquetas.push(el("span", { className: "tag rubi",
+          title: "Registrada por " + (a.usuario || "") + " em " + dataHoraBr(a.dtRegistro) }, "Alergia: " + a.descricao)));
+        else etiquetas.push(el("span", { className: "tag" }, "Sem alergias registradas"));
+        const cids = new Map();
+        (dados.atendimentos || []).forEach((c) => (c.diagnosticos || []).forEach((d) => !cids.has(d.cid) && cids.set(d.cid, d.descricao)));
+        [...cids].slice(0, 5).forEach(([cid, desc]) => etiquetas.push(el("span", { className: "tag marca", title: desc || "" }, cid)));
+      }
+      return el("section", { className: "cartao resumo" },
+        el("div", { className: "monograma", ariaHidden: "true" }, iniciais(p.nome).toUpperCase()),
+        el("div", { className: "resumo-dados" },
+          el("span", { className: "nome" }, p.nome),
+          el("span", { className: "fatos" }, fatos.join("  ·  ")),
+          etiquetas.length ? el("div", { className: "tags" }, etiquetas) : null,
+          el("span", { className: "sub" }, ultimoAtendido
+            ? "Último atendimento em " + dataBr(ultimoAtendido.inicio) + " com " + (ultimoAtendido.profissional || "")
+            : "Ainda sem atendimento realizado na clínica")));
+    }
 
-      const cabecalho = el("div", { className: "cartao paciente" },
-        el("span", { className: "nome" }, p.nome),
-        el("span", { className: "sub" }, ["CPF " + fmtCpf(p.cpf), p.nascimento ? "nasc. " + dataBr(p.nascimento) + " (" + idade(p.nascimento) + ")" : "",
-          p.telefone ? "tel. " + p.telefone : ""].filter(Boolean).join(" · ")),
-        MEDICO ? el("div", { className: "tags" }, alergias.length
-          ? alergias.map((a) => el("span", { className: "tag rubi", title: "Registrada por " + (a.usuario || "") + " em " + dataHoraBr(a.dtRegistro) },
-            "Alergia: " + a.descricao))
-          : el("span", { className: "tag" }, "Sem alergias registradas")) : null,
-        el("span", { className: "sub" }, visitas.length === 1 ? "1 agendamento" : visitas.length + " agendamentos"));
-
-      const cartoes = visitas.map((v) => {
-        const consulta = v.nrAtendimento ? consultas.get(v.nrAtendimento) : null;
-        if (consulta) usados.add(v.nrAtendimento);
-        return cartaoVisita(v, consulta);
+    function indicadores(dados) {
+      const visitas = dados.visitas || [];
+      const itens = INDICADORES.map((ind) => {
+        const total = visitas.filter(ind.filtro).length;
+        return el("button", { type: "button", className: "indicador" + (ind.alerta && total ? " alerta" : ""),
+          title: "Ver em Agendamentos", onclick: () => { estado.indicador = ind.id; trocarAba("agendamentos"); } },
+          el("b", {}, String(total)), el("span", {}, ind.titulo));
       });
-      [...consultas.values()].filter((c) => !usados.has(c.atendimento.nrAtendimento))
-        .forEach((c) => cartoes.push(el("div", { className: "cartao visita" },
-          el("div", { className: "topo" }, el("span", { className: "data" }, dataHoraBr(c.atendimento.dtEntrada)),
-            el("span", { className: "sub" }, c.atendimento.profissional || "")),
-          blocoClinico(c))));
+      if (MEDICO) {
+        const receitas = (dados.atendimentos || []).reduce((n, c) => n + (c.receitas || []).length, 0);
+        itens.push(el("button", { type: "button", className: "indicador", title: "Ver receitas", onclick: () => trocarAba("receitas") },
+          el("b", {}, String(receitas)), el("span", {}, "Receitas")));
+      }
+      return el("div", { className: "indicadores" }, itens);
+    }
 
-      $("resultado").replaceChildren(cabecalho,
-        el("div", { className: "linha-tempo" }, cartoes.length ? cartoes : el("div", { className: "vazio" }, "Nenhum agendamento registrado.")));
+    function proximos(dados) {
+      const lista = (dados.visitas || []).filter(futura).sort((a, b) => a.inicio.localeCompare(b.inicio));
+      if (!lista.length) return null;
+      return el("section", { className: "proximos" }, el("h2", {}, "Próximos agendamentos"),
+        ...lista.slice(0, 3).map((v) => el("div", { className: "proximo" },
+          el("span", { className: "data" }, dataHoraBr(v.inicio)),
+          el("span", {}, [v.especialidade, v.profissional].filter(Boolean).join(" com ")),
+          el("span", { className: "tag" + (v.statusAgendamento === "CONFIRMADO" ? " marca" : "") },
+            v.statusAgendamento === "CONFIRMADO" ? "Confirmada" : "Marcada"))));
+    }
+
+    function trocarAba(id) {
+      estado.aba = id;
+      document.querySelectorAll(".aba").forEach((b) => {
+        b.classList.toggle("ativa", b.dataset.aba === id);
+        b.ariaSelected = String(b.dataset.aba === id);
+      });
+      const dados = estado.dados;
+      const consultas = new Map((dados.atendimentos || []).map((c) => [c.atendimento.nrAtendimento, c]));
+      let itens;
+      if (id === "consultas") {
+        itens = (dados.atendimentos || []).map((c) => el("div", { className: "cartao visita" },
+          el("div", { className: "topo" }, el("span", { className: "data" }, dataHoraBr(c.atendimento.dtEntrada)),
+            el("span", { className: "sub" }, c.atendimento.especialidade || "")), blocoClinico(c)));
+      } else if (id === "receitas") {
+        itens = (dados.atendimentos || []).flatMap((c) => (c.receitas || []).map((r) => ({ c, r })))
+          .sort((a, b) => String(b.r.dtLiberacao).localeCompare(String(a.r.dtLiberacao)))
+          .map(({ c, r }) => el("div", { className: "cartao visita" },
+            el("div", { className: "topo" }, el("span", { className: "data" }, dataBr(r.dtLiberacao)),
+              el("span", { className: "sub" }, [c.atendimento.profissional, r.tipo === "ESPECIAL" ? "controle especial" : ""].filter(Boolean).join(" · "))),
+            el("ul", { className: "itens-receita" }, (r.itens || []).map((i) => el("li", {},
+              el("b", {}, [i.medicamento, i.apresentacao].filter(Boolean).join(" ")), i.posologia ? " — " + i.posologia : "",
+              i.usoContinuo ? el("span", { className: "tag verde", style: "margin-left:6px" }, "uso contínuo") : null)))));
+      } else if (id === "agendamentos") {
+        const ind = INDICADORES.find((x) => x.id === estado.indicador);
+        const visitas = (dados.visitas || []).filter((v) => !ind || ind.filtro(v));
+        const filtroAtivo = ind ? el("div", { className: "filtro-ativo" }, "Mostrando: " + ind.titulo + " ",
+          el("button", { type: "button", className: "btn cinza mini", onclick: () => { estado.indicador = null; trocarAba("agendamentos"); } }, "Ver todos")) : null;
+        itens = [filtroAtivo, ...visitas.map((v) => {
+          const [rotulo, cor] = STATUS_AGENDA[v.statusAgendamento] || [v.statusAgendamento || "", ""];
+          return el("div", { className: "linha-agenda" },
+            el("span", { className: "data" }, dataHoraBr(v.inicio)),
+            el("span", {}, v.profissional || ""),
+            el("span", { className: "sub" }, [v.especialidade, v.convenio || "Particular"].filter(Boolean).join(" · ")),
+            el("span", { className: "tag " + cor }, rotulo));
+        })].filter(Boolean);
+        if (!visitas.length) itens.push(el("div", { className: "vazio" }, "Nenhum agendamento nesta situação."));
+      } else {
+        const usados = new Set();
+        itens = (dados.visitas || []).map((v) => {
+          const consulta = v.nrAtendimento ? consultas.get(v.nrAtendimento) : null;
+          if (consulta) usados.add(v.nrAtendimento);
+          return cartaoVisita(v, consulta);
+        });
+        [...consultas.values()].filter((c) => !usados.has(c.atendimento.nrAtendimento))
+          .forEach((c) => itens.push(el("div", { className: "cartao visita" },
+            el("div", { className: "topo" }, el("span", { className: "data" }, dataHoraBr(c.atendimento.dtEntrada)),
+              el("span", { className: "sub" }, c.atendimento.profissional || "")), blocoClinico(c))));
+      }
+      const vazio = { consultas: "Nenhuma consulta com registro liberado.", receitas: "Nenhuma receita liberada.", linha: "Nenhum agendamento registrado." };
+      $("conteudo").replaceChildren(el("div", { className: id === "agendamentos" ? "tabela-agenda" : "linha-tempo" },
+        itens.length ? itens : el("div", { className: "vazio" }, vazio[id] || "")));
+      filtrarHistorico();
+    }
+
+    function filtrarHistorico() {
+      const termo = semAcento($("buscaHistorico")?.value || "").trim();
+      document.querySelectorAll("#conteudo .cartao, #conteudo .linha-agenda").forEach((n) => {
+        n.hidden = !!termo && !semAcento(n.textContent).includes(termo);
+      });
     }
 
     function cartaoVisita(v, consulta) {

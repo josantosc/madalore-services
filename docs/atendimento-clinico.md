@@ -93,7 +93,11 @@ data, profissional, especialidade, convênio, situação (marcado, confirmado, c
 número do atendimento, local da última chamada e o histórico de cada um (marcação, confirmação, remarcação,
 chegada, chamada, início e fim da consulta, falta), com usuário e horário. A recepção e o gestor não veem
 conteúdo clínico: nem nota, nem CID, nem receita, nem os eventos clínicos. Um CPF com mais de um cadastro
-(nascimentos diferentes) lista os cadastros para escolher. O CPF vai no corpo da requisição, nunca na URL.
+(nascimentos diferentes) lista os cadastros para escolher. A ficha abre com um resumo (iniciais, idade,
+CPF, telefone, convênio do último agendamento e último atendimento), os indicadores de consultas realizadas,
+próximas, faltas e cancelados (um clique filtra a aba Agendamentos), os próximos agendamentos e as abas Linha
+do tempo e Agendamentos, com busca no histórico. O médico vê também alergias e CIDs anteriores no resumo, o
+indicador de receitas e as abas Consultas e Receitas. O CPF vai no corpo da requisição, nunca na URL.
 Cada abertura fica na auditoria (`FICHA_PACIENTE`).
 
 ## Rotina do médico
