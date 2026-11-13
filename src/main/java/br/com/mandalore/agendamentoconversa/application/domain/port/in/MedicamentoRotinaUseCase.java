@@ -14,6 +14,9 @@ public interface MedicamentoRotinaUseCase {
 
     boolean excluir(String conta, long id);
 
+    /** Grava a lista padrão na conta habilitada que ainda não a recebeu. Devolve true quando gravou agora. */
+    boolean carregarPadraoSeNova(String conta);
+
     /** Inclui de novo os itens da lista padrão que não estão na conta. Devolve quantos entraram. */
     int restaurarPadrao(String conta, String ator);
 }

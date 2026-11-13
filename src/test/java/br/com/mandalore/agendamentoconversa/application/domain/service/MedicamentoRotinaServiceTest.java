@@ -47,6 +47,17 @@ class MedicamentoRotinaServiceTest {
     }
 
     @Test
+    void carregarPadraoSoNaContaHabilitada() {
+        when(habilitacao.habilitada("7")).thenReturn(true);
+        when(port.semearSeNova("7", List.of(DIPIRONA))).thenReturn(true);
+
+        assertThat(service.carregarPadraoSeNova("7")).isTrue();
+        assertThat(service.carregarPadraoSeNova("8")).isFalse();
+
+        verify(port, never()).semearSeNova(org.mockito.ArgumentMatchers.eq("8"), any());
+    }
+
+    @Test
     void salvarLimpaEspacosEPreservaId() {
         when(port.salvar(any(), any(), any())).thenReturn(Atendimento.Operacao.sucesso(3L));
 

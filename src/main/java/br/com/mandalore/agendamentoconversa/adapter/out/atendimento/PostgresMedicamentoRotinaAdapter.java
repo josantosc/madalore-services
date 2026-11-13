@@ -34,14 +34,15 @@ public class PostgresMedicamentoRotinaAdapter implements MedicamentoRotinaPort {
     }
 
     @Override
-    public void semearSeNova(String conta, List<Atendimento.MedicamentoRotina> padrao) {
-        transacao.executeWithoutResult(status -> {
+    public boolean semearSeNova(String conta, List<Atendimento.MedicamentoRotina> padrao) {
+        return Boolean.TRUE.equals(transacao.execute(status -> {
             int nova = jdbc.update("INSERT INTO atendimento.medicamento_rotina_conta (conta_id) VALUES (:conta) "
                     + "ON CONFLICT (conta_id) DO NOTHING", new MapSqlParameterSource("conta", conta));
             if (nova == 1) {
                 inserirFaltantes(conta, padrao, SISTEMA);
             }
-        });
+            return nova == 1;
+        }));
     }
 
     @Override

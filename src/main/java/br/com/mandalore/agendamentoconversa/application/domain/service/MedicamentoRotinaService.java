@@ -54,6 +54,11 @@ public class MedicamentoRotinaService implements MedicamentoRotinaUseCase {
     }
 
     @Override
+    public boolean carregarPadraoSeNova(String conta) {
+        return habilitacao.habilitada(conta) && port.semearSeNova(conta, padrao);
+    }
+
+    @Override
     public Atendimento.Operacao salvar(String conta, Atendimento.MedicamentoRotina item, String ator) {
         habilitacao.exigir(conta);
         return port.salvar(conta, normalizado(item), ator);

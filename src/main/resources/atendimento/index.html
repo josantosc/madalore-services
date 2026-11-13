@@ -83,6 +83,43 @@
     .espera.rubi { color: var(--rubi-texto); }
     .acoes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
     .vazio { text-align: center; color: var(--texto-3); padding: 20px 8px; font-size: 13px; }
+
+    .alternar { display: inline-flex; background: var(--alpha-2); border-radius: 8px; padding: 2px; }
+    .alternar button { height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 13px;
+      font-weight: 500; color: var(--texto-2); cursor: pointer; }
+    .alternar button.ativo { background: var(--solido); color: var(--texto); box-shadow: 0 0 0 1px var(--borda); }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: -2px 0 12px; }
+    .chip { height: 28px; padding: 0 10px; border-radius: 999px; border: 0; background: var(--alpha-2); color: var(--texto-2); font: inherit;
+      font-size: 13px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+    .chip b { font-weight: 600; color: var(--texto); font-variant-numeric: tabular-nums; }
+    .chip.alerta b { color: var(--rubi-texto); }
+    .chip.ativo { background: var(--marca); color: #fff; }
+    .chip.ativo b { color: #fff; }
+    .tabela-fila { background: var(--solido); border-radius: 12px; box-shadow: 0 0 0 1px var(--borda); }
+    .grupo { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 14px; background: var(--alpha-1); border: 0;
+      border-top: 1px solid var(--borda); font: inherit; font-size: 12px; font-weight: 500; color: var(--texto-2); text-transform: uppercase;
+      letter-spacing: .04em; text-align: left; }
+    .grupo:first-child { border-top: 0; border-radius: 12px 12px 0 0; }
+    .grupo b { font-variant-numeric: tabular-nums; color: var(--texto); }
+    button.grupo { cursor: pointer; }
+    button.grupo:hover { color: var(--texto); }
+    .linha { display: grid; grid-template-columns: 52px minmax(150px, 1.2fr) minmax(140px, 1fr) minmax(220px, 1.6fr) minmax(190px, auto);
+      gap: 12px; align-items: center; padding: 9px 14px 9px 11px; border-top: 1px solid var(--borda); border-left: 3px solid transparent; }
+    .linha:hover { background: var(--alpha-1); }
+    .linha.ambar { border-left-color: var(--ambar-texto); }
+    .linha.rubi { border-left-color: var(--rubi); }
+    .linha.violeta { border-left-color: var(--violeta-texto); }
+    .linha.encerrado { opacity: .72; }
+    .linha .nome { margin-top: 0; }
+    .linha .tags { margin-top: 0; align-items: center; }
+    .linha .acoes { margin-top: 0; justify-content: flex-end; flex-wrap: nowrap; }
+    .mais { position: relative; }
+    .mais summary, .sem-menu { width: 28px; flex: none; }
+    .mais summary { list-style: none; }
+    .mais summary::-webkit-details-marker { display: none; }
+    .mais .menu { position: absolute; right: 0; top: calc(100% + 4px); background: var(--solido); border-radius: 10px; padding: 4px; display: grid;
+      min-width: 180px; z-index: 5; box-shadow: 0 0 0 1px var(--borda), 0 8px 24px rgba(0, 0, 0, .14); }
+    .mais .menu .btn { justify-content: flex-start; }
     .separador { font-size: 12px; color: var(--texto-3); margin: 6px 4px 0; }
 
     dialog { border: 0; padding: 24px; border-radius: 12px; width: min(600px, calc(100vw - 32px)); color: var(--texto);
@@ -114,6 +151,9 @@
       .conteudo { padding: 20px 16px 40px; }
       .ferramentas #busca { width: 100%; }
       .grade2 { grid-template-columns: 1fr; }
+      .linha { grid-template-columns: 48px 1fr; row-gap: 6px; }
+      .linha > .c-prof, .linha > .c-sit, .linha > .acoes { grid-column: 2; }
+      .linha .acoes { justify-content: flex-start; flex-wrap: wrap; }
     }
   </style>
   <link rel="stylesheet" href="/admin/assets/tema.css">
@@ -124,8 +164,9 @@
       <div class="cabecalho">
         <div>
           <h1>Recepção</h1>
-          <p class="descricao">Quadro do dia. Registre a chegada, chame o paciente e acompanhe a consulta.
-            O quadro atualiza sozinho quando a recepção ou o médico mudam algo.</p>
+          <p class="descricao">Fila do dia. Registre a chegada, chame o paciente e acompanhe a consulta. Quem pede ação
+            aparece primeiro. A tela atualiza sozinha quando a recepção ou o médico mudam algo.
+            Busque o paciente e tecle Enter para a ação principal.</p>
         </div>
         <div class="botoes">
           <button class="btn solido" type="button" id="abrirEncaixe">+ Encaixe</button>
@@ -145,9 +186,15 @@
         <span class="aovivo" id="aovivo">Conectando…</span>
         <span class="sub" id="atualizado"></span>
         <button class="btn cinza" type="button" id="atualizar">Atualizar</button>
+        <div class="alternar" role="group" aria-label="Visualização">
+          <button type="button" data-visao="lista" title="Lista por prioridade">Lista</button>
+          <button type="button" data-visao="quadro" title="Colunas por situação">Quadro</button>
+        </div>
       </div>
 
-      <div class="quadro" id="quadro"></div>
+      <div class="chips" id="chips"></div>
+      <div class="tabela-fila" id="tabela"></div>
+      <div class="quadro" id="quadro" hidden></div>
     </div>
   </main>
 
@@ -227,7 +274,26 @@
       { id: "atendidos", titulo: "Atendidos", vazio: "Nenhum atendimento finalizado." }
     ];
 
-    const estado = { conta: null, fila: [], cadastros: null, encaixePacienteId: null, locais: null };
+    const VISAO_SALVA = "mandalore.recepcao.visao";
+    const estado = { conta: null, fila: [], cadastros: null, encaixePacienteId: null, locais: null,
+      visao: localStorage.getItem(VISAO_SALVA) === "quadro" ? "quadro" : "lista", filtro: "todos", encerradosAbertos: false };
+    const CHIPS = [
+      { id: "todos", titulo: "Todos" },
+      { id: "chegar", titulo: "A chegar" },
+      { id: "aguardando", titulo: "Aguardando", alerta: true },
+      { id: "chamado", titulo: "Chamado" },
+      { id: "consulta", titulo: "Em consulta" },
+      { id: "atendidos", titulo: "Atendidos" },
+      { id: "faltas", titulo: "Faltas" }
+    ];
+    const GRUPOS = [
+      { id: "aguardando", titulo: "Aguardando" },
+      { id: "chamado", titulo: "Chamados" },
+      { id: "atrasado", titulo: "Atrasados para chegar" },
+      { id: "consulta", titulo: "Em consulta" },
+      { id: "proximos", titulo: "Próximos" },
+      { id: "encerrados", titulo: "Atendidos e faltas", recolhe: true }
+    ];
     const params = new URLSearchParams(location.search);
 
     function el(tag, attrs, ...filhos) {
@@ -314,6 +380,108 @@
       $("filtroProf").value = profs.includes(profSel) ? profSel : "";
 
       const linhas = filtrar(estado.fila);
+      document.querySelectorAll(".alternar button").forEach((b) => b.classList.toggle("ativo", b.dataset.visao === estado.visao));
+      $("quadro").hidden = estado.visao !== "quadro";
+      $("tabela").hidden = $("chips").hidden = estado.visao !== "lista";
+      if (estado.visao === "lista") desenharLista(linhas);
+      else desenharQuadro(linhas);
+    }
+
+    // ---------- Lista por prioridade ----------
+    function chipDe(f) {
+      return f.status === "FALTOU" ? "faltas" : coluna(f);
+    }
+
+    function grupoDe(f) {
+      const col = coluna(f);
+      if (col === "aguardando" || col === "chamado" || col === "consulta") return col;
+      if (col === "atendidos" || f.status === "FALTOU") return "encerrados";
+      return ehHoje() && horarioPassou(f.horario) ? "atrasado" : "proximos";
+    }
+
+    const ordemNoGrupo = {
+      aguardando: (a, b) => (b.esperaMin || 0) - (a.esperaMin || 0),
+      chamado: (a, b) => String(b.chamadoEm).localeCompare(String(a.chamadoEm))
+    };
+
+    function desenharLista(linhas) {
+      const contagem = Object.fromEntries(CHIPS.map((c) => [c.id, 0]));
+      linhas.forEach((f) => { contagem.todos++; contagem[chipDe(f)]++; });
+      const maiorEspera = Math.max(0, ...linhas.filter((f) => coluna(f) === "aguardando").map((f) => f.esperaMin || 0));
+      $("chips").replaceChildren(...CHIPS.map((c) => el("button", {
+        type: "button",
+        className: "chip" + (estado.filtro === c.id ? " ativo" : "") + (c.alerta && maiorEspera >= ESPERA_ATRASO_MIN ? " alerta" : ""),
+        title: c.alerta && contagem[c.id] ? "Maior espera: " + duracao(maiorEspera) : "",
+        onclick: () => { estado.filtro = c.id; desenhar(); }
+      }, c.titulo, el("b", {}, String(contagem[c.id])))));
+
+      const visiveis = estado.filtro === "todos" ? linhas : linhas.filter((f) => chipDe(f) === estado.filtro);
+      const porGrupo = Object.fromEntries(GRUPOS.map((g) => [g.id, []]));
+      visiveis.forEach((f) => porGrupo[grupoDe(f)].push(f));
+      const filhos = [];
+      GRUPOS.forEach((g) => {
+        const itens = porGrupo[g.id].sort(ordemNoGrupo[g.id] || ((a, b) => a.horario.localeCompare(b.horario)));
+        if (!itens.length) return;
+        const recolhido = g.recolhe && estado.filtro === "todos" && !estado.encerradosAbertos;
+        if (g.recolhe && estado.filtro === "todos") {
+          filhos.push(el("button", { type: "button", className: "grupo", ariaExpanded: String(!recolhido),
+            onclick: () => { estado.encerradosAbertos = !estado.encerradosAbertos; desenhar(); } },
+            (recolhido ? "▸ " : "▾ ") + g.titulo, el("b", {}, String(itens.length))));
+        } else {
+          filhos.push(el("div", { className: "grupo" }, g.titulo, el("b", {}, String(itens.length))));
+        }
+        if (!recolhido) itens.forEach((f) => filhos.push(linhaFila(f)));
+      });
+      $("tabela").replaceChildren(...(filhos.length ? filhos : [el("div", { className: "vazio" },
+        !estado.fila.length ? "Nenhuma consulta neste dia." : linhas.length ? "Ninguém nesta situação." : "Nenhum paciente com este filtro.")]));
+    }
+
+    function linhaFila(f) {
+      const col = coluna(f);
+      const acoes = acoesDe(f, col);
+      const principal = acoes.find((a) => a.estilo !== "fantasma");
+      const outras = acoes.filter((a) => a !== principal);
+      let destaque = "";
+      if (col === "aguardando") destaque = f.esperaMin >= ESPERA_ATRASO_MIN ? " rubi" : f.esperaMin >= ESPERA_ALERTA_MIN ? " ambar" : "";
+      else if (col === "chamado") destaque = " violeta";
+      else if (col === "atendidos" || f.status === "FALTOU") destaque = " encerrado";
+      return el("div", { className: "linha" + destaque },
+        el("span", { className: "hora" }, hora(f.horario)),
+        el("span", { className: "nome" }, f.paciente || ""),
+        el("span", { className: "sub c-prof" }, [f.profissional, f.especialidade].filter(Boolean).join(" · ")),
+        el("div", { className: "tags c-sit" }, situacao(f, col)),
+        el("div", { className: "acoes" },
+          principal ? botao(principal.texto, principal.estilo, principal.executar) : null,
+          outras.length ? menuMais(outras) : el("span", { className: "sem-menu" })));
+    }
+
+    function situacao(f, col) {
+      const tags = [];
+      if (col === "chegar" && previsto(f.status)) {
+        tags.push(el("span", { className: "tag" + (f.status === "CONFIRMADO" ? " marca" : "") }, f.status === "CONFIRMADO" ? "Confirmada" : "Marcada"));
+        if (ehHoje() && horarioPassou(f.horario)) {
+          const min = Math.max(0, Math.floor((Date.now() - new Date(f.horario)) / 60000));
+          tags.push(el("span", { className: "tag ambar" }, "Atrasado " + duracao(min)));
+        }
+      }
+      if (col === "aguardando") tags.push(el("span", { className: "tag ambar" }, "Aguardando"), espera(f));
+      if (col === "consulta") tags.push(el("span", { className: "tag marca" }, "Em consulta"));
+      if (col === "chamado") tags.push(espera(f));
+      return [...tags, ...tagsDe(f, col).filter((t) => !(col === "chegar" && t.textContent === "Confirmada"))];
+    }
+
+    function menuMais(acoes) {
+      const menu = el("details", { className: "mais" },
+        el("summary", { className: "btn mini fantasma", title: "Mais ações", ariaLabel: "Mais ações" }, "⋯"),
+        el("div", { className: "menu" }, acoes.map((a) => botao(a.texto, "fantasma", (b) => { menu.open = false; a.executar(b); }))));
+      menu.addEventListener("toggle", () => {
+        if (menu.open) document.querySelectorAll("details.mais[open]").forEach((d) => d !== menu && (d.open = false));
+      });
+      return menu;
+    }
+
+    // ---------- Quadro por colunas ----------
+    function desenharQuadro(linhas) {
       const porColuna = Object.fromEntries(COLUNAS.map((c) => [c.id, []]));
       linhas.forEach((f) => porColuna[coluna(f)].push(f));
       porColuna.chegar.sort((a, b) => (a.status === "FALTOU") - (b.status === "FALTOU") || a.horario.localeCompare(b.horario));
@@ -351,36 +519,47 @@
       return el("span", { className: "espera" + cor, title: "Espera desde a chegada" }, duracao(f.esperaMin));
     }
 
-    function cartao(f, col) {
+    function tagsDe(f, col) {
       const tags = [];
-      const acoes = [];
-      const hojeSim = ehHoje();
       if (f.status === "CONFIRMADO") tags.push(el("span", { className: "tag marca" }, "Confirmada"));
       if (f.status === "FALTOU") tags.push(el("span", { className: "tag rubi" }, "Faltou"));
       if (f.chegadaEm && col !== "chegar") tags.push(el("span", { className: "tag" }, "Chegou " + hora(f.chegadaEm)));
       if (f.chamadoEm) tags.push(el("span", { className: "tag violeta" },
         "Chamado " + hora(f.chamadoEm) + (f.localChamada ? " · " + f.localChamada : "")));
       if (f.status === "EXECUTADO") tags.push(el("span", { className: "tag verde" }, "Atendido"));
+      return tags;
+    }
 
+    /** Ações do paciente na ordem de importância; a primeira que não é "fantasma" é a ação principal. */
+    function acoesDe(f, col) {
+      const acoes = [];
+      const hojeSim = ehHoje();
+      const nova = (texto, estilo, executar) => acoes.push({ texto, estilo, executar });
       if (col === "chegar" && previsto(f.status) && hojeSim) {
-        acoes.push(botao("Chegou", "solido", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/chegada",
-          "Chegada de " + f.paciente + " registrada.")));
+        nova("Chegou", "solido", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/chegada",
+          "Chegada de " + f.paciente + " registrada."));
         if (horarioPassou(f.horario)) {
-          acoes.push(botao("Faltou", "fantasma", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/falta",
-            f.paciente + " marcado como falta. O horário ficou livre.")));
+          nova("Faltou", "fantasma", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/falta",
+            f.paciente + " marcado como falta. O horário ficou livre."));
         }
       }
       if (f.status === "FALTOU") {
-        acoes.push(botao("Desfazer falta", "fantasma", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/desfazer-falta",
-          "Falta desfeita.")));
+        nova("Desfazer falta", "fantasma", (b) => acao(b, "/atendimento/api/agendamentos/" + f.agendamentoId + "/desfazer-falta",
+          "Falta desfeita."));
       }
       if (f.status === "AGUARDANDO" && f.atendimentoId) {
-        acoes.push(botao(f.chamadoEm ? "Chamar de novo" : "Chamar", f.chamadoEm ? "cinza" : "solido", () => abrirChamar(f)));
-        acoes.push(botao("Desfazer chegada", "fantasma", () => abrirDesfazer(f)));
+        nova(f.chamadoEm ? "Chamar de novo" : "Chamar", f.chamadoEm ? "cinza" : "solido", () => abrirChamar(f));
+        nova("Desfazer chegada", "fantasma", () => abrirDesfazer(f));
       }
       if (f.status === "EXECUTADO" && f.atendimentoId && hojeSim) {
-        acoes.push(botao("Chamar", "fantasma", () => abrirChamar(f)));
+        nova("Chamar", "fantasma", () => abrirChamar(f));
       }
+      return acoes;
+    }
+
+    function cartao(f, col) {
+      const tags = tagsDe(f, col);
+      const acoes = acoesDe(f, col).map((a) => botao(a.texto, a.estilo, a.executar));
       return el("article", { className: "cartao" + (col === "chamado" ? " chamado" : "") + (col === "atendidos" || f.status === "FALTOU" ? " encerrado" : "") },
         el("div", { className: "topo" }, el("span", { className: "hora" }, hora(f.horario)), f.status === "AGUARDANDO" ? espera(f) : null),
         el("span", { className: "nome" }, f.paciente || ""),
@@ -594,6 +773,25 @@
     $("atualizar").onclick = carregarFila;
     $("filtroProf").addEventListener("change", desenhar);
     $("busca").addEventListener("input", desenhar);
+    $("busca").addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter") return;
+      const achados = filtrar(estado.fila);
+      if (achados.length !== 1) return;
+      const principal = acoesDe(achados[0], coluna(achados[0])).find((a) => a.estilo !== "fantasma");
+      if (!principal) return;
+      ev.preventDefault();
+      const botaoAcao = el("button");
+      principal.executar(botaoAcao);
+      if (principal.texto === "Chegou") { $("busca").value = ""; }
+    });
+    document.querySelectorAll(".alternar button").forEach((b) => b.onclick = () => {
+      estado.visao = b.dataset.visao;
+      localStorage.setItem(VISAO_SALVA, estado.visao);
+      desenhar();
+    });
+    document.addEventListener("click", (ev) => {
+      if (!ev.target.closest("details.mais")) document.querySelectorAll("details.mais[open]").forEach((d) => d.open = false);
+    });
     $("abrirEncaixe").onclick = abrirEncaixe;
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "/" && !document.querySelector("dialog[open]") && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {

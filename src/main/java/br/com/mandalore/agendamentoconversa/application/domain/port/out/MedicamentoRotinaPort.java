@@ -7,8 +7,11 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento
 /** Medicamentos de rotina da clínica ({@code atendimento.medicamento_rotina}). */
 public interface MedicamentoRotinaPort {
 
-    /** Grava a lista padrão só na primeira vez da conta, mesmo que depois a clínica exclua todos os itens. */
-    void semearSeNova(String conta, List<Atendimento.MedicamentoRotina> padrao);
+    /**
+     * Grava a lista padrão só na primeira vez da conta, mesmo que depois a clínica exclua todos os itens. Devolve true
+     * quando gravou agora.
+     */
+    boolean semearSeNova(String conta, List<Atendimento.MedicamentoRotina> padrao);
 
     /** Inclui os itens cujo medicamento e apresentação ainda não estão na conta. Devolve quantos entraram. */
     int incluirFaltantes(String conta, List<Atendimento.MedicamentoRotina> itens, String ator);

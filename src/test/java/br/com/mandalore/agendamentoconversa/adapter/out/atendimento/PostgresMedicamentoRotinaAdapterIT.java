@@ -2,6 +2,8 @@ package br.com.mandalore.agendamentoconversa.adapter.out.atendimento;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -56,8 +58,8 @@ class PostgresMedicamentoRotinaAdapterIT {
 
     @Test
     void listaPadraoEntraUmaVezEExcluirTudoNaoATrazDeVolta() {
-        adapter.semearSeNova("7", PADRAO);
-        adapter.semearSeNova("7", PADRAO);
+        assertThat(adapter.semearSeNova("7", PADRAO)).isTrue();
+        assertThat(adapter.semearSeNova("7", PADRAO)).isFalse();
 
         List<Atendimento.MedicamentoRotina> itens = adapter.listar("7");
         assertThat(itens).extracting(Atendimento.MedicamentoRotina::medicamento).containsExactly("Dipirona", "Losartana");
@@ -90,6 +92,24 @@ class PostgresMedicamentoRotinaAdapterIT {
         assertThat(adapter.excluir("8", criado.id())).isFalse();
         assertThat(jdbc.queryForObject("SELECT atualizado_por FROM atendimento.medicamento_rotina WHERE id = ?", String.class,
                 criado.id())).isEqualTo("gestor");
+    }
+
+    @Test
+    void scriptDeCargaManualTrazAListaPadraoInteiraSemDuplicar() throws Exception {
+        String script = Files.readString(Path.of("deploy/sql/medicamentos-rotina-carga.sql"));
+        long itensNoCsv = Files.readAllLines(Path.of("src/main/resources/db/atendimento/medicamentos-rotina.csv")).stream()
+                .skip(1).filter(l -> !l.isBlank()).count();
+
+        jdbc.execute(script);
+        jdbc.execute(script);
+        adapter.semearSeNova("1", PADRAO);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM atendimento.medicamento_rotina WHERE conta_id = '1'", Long.class))
+                .isEqualTo(itensNoCsv);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM atendimento.medicamento_rotina_conta WHERE conta_id = '1'",
+                Long.class)).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("SELECT ds_posologia FROM atendimento.medicamento_rotina WHERE conta_id = '1' "
+                + "AND ds_medicamento = 'Insulina humana NPH'", String.class)).contains("___ UI");
     }
 
     private void executarNoAdmin(String sql) throws Exception {

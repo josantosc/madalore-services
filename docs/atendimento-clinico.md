@@ -31,11 +31,18 @@ agendamento sem atendimento e libera o horário.
 
 ## Rotina da recepção
 
-1. **Quadro do dia:** abra `/atendimento` e escolha a data. O quadro tem as colunas A chegar (`MARCADO` e
-   `CONFIRMADO`, com as faltas separadas no fim), Aguardando, Chamado, Em consulta e Atendidos. Cada cartão
-   traz paciente, horário, profissional e, quando houver, a chegada, o tempo de espera e a hora da chamada.
-   A busca filtra por nome ou CPF (atalho `/`), e o filtro de profissional reduz o quadro. Anamnese,
-   evolução, CID e receita ficam no consultório.
+1. **Fila do dia:** abra `/atendimento` e escolha a data. A tela abre em **Lista**, uma linha por paciente,
+   em grupos por prioridade: Aguardando (maior espera primeiro), Chamados, Atrasados para chegar, Em
+   consulta, Próximos e, recolhido no fim, Atendidos e faltas. Cada linha traz horário, paciente,
+   profissional, situação (chegada, tempo de espera, chamada com o local) e a ação principal (Chegou,
+   Chamar ou Chamar de novo); as demais (Faltou, Desfazer chegada, Desfazer falta) ficam no menu "⋯". Espera
+   a partir de 15 minutos marca a linha em âmbar, a partir de 30 em vermelho, e o chamado em violeta. Os
+   botões no topo (Todos, A chegar, Aguardando, Chamado, Em consulta, Atendidos, Faltas) mostram a contagem e
+   filtram a lista. A busca filtra por nome ou CPF (atalho `/`); com um paciente só no resultado, Enter
+   executa a ação principal dele. O botão **Quadro** mostra as mesmas informações em colunas (A chegar,
+   Aguardando, Chamado, Em consulta e Atendidos), melhor para poucos pacientes ou monitor grande. A tela
+   lembra no navegador a última visualização escolhida. Anamnese, evolução, CID e receita ficam no
+   consultório.
    O quadro e a fila do consultório se atualizam sozinhos (indicador "Ao vivo"): cada chegada, chamada,
    falta, encaixe, início e finalização avisa as telas da clínica, que recarregam a lista. O aviso leva só o
    tipo e os identificadores, sem nome nem texto clínico. Sem conexão ao vivo, as telas recarregam a cada 60
@@ -51,7 +58,7 @@ agendamento sem atendimento e libera o horário.
    confirmação, `MARCADO` nos demais casos. Em seguida a recepção pode registrar a chegada de novo. Consulta
    já iniciada ou atendimento já finalizado permanece: o sistema recusa o desfazer.
 4. **Chamar:** com o paciente `AGUARDANDO`, a recepção ou o médico (só nos atendimentos do próprio
-   profissional) registra a chamada. O cartão passa para a coluna Chamado com a hora. Chamar de novo
+   profissional) registra a chamada. O paciente passa para Chamados (coluna Chamado no Quadro) com a hora. Chamar de novo
    atualiza a hora. A chamada não muda o status: a consulta começa quando o médico inicia.
    Ao chamar, escolha o local para onde o paciente vai (`Consultório 3`, `Recepção`, `Financeiro`...). As
    opções vêm de `mandalore.clientes.<id>.painel.locais`; também dá para digitar outro local, com até 60
@@ -116,12 +123,17 @@ dose usual de adulto, e o médico confere antes de liberar a receita.
 
 **Medicamentos de rotina:** a lista é da clínica e vale para todos os médicos. O gestor a mantém em
 `/consultorio/medicamentos` (tela "Medicamentos de rotina"), que o perfil Gestor já recebe. Para outro
-usuário, inclua a tela nas telas extras em Usuários. No primeiro acesso, a conta recebe a lista padrão do
+usuário, inclua a tela nas telas extras em Usuários. Na subida da aplicação (e, se a subida falhar nessa
+etapa, no primeiro acesso), cada conta habilitada recebe uma vez a lista padrão do
 sistema (`db/atendimento/medicamentos-rotina.csv`): cerca de 130 genéricos comuns da atenção primária, com
 apresentação, posologia usual de adulto e via. A lista padrão não traz controlados como benzodiazepínicos e
 opioides, nem doses pediátricas por peso. A clínica inclui, altera ou exclui itens. Medicamento e
 apresentação não se repetem. "Restaurar lista padrão" inclui de novo os itens padrão que faltam, sem mexer nos
-alterados. Excluir todos os itens não faz a lista padrão voltar sozinha.
+alterados. Excluir todos os itens não faz a lista padrão voltar sozinha. O log da subida mostra
+"medicamentos de rotina: lista padrão gravada na conta <id>" na conta que recebeu a lista. Para carregar à
+mão (ex.: conta nova sem reiniciar a aplicação), rode `deploy/sql/medicamentos-rotina-carga.sql` no banco,
+trocando a conta nas duas linhas marcadas. O script pode rodar mais de uma vez e não altera item que a clínica
+já tem.
 
 Enquanto o atendimento está `EM_CONSULTA`, o registro nasce como rascunho e passa a valer ao liberar.
 Rascunho se altera até a liberação. Registro liberado se corrige por inativação, com justificativa, e
