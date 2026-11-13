@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Painel de chamada</title>
+  <style>
+    :root { --fundo: #0f1720; --cartao: #17212d; --texto: #f4f7fa; --texto-2: #9fb0c2; --marca: #3fb68b; --destaque: #ffd166; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--texto);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif; overflow: hidden; }
+    .tela { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; padding: 3vh 4vw; gap: 3vh; }
+    header { display: flex; justify-content: space-between; align-items: center; }
+    .clinica { font-size: 3.2vh; font-weight: 600; color: var(--texto-2); }
+    .relogio { font-size: 5vh; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .atual { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+      background: var(--cartao); border-radius: 3vh; padding: 4vh 3vw; border: 0.6vh solid transparent; }
+    .atual.nova { animation: pisca 1s ease-in-out 4; }
+    @keyframes pisca { 50% { border-color: var(--destaque); background: #213043; } }
+    .rotulo { font-size: 3.4vh; color: var(--texto-2); text-transform: uppercase; letter-spacing: .3vh; }
+    .nome { font-size: 13vh; font-weight: 700; line-height: 1.1; margin: 2vh 0; word-break: break-word; }
+    .destino { font-size: 5vh; color: var(--marca); font-weight: 600; }
+    .vazio { font-size: 5vh; color: var(--texto-2); }
+    .anteriores { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5vw; }
+    .anterior { background: var(--cartao); border-radius: 1.6vh; padding: 2vh 1.2vw; min-width: 0; }
+    .anterior b { display: block; font-size: 3.4vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .anterior span { display: block; font-size: 2.4vh; color: var(--texto-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .status { position: fixed; right: 1.5vw; bottom: 1vh; font-size: 1.6vh; color: var(--texto-2); }
+    .inicio { position: fixed; inset: 0; background: rgba(15, 23, 32, .96); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3vh; cursor: pointer; z-index: 2; text-align: center; padding: 4vw; }
+    .inicio[hidden] { display: none; }
+    .inicio b { font-size: 6vh; }
+    .inicio span { font-size: 3vh; color: var(--texto-2); }
+    .erro { font-size: 4vh; color: var(--destaque); }
+  </style>
+</head>
+<body>
+  <div class="tela">
+    <header>
+      <span class="clinica" id="clinica"></span>
+      <span class="relogio" id="relogio"></span>
+    </header>
+    <section class="atual" id="atual">
+      <span class="vazio">Aguarde ser chamado</span>
+    </section>
+    <section class="anteriores" id="anteriores"></section>
+  </div>
+  <span class="status" id="status">Conectando…</span>
+  <div class="inicio" id="inicio">
+    <b>Painel de chamada</b>
+    <span>Toque na tela para iniciar em tela cheia e ativar o som das chamadas.</span>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const consulta = "?conta=" + encodeURIComponent(params.get("conta") || "") + "&chave=" + encodeURIComponent(params.get("chave") || "");
+    let ultima = null;
+    let som = null;
+    let recarga = null;
+
+    const hora = (iso) => iso ? String(iso).substring(11, 16) : "";
+
+    function el(tag, classe, texto) {
+      const n = document.createElement(tag);
+      if (classe) n.className = classe;
+      if (texto != null) n.textContent = texto;
+      return n;
+    }
+
+    function relogio() {
+      $("relogio").textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function tocar(chamada) {
+      if (!som) return;
+      const agora = som.currentTime;
+      [0, 0.35].forEach((atraso, i) => {
+        const osc = som.createOscillator();
+        const ganho = som.createGain();
+        osc.frequency.value = i ? 660 : 880;
+        ganho.gain.setValueAtTime(0.0001, agora + atraso);
+        ganho.gain.exponentialRampToValueAtTime(0.4, agora + atraso + 0.02);
+        ganho.gain.exponentialRampToValueAtTime(0.0001, agora + atraso + 0.3);
+        osc.connect(ganho).connect(som.destination);
+        osc.start(agora + atraso);
+        osc.stop(agora + atraso + 0.32);
+      });
+      if ("speechSynthesis" in window) {
+        const fala = new SpeechSynthesisUtterance(chamada.paciente.replace(/\./g, "") + ". " + chamada.profissional);
+        fala.lang = "pt-BR";
+        setTimeout(() => speechSynthesis.speak(fala), 800);
+      }
+    }
+
+    function desenhar(painel) {
+      $("clinica").textContent = painel.clinica || "";
+      const lista = painel.chamadas || [];
+      const atual = lista[0];
+      const caixa = $("atual");
+      if (!atual) {
+        caixa.replaceChildren(el("span", "vazio", "Aguarde ser chamado"));
+      } else {
+        caixa.replaceChildren(el("span", "rotulo", "Chamando"), el("span", "nome", atual.paciente),
+          el("span", "destino", atual.profissional));
+      }
+      $("anteriores").replaceChildren(...lista.slice(1, 6).map((c) => {
+        const item = el("div", "anterior");
+        item.append(el("b", null, c.paciente), el("span", null, c.profissional + " · " + hora(c.chamadoEm)));
+        return item;
+      }));
+      const chave = atual ? atual.chamadoEm + "|" + atual.paciente : null;
+      if (ultima !== null && chave && chave !== ultima) {
+        caixa.classList.remove("nova");
+        void caixa.offsetWidth;
+        caixa.classList.add("nova");
+        tocar(atual);
+      }
+      ultima = chave || "";
+    }
+
+    async function carregar() {
+      try {
+        const r = await fetch("painel/api/chamadas" + consulta, { cache: "no-store" });
+        if (!r.ok) throw new Error(r.status === 404 ? "Painel não encontrado. Confira o link da TV." : "Falha ao carregar");
+        desenhar(await r.json());
+      } catch (e) {
+        $("status").textContent = e.message;
+      }
+    }
+
+    function conectar() {
+      const fonte = new EventSource("painel/api/eventos" + consulta);
+      fonte.onopen = () => { $("status").textContent = "Ao vivo"; carregar(); };
+      fonte.onerror = () => { $("status").textContent = "Reconectando…"; };
+      fonte.addEventListener("chamada", () => {
+        clearTimeout(recarga);
+        recarga = setTimeout(carregar, 300);
+      });
+    }
+
+    $("inicio").addEventListener("click", () => {
+      $("inicio").hidden = true;
+      try { som = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { som = null; }
+      if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    });
+
+    relogio();
+    setInterval(relogio, 10000);
+    setInterval(carregar, 30000);
+    carregar();
+    if (window.EventSource) conectar();
+  </script>
+</body>
+</html>

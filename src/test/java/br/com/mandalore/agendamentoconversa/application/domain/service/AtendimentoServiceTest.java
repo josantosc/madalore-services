@@ -51,6 +51,25 @@ class AtendimentoServiceTest {
     }
 
     @Test
+    void painelMostraSoONomeAbreviadoDasChamadasDeHoje() {
+        LocalDateTime chamada = AGORA.plusMinutes(5);
+        when(port.chamadas("1", LocalDate.of(2026, 11, 10), AtendimentoService.PAINEL_LIMITE)).thenReturn(List.of(
+                new Atendimento.Chamada("MARIA DA SILVA OLIVEIRA", "Dra. Ana", chamada)));
+
+        assertThat(service.chamadasDoPainel("1"))
+                .containsExactly(new Atendimento.Chamada("Maria S. O.", "Dra. Ana", chamada));
+        verify(habilitacao).exigir("1");
+    }
+
+    @Test
+    void nomePublicoAbreviaSobrenomesEIgnoraParticulas() {
+        assertThat(AtendimentoService.nomePublico("joão  dos santos e souza")).isEqualTo("João S. S.");
+        assertThat(AtendimentoService.nomePublico("Ana")).isEqualTo("Ana");
+        assertThat(AtendimentoService.nomePublico("  ")).isEmpty();
+        assertThat(AtendimentoService.nomePublico(null)).isEmpty();
+    }
+
+    @Test
     void chegadaDelegaAoPort() {
         Atendimento.Operacao ok = Atendimento.Operacao.sucesso(5L);
         when(port.registrarChegada("1", 9L, "ana")).thenReturn(ok);

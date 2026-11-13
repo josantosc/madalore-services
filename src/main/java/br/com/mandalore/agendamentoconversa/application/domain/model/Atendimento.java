@@ -86,6 +86,10 @@ public final class Atendimento {
     ) {
     }
 
+    /** Chamada no painel da sala de espera. paciente sai abreviado do service (Maria S. O.), nunca o nome completo. */
+    public record Chamada(String paciente, String profissional, LocalDateTime chamadoEm) {
+    }
+
     /** Paciente que chegou sem agendamento. Paciente novo é cadastrado pelo CPF e nascimento. */
     public record Encaixe(
             long profissionalId,

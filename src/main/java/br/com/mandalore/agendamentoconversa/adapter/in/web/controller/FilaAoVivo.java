@@ -1,6 +1,7 @@
 package br.com.mandalore.agendamentoconversa.adapter.in.web.controller;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +29,11 @@ public class FilaAoVivo implements AvisoFilaPort {
     /** Abaixo do tempo ocioso padrão dos proxies (60 s), para a conexão não cair sem aviso. */
     private static final long PING_SEGUNDOS = 25;
 
+    static final String CHAMADO = "CHAMADO";
+
     private final Map<String, Set<SseEmitter>> porConta = new ConcurrentHashMap<>();
+    /** Painel público da sala de espera: recebe só o sinal de nova chamada, sem ids. */
+    private final Map<String, Set<SseEmitter>> painelPorConta = new ConcurrentHashMap<>();
     private final ScheduledExecutorService ping = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "fila-ao-vivo");
         t.setDaemon(true);
@@ -40,8 +45,16 @@ public class FilaAoVivo implements AvisoFilaPort {
     }
 
     public SseEmitter assinar(String conta) {
+        return assinar(porConta, conta);
+    }
+
+    public SseEmitter assinarPainel(String conta) {
+        return assinar(painelPorConta, conta);
+    }
+
+    private static SseEmitter assinar(Map<String, Set<SseEmitter>> mapa, String conta) {
         SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
-        Set<SseEmitter> conectados = porConta.computeIfAbsent(conta, k -> ConcurrentHashMap.newKeySet());
+        Set<SseEmitter> conectados = mapa.computeIfAbsent(conta, k -> ConcurrentHashMap.newKeySet());
         conectados.add(emitter);
         Runnable sair = () -> conectados.remove(emitter);
         emitter.onCompletion(sair);
@@ -54,11 +67,16 @@ public class FilaAoVivo implements AvisoFilaPort {
     @Override
     public void publicar(String conta, Aviso aviso) {
         Set<SseEmitter> conectados = porConta.get(conta);
-        if (conectados == null) {
-            return;
+        if (conectados != null) {
+            for (SseEmitter emitter : conectados) {
+                enviar(conectados, emitter, SseEmitter.event().name("fila").data(aviso, MediaType.APPLICATION_JSON));
+            }
         }
-        for (SseEmitter emitter : conectados) {
-            enviar(conectados, emitter, SseEmitter.event().name("fila").data(aviso, MediaType.APPLICATION_JSON));
+        Set<SseEmitter> paineis = painelPorConta.get(conta);
+        if (paineis != null && aviso != null && CHAMADO.equals(aviso.tipo())) {
+            for (SseEmitter emitter : paineis) {
+                enviar(paineis, emitter, SseEmitter.event().name("chamada").data("{}"));
+            }
         }
     }
 
@@ -68,8 +86,10 @@ public class FilaAoVivo implements AvisoFilaPort {
     }
 
     private void pingar() {
-        porConta.values().forEach(conectados -> conectados.forEach(
-                emitter -> enviar(conectados, emitter, SseEmitter.event().comment("ping"))));
+        for (Map<String, Set<SseEmitter>> mapa : List.of(porConta, painelPorConta)) {
+            mapa.values().forEach(conectados -> conectados.forEach(
+                    emitter -> enviar(conectados, emitter, SseEmitter.event().comment("ping"))));
+        }
     }
 
     /** Conexão que falhou sai da lista; o EventSource do navegador reconecta sozinho. */
@@ -89,13 +109,15 @@ public class FilaAoVivo implements AvisoFilaPort {
     @PreDestroy
     void parar() {
         ping.shutdownNow();
-        porConta.values().forEach(conectados -> conectados.forEach(emitter -> {
-            try {
-                emitter.complete();
-            } catch (IllegalStateException ignorado) {
-                // já encerrado
-            }
-        }));
-        porConta.clear();
+        for (Map<String, Set<SseEmitter>> mapa : List.of(porConta, painelPorConta)) {
+            mapa.values().forEach(conectados -> conectados.forEach(emitter -> {
+                try {
+                    emitter.complete();
+                } catch (IllegalStateException ignorado) {
+                    // já encerrado
+                }
+            }));
+            mapa.clear();
+        }
     }
 }

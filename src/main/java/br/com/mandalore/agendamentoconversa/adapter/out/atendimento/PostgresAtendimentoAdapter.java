@@ -304,6 +304,23 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
                 (rs, i) -> filaItem(rs, agora));
     }
 
+    @Override
+    public List<Atendimento.Chamada> chamadas(String conta, LocalDate dia, int limite) {
+        return jdbc.query("""
+                SELECT pa.nome AS paciente, p.nome AS profissional, at.dt_chamada
+                FROM atendimento.atendimento_paciente at
+                JOIN agenda.paciente pa ON pa.id = at.paciente_id
+                JOIN agenda.profissional p ON p.id = at.profissional_id
+                WHERE at.conta_id = :conta AND at.ie_status_atendimento <> 'CANCELADO'
+                  AND at.dt_chamada >= :de AND at.dt_chamada < :ate
+                ORDER BY at.dt_chamada DESC
+                LIMIT :limite
+                """, conta(conta).addValue("de", Timestamp.valueOf(dia.atStartOfDay()))
+                        .addValue("ate", Timestamp.valueOf(dia.plusDays(1).atStartOfDay())).addValue("limite", limite),
+                (rs, i) -> new Atendimento.Chamada(rs.getString("paciente"), rs.getString("profissional"),
+                        rs.getTimestamp("dt_chamada").toLocalDateTime()));
+    }
+
     /** Mapeia uma linha da fila (colunas da fila da recepção); espera só para status AGUARDANDO. */
     private static Atendimento.FilaItem filaItem(ResultSet rs, LocalDateTime agora) throws SQLException {
         String status = rs.getString("status");

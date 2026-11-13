@@ -104,6 +104,9 @@ public interface AtendimentoPort {
 
     Optional<CabecalhoReceita> cabecalhoAtendimento(String conta, long nrAtendimento);
 
+    /** Últimas chamadas do dia, da mais recente para a mais antiga, com o nome completo do paciente. */
+    List<Atendimento.Chamada> chamadas(String conta, LocalDate dia, int limite);
+
     ContagemClinica contagemParaFinalizar(String conta, long nrAtendimento);
 
     /** PEP_ACESSO. nrAtendimento pode ser nulo (histórico do paciente). */

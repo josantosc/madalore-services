@@ -4,6 +4,8 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,6 +26,8 @@ public class AtendimentoService implements AtendimentoUseCase {
     static final int MOTIVO_MAX = 300;
     static final int ENCAIXE_DURACAO_MIN = 15;
     static final int BUSCA_LIMITE = 10;
+    static final int PAINEL_LIMITE = 6;
+    private static final Set<String> PARTICULAS = Set.of("da", "de", "do", "das", "dos", "e");
     private static final int NOME_MAX = 240;
     private static final int TELEFONE_MAX = 40;
 
@@ -53,6 +57,29 @@ public class AtendimentoService implements AtendimentoUseCase {
     public List<Atendimento.FilaItem> fila(String conta, LocalDate data) {
         exigirHabilitada(conta);
         return atendimentos.fila(conta, data == null ? LocalDate.now(relogio) : data);
+    }
+
+    @Override
+    public List<Atendimento.Chamada> chamadasDoPainel(String conta) {
+        exigirHabilitada(conta);
+        return atendimentos.chamadas(conta, LocalDate.now(relogio), PAINEL_LIMITE).stream()
+                .map(c -> new Atendimento.Chamada(nomePublico(c.paciente()), c.profissional(), c.chamadoEm()))
+                .toList();
+    }
+
+    /** "MARIA DA SILVA OLIVEIRA" vira "Maria S. O.": primeiro nome e iniciais, sem partículas (da, de, dos...). */
+    static String nomePublico(String nome) {
+        if (nome == null || nome.isBlank()) {
+            return "";
+        }
+        String[] partes = nome.trim().toLowerCase(Locale.ROOT).split("\\s+");
+        StringBuilder s = new StringBuilder(Character.toUpperCase(partes[0].charAt(0)) + partes[0].substring(1));
+        for (int i = 1; i < partes.length; i++) {
+            if (!PARTICULAS.contains(partes[i])) {
+                s.append(' ').append(Character.toUpperCase(partes[i].charAt(0))).append('.');
+            }
+        }
+        return s.toString();
     }
 
     @Override

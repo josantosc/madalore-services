@@ -68,6 +68,20 @@ class AdminAuthFilterTest {
     }
 
     @Test
+    void painelDaTvPassaSemSessaoMasORestoDoAtendimentoNao() throws Exception {
+        for (String caminho : List.of("/atendimento/painel", "/atendimento/painel/api/chamadas", "/atendimento/painel/api/eventos")) {
+            MockFilterChain chain = new MockFilterChain();
+            executar(new MockHttpServletRequest("GET", caminho), chain);
+            assertThat(chain.getRequest()).as(caminho).isNotNull();
+        }
+        for (String caminho : List.of("/atendimento/api/fila", "/atendimento/painel/../api/fila", "/atendimento/painel/x")) {
+            MockFilterChain chain = new MockFilterChain();
+            executar(new MockHttpServletRequest("GET", caminho), chain);
+            assertThat(chain.getRequest()).as(caminho).isNull();
+        }
+    }
+
+    @Test
     void sessaoLiberaSoOsModulosDoUsuario() throws Exception {
         MockFilterChain chain = new MockFilterChain();
         MockHttpServletRequest precos = logado("POST", "/precos/api/importar", EnumSet.of(Modulo.PRECOS));

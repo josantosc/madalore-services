@@ -969,6 +969,27 @@ class PostgresAtendimentoAdapterIT {
     }
 
     @Test
+    void chamadasDoDiaVemDaMaisRecenteSoNaPropriaConta() {
+        long primeiro = novoAgendamento("MARCADO", "2030-01-07 09:00");
+        long segundo = novoAgendamento("MARCADO", "2030-01-07 09:30");
+        long nrPrimeiro = adapter.registrarChegada(CONTA, primeiro, "recepcao").id();
+        long nrSegundo = adapter.registrarChegada(CONTA, segundo, "recepcao").id();
+        adapter.chamar(CONTA, nrPrimeiro, null, "recepcao");
+        PostgresAtendimentoAdapter depois = new PostgresAtendimentoAdapter(new NamedParameterJdbcTemplate(jdbc),
+                jdbc.getDataSource(), Clock.fixed(Instant.from(relogio.instant().plusSeconds(60)), relogio.getZone()));
+        depois.chamar(CONTA, nrSegundo, null, "recepcao");
+
+        List<Atendimento.Chamada> chamadas = adapter.chamadas(CONTA, LocalDate.from(AGORA), 6);
+
+        assertThat(chamadas).hasSize(2);
+        assertThat(chamadas.get(0).chamadoEm()).isAfter(chamadas.get(1).chamadoEm());
+        assertThat(chamadas.get(0).paciente()).startsWith("Paciente ");
+        assertThat(adapter.chamadas(CONTA, LocalDate.from(AGORA), 1)).hasSize(1);
+        assertThat(adapter.chamadas("outra", LocalDate.from(AGORA), 6)).isEmpty();
+        assertThat(adapter.chamadas(CONTA, LocalDate.from(AGORA).plusDays(1), 6)).isEmpty();
+    }
+
+    @Test
     void cabecalhoDoAtendimentoTrazClinicaEPacienteSoNaPropriaConta() {
         Consulta consulta = novaConsultaEmAndamento();
         PostgresAtendimentoAdapter comNome = new PostgresAtendimentoAdapter(new NamedParameterJdbcTemplate(jdbc),

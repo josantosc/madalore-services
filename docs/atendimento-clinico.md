@@ -53,6 +53,13 @@ agendamento sem atendimento e libera o horário.
 4. **Chamar:** com o paciente `AGUARDANDO`, a recepção ou o médico (só nos atendimentos do próprio
    profissional) registra a chamada. O cartão passa para a coluna Chamado com a hora. Chamar de novo
    atualiza a hora. A chamada não muda o status: a consulta começa quando o médico inicia.
+   **Painel da TV:** a sala de espera abre `/atendimento/painel?conta=<id>&chave=<chave>` em tela cheia.
+   Não exige login: vale a chave da clínica em `mandalore.clientes.<id>.painel.chave` (mínimo de 16
+   caracteres). Sem a propriedade, ou com chave errada, a resposta é 404. O painel mostra a chamada atual em
+   destaque, com aviso sonoro e leitura em voz, e as cinco anteriores do dia. O paciente aparece com o
+   primeiro nome e as iniciais (`Maria S. O.`), mais o nome do profissional e a hora; CPF, especialidade e
+   nome completo não saem do servidor. No primeiro acesso, um toque na tela ativa o som e a tela cheia
+   (exigência do navegador). Para trocar a chave, mude a propriedade e atualize o link da TV.
 5. **Falta:** no agendamento `MARCADO` ou `CONFIRMADO` cujo horário já começou, marque a falta. O
    agendamento fica `FALTOU` e o horário volta a ficar livre. Desfazer a falta devolve o status anterior
    (`CONFIRMADO` quando houve confirmação, `MARCADO` nos demais casos), desde que o horário não tenha sido
@@ -146,7 +153,8 @@ A leitura do prontuário e do histórico do paciente também fica na auditoria.
 | `atendimento.enabled` | `false` | Liga o fluxo clínico (fila, chegada e consultório). Desligada, a agenda atual segue sem este fluxo |
 | `atendimento.receita.validade-dias` | `30` | Dias de validade gravados ao liberar a receita |
 | `mandalore.clientes.<id>.agenda` | já existe | `mandalore` habilita chegada e consultório na conta. Outro valor: as rotas dessa conta respondem 404 |
-| `mandalore.clientes.<id>.nome` | `admin.nome` | Nome da clínica na impressão da receita. Sem esta propriedade, a impressão usa `admin.nome` |
+| `mandalore.clientes.<id>.nome` | `admin.nome` | Nome da clínica na impressão da receita e no painel da TV. Sem esta propriedade, usa `admin.nome` |
+| `mandalore.clientes.<id>.painel.chave` | vazio | Chave do painel de chamada da TV, com no mínimo 16 caracteres. Vazia: o painel não existe na conta |
 
 Por clínica, no `clientes.properties`: `mandalore.clientes.<id>.agenda` e `mandalore.clientes.<id>.nome`.
 
@@ -192,6 +200,6 @@ adicionado à mão no proxy não pode valer para `/atendimento/api/eventos` e `/
 ## O que esta versão deixa para depois
 
 Troca de médico no meio do atendimento, sinais vitais, atestado, pedido de exame, catálogo de medicamentos
-e de CID, assinatura digital, PDF da receita, reabrir atendimento finalizado, painel de chamada na TV,
-aviso ao vivo entre várias instâncias e faturamento. Clínica com agenda em outro sistema (por exemplo `tasy`) segue
+e de CID, assinatura digital, PDF da receita, reabrir atendimento finalizado, sala ou consultório no
+painel da TV, aviso ao vivo entre várias instâncias e faturamento. Clínica com agenda em outro sistema (por exemplo `tasy`) segue
 com o fluxo clínico lá.

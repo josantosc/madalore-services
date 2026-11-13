@@ -59,7 +59,7 @@ public class AdminAuthFilter extends OncePerRequestFilter {
             return;
         }
         response.setHeader("Cache-Control", "no-store");
-        if (caminho.equals("/admin/login") || caminho.equals("/admin/logout")) {
+        if (caminho.equals("/admin/login") || caminho.equals("/admin/logout") || painelDaTv(caminho)) {
             chain.doFilter(request, response);
             return;
         }
@@ -121,6 +121,12 @@ public class AdminAuthFilter extends OncePerRequestFilter {
         request.setAttribute(USUARIO, login.get().usuario());
         request.setAttribute(LOGIN, login.get());
         chain.doFilter(request, response);
+    }
+
+    /** Painel de chamada da TV: sem login, protegido pela chave da clínica no próprio controller. */
+    static boolean painelDaTv(String caminho) {
+        return caminho.equals("/atendimento/painel") || caminho.equals("/atendimento/painel/api/chamadas")
+                || caminho.equals("/atendimento/painel/api/eventos");
     }
 
     private static Optional<AdminAcesso.Login> daSessao(HttpServletRequest request) {

@@ -11,6 +11,9 @@ public interface AtendimentoUseCase {
     /** Agendamentos do dia com a situação de chegada e o tempo de espera. */
     List<Atendimento.FilaItem> fila(String conta, LocalDate data);
 
+    /** Últimas chamadas de hoje para o painel público da sala de espera, com o nome do paciente abreviado. */
+    List<Atendimento.Chamada> chamadasDoPainel(String conta);
+
     /** Operacao.id() é o número do atendimento. Chegada repetida devolve o atendimento existente. */
     Atendimento.Operacao registrarChegada(String conta, long agendamentoId, String ator);
 
