@@ -10,8 +10,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,12 +23,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AtendimentoUseCase;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.CheckinUseCase;
 
 class PainelChamadaControllerTest {
 
     private static final String CHAVE = "chave-da-tv-1234567890";
 
     private AtendimentoUseCase atendimento;
+    private CheckinUseCase checkin;
     private MockMvc mvc;
 
     @BeforeEach
@@ -36,7 +40,32 @@ class PainelChamadaControllerTest {
                 .withProperty("mandalore.clientes.7.painel.chave", CHAVE)
                 .withProperty("mandalore.clientes.7.nome", "Clínica Bio")
                 .withProperty("mandalore.clientes.8.painel.chave", "curta");
-        mvc = MockMvcBuilders.standaloneSetup(new PainelChamadaController(atendimento, ambiente, "1", null, null)).build();
+        checkin = mock(CheckinUseCase.class);
+        mvc = MockMvcBuilders.standaloneSetup(new PainelChamadaController(atendimento, ambiente, "1", null, null, checkin))
+                .build();
+    }
+
+    @Test
+    void checkinDevolveCodigoEQrEmSvg() throws Exception {
+        when(checkin.doDia("7")).thenReturn(Optional.of(new Atendimento.CheckinDoDia(LocalDate.of(2026, 11, 13),
+                "ABC234", "https://wa.me/5547999990000?text=Cheguei%20ABC234")));
+
+        mvc.perform(get("/atendimento/painel/api/checkin").param("conta", "7").param("chave", CHAVE))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Referrer-Policy", "no-referrer"))
+                .andExpect(jsonPath("$.codigo").value("ABC234"))
+                .andExpect(jsonPath("$.dia").value("2026-11-13"))
+                .andExpect(jsonPath("$.svg").value(org.hamcrest.Matchers.startsWith("<svg ")));
+    }
+
+    @Test
+    void checkinSemConfiguracaoDevolve204ESemChaveDevolve404() throws Exception {
+        when(checkin.doDia("7")).thenReturn(Optional.empty());
+
+        mvc.perform(get("/atendimento/painel/api/checkin").param("conta", "7").param("chave", CHAVE))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/atendimento/painel/api/checkin").param("conta", "7").param("chave", "errada"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

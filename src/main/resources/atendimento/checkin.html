@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Check-in pelo WhatsApp</title>
+  <style>
+    :root { --texto: #1c2024; --texto-2: #60646c; --marca: #0b5c7a; --borda: #e8e8ec; --verde: #25d366; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #fff; color: var(--texto);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    main { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2.2vh; padding: 4vh 6vw; text-align: center; }
+    h1 { font-size: clamp(26px, 5vh, 48px); font-weight: 600; margin: 0; }
+    .passos { font-size: clamp(16px, 2.6vh, 24px); color: var(--texto-2); margin: 0; max-width: 680px; }
+    .qr { width: min(56vh, 80vw); aspect-ratio: 1; border-radius: 16px; box-shadow: 0 0 0 1px var(--borda); padding: 8px; }
+    .qr svg { display: block; width: 100%; height: 100%; }
+    .codigo { font-size: clamp(30px, 6vh, 56px); font-weight: 700; letter-spacing: .3em; font-variant-numeric: tabular-nums; }
+    .rodape { display: flex; gap: 12px; align-items: center; color: var(--texto-2); font-size: 13px; }
+    .btn { height: 34px; padding: 0 14px; border-radius: 8px; border: 0; background: rgba(0, 0, 59, .055); font: inherit;
+      font-size: 14px; font-weight: 500; cursor: pointer; color: var(--texto); text-decoration: none; display: inline-flex; align-items: center; }
+    .aviso { max-width: 560px; color: var(--texto-2); font-size: 15px; }
+    [hidden] { display: none !important; }
+    @media print {
+      .rodape { display: none; }
+      main { min-height: auto; padding-top: 8vh; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Chegou? Faça o check-in pelo WhatsApp</h1>
+    <p class="passos" id="passos">Aponte a câmera do celular para o QR code. O WhatsApp abre com a mensagem pronta:
+      é só enviar e confirmar seu CPF e sua data de nascimento.</p>
+    <div class="qr" id="qr" hidden></div>
+    <div>
+      <div class="passos" id="rotuloCodigo" hidden>Ou envie <b>Cheguei</b> e o código</div>
+      <div class="codigo" id="codigo"></div>
+    </div>
+    <p class="aviso" id="aviso" hidden></p>
+    <div class="rodape">
+      <span id="validade"></span>
+      <button class="btn" type="button" id="imprimir">Imprimir</button>
+      <a class="btn" href="/atendimento">Voltar à recepção</a>
+    </div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const conta = new URLSearchParams(location.search).get("conta");
+    const consulta = conta ? "?conta=" + encodeURIComponent(conta) : "";
+
+    function semQr(texto) {
+      $("qr").hidden = true;
+      $("rotuloCodigo").hidden = true;
+      $("codigo").textContent = "";
+      $("validade").textContent = "";
+      $("aviso").hidden = false;
+      $("aviso").textContent = texto;
+    }
+
+    async function carregar() {
+      try {
+        const r = await fetch("/atendimento/api/checkin" + consulta, { cache: "no-store" });
+        if (r.status === 204) {
+          semQr("O check-in pelo WhatsApp não está configurado para esta clínica. Peça ao suporte para cadastrar o "
+            + "número do WhatsApp da clínica.");
+          return;
+        }
+        if (!r.ok) throw new Error();
+        const dados = await r.json();
+        $("qr").innerHTML = dados.svg;
+        $("qr").hidden = false;
+        $("rotuloCodigo").hidden = false;
+        $("codigo").textContent = dados.codigo;
+        const [a, m, d] = String(dados.dia).split("-");
+        $("validade").textContent = "Código válido só hoje, " + d + "/" + m + "/" + a + ".";
+        $("aviso").hidden = true;
+      } catch (e) {
+        if (!$("codigo").textContent) semQr("Não consegui carregar o QR code. Atualize a página.");
+      }
+    }
+
+    $("imprimir").addEventListener("click", () => window.print());
+    carregar();
+    setInterval(carregar, 600000);
+  </script>
+</body>
+</html>

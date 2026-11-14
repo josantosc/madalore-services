@@ -28,6 +28,16 @@
     .anterior { background: var(--cartao); border-radius: 1.6vh; padding: 2vh 1.2vw; min-width: 0; }
     .anterior b { display: block; font-size: 3.4vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .anterior span { display: block; font-size: 2.4vh; color: var(--texto-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tela.com-checkin { grid-template-columns: 1fr 24vh; column-gap: 2vw; }
+    .tela.com-checkin header { grid-column: 1 / -1; }
+    .checkin { display: none; }
+    .tela.com-checkin .checkin { display: flex; grid-column: 2; grid-row: 2 / 4; flex-direction: column; align-items: center;
+      justify-content: center; gap: 1.4vh; background: var(--cartao); border-radius: 3vh; padding: 2.5vh 1.5vh; text-align: center; }
+    .checkin b { font-size: 3.2vh; }
+    .checkin span { font-size: 2.2vh; color: var(--texto-2); }
+    .checkin .qr { width: 20vh; height: 20vh; background: #fff; border-radius: 1.2vh; padding: .6vh; }
+    .checkin .qr svg { display: block; width: 100%; height: 100%; }
+    .checkin .codigo { font-size: 3.6vh; font-weight: 700; letter-spacing: .5vh; color: var(--destaque); font-variant-numeric: tabular-nums; }
     .status { position: fixed; right: 1.5vw; bottom: 1vh; font-size: 1.6vh; color: var(--texto-2); }
     .inicio { position: fixed; inset: 0; background: rgba(15, 23, 32, .96); display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 3vh; cursor: pointer; z-index: 2; text-align: center; padding: 4vw; }
@@ -38,7 +48,7 @@
   </style>
 </head>
 <body>
-  <div class="tela">
+  <div class="tela" id="tela">
     <header>
       <span class="clinica" id="clinica"></span>
       <span class="relogio" id="relogio"></span>
@@ -47,6 +57,13 @@
       <span class="vazio">Aguarde ser chamado</span>
     </section>
     <section class="anteriores" id="anteriores"></section>
+    <aside class="checkin" id="checkin">
+      <b>Chegou?</b>
+      <span>Faça o check-in pelo WhatsApp: aponte a câmera do celular</span>
+      <div class="qr" id="qr"></div>
+      <span>ou envie <i>Cheguei</i> e o código</span>
+      <span class="codigo" id="codigoCheckin"></span>
+    </aside>
   </div>
   <span class="status" id="status">Conectando…</span>
   <div class="inicio" id="inicio">
@@ -134,6 +151,20 @@
       }
     }
 
+    async function carregarCheckin() {
+      try {
+        const r = await fetch("painel/api/checkin" + consulta, { cache: "no-store" });
+        const dados = r.status === 200 ? await r.json() : null;
+        $("tela").classList.toggle("com-checkin", !!dados);
+        if (dados) {
+          $("qr").innerHTML = dados.svg;
+          $("codigoCheckin").textContent = dados.codigo;
+        }
+      } catch (e) {
+        // sem rede: mantém o QR que já está na tela
+      }
+    }
+
     function conectar() {
       const fonte = new EventSource("painel/api/eventos" + consulta);
       fonte.onopen = () => { $("status").textContent = "Ao vivo"; carregar(); };
@@ -153,7 +184,9 @@
     relogio();
     setInterval(relogio, 10000);
     setInterval(carregar, 30000);
+    setInterval(carregarCheckin, 600000);
     carregar();
+    carregarCheckin();
     if (window.EventSource) conectar();
   </script>
 </body>

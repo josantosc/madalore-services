@@ -98,6 +98,20 @@ class PostgresAtendimentoAdapterIT {
     }
 
     @Test
+    void filaMarcaAChegadaFeitaPeloWhatsapp() {
+        long pelaRecepcao = novoAgendamento("MARCADO", "2030-01-07 09:00");
+        long peloWhatsapp = novoAgendamento("CONFIRMADO", "2030-01-07 09:30");
+        adapter.registrarChegada(CONTA, pelaRecepcao, "recepcao");
+        adapter.registrarChegada(CONTA, peloWhatsapp, Atendimento.CHEGADA_WHATSAPP);
+
+        assertThat(adapter.fila(CONTA, AGORA.toLocalDate()))
+                .filteredOn(f -> f.agendamentoId() == pelaRecepcao || f.agendamentoId() == peloWhatsapp)
+                .extracting(Atendimento.FilaItem::agendamentoId, Atendimento.FilaItem::checkinWhatsapp)
+                .containsExactlyInAnyOrder(org.assertj.core.groups.Tuple.tuple(pelaRecepcao, false),
+                        org.assertj.core.groups.Tuple.tuple(peloWhatsapp, true));
+    }
+
+    @Test
     void chegadaRepetidaDevolveOMesmoAtendimento() {
         long agendamento = novoAgendamento("MARCADO", "2030-01-07 09:00");
 
@@ -253,10 +267,10 @@ class PostgresAtendimentoAdapterIT {
         assertThat(segundo.atendimentoId()).isNull();
         assertThat(segundo.esperaMin()).isNull();
         assertThat(primeiro.chamadoEm()).isNull();
-        // o tipo FilaItem só expõe identificação, horário, status, espera e chamada
+        // o tipo FilaItem só expõe identificação, horário, status, espera, chamada e a origem da chegada
         assertThat(Atendimento.FilaItem.class.getRecordComponents()).extracting("name").containsExactly("agendamentoId",
                 "atendimentoId", "horario", "paciente", "cpf", "profissional", "especialidade", "status", "chegadaEm",
-                "esperaMin", "chamadoEm", "localChamada");
+                "esperaMin", "chamadoEm", "localChamada", "checkinWhatsapp");
     }
 
     @Test

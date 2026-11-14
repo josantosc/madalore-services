@@ -10,11 +10,11 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
@@ -26,6 +26,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDia
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowEvent;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowTelemetry;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.CheckinUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.OrcarPedidoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.DialogflowPort;
@@ -46,10 +47,48 @@ class MensagemChatwootServiceTest {
     private OrcarPedidoUseCase orcamento;
 
     @Mock
+    private ObjectProvider<CheckinUseCase> checkins;
+
+    @Mock
+    private CheckinUseCase checkin;
+
+    @Mock
     private FlowTelemetry telemetry;
 
-    @InjectMocks
     private MensagemChatwootService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new MensagemChatwootService(dialogflow, chatwoot, orcamentos, checkins, telemetry);
+    }
+
+    @Test
+    void checkinRespondeAntesDoDialogflow() {
+        when(checkins.getIfAvailable()).thenReturn(checkin);
+        when(checkin.responder("1", "10", "Cheguei ABC123")).thenReturn(java.util.Optional.of(CheckinService.PEDE_DADOS));
+
+        service.receber(new MensagemEntrada("message_created", "incoming", false, "Cheguei ABC123", "m-ck", "1", "10",
+                "pending", Canal.WHATSAPP, java.util.List.of()));
+
+        verify(chatwoot).publicar("1", "10", CheckinService.PEDE_DADOS);
+        verify(dialogflow, never()).detectar(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        ArgumentCaptor<FlowEvent> evento = ArgumentCaptor.forClass(FlowEvent.class);
+        verify(telemetry).record(evento.capture());
+        assertThat(evento.getValue().stage()).isEqualTo("checkin");
+    }
+
+    @Test
+    void mensagemForaDoCheckinSegueParaODialogflow() {
+        when(checkins.getIfAvailable()).thenReturn(checkin);
+        when(checkin.responder("1", "10", "oi")).thenReturn(java.util.Optional.empty());
+        when(dialogflow.detectar(org.mockito.ArgumentMatchers.any(), eq("oi")))
+                .thenReturn(new RespostaDialogflow("texto.menu", "Olá!"));
+
+        service.receber(new MensagemEntrada("message_created", "incoming", false, "oi", "m-oi", "1", "10",
+                "pending", Canal.WHATSAPP, java.util.List.of()));
+
+        verify(chatwoot).publicar("1", "10", "Olá!");
+    }
 
     @Test
     void fotoDoPedidoVaiParaOrcamento() {

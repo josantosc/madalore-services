@@ -24,6 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import br.com.mandalore.agendamentoconversa.application.domain.exception.AtendimentoDesabilitadoException;
 import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AtendimentoUseCase;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.CheckinUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.service.HabilitacaoAtendimento;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -43,16 +44,18 @@ public class PainelChamadaController {
     private final String contaPadrao;
     private final FilaAoVivo aoVivo;
     private final HabilitacaoAtendimento habilitacao;
+    private final CheckinUseCase checkin;
 
     @Autowired
     public PainelChamadaController(AtendimentoUseCase atendimento, Environment ambiente,
                                    @Value("${agenda.conta-padrao:1}") String contaPadrao, FilaAoVivo aoVivo,
-                                   HabilitacaoAtendimento habilitacao) {
+                                   HabilitacaoAtendimento habilitacao, CheckinUseCase checkin) {
         this.atendimento = atendimento;
         this.ambiente = ambiente;
         this.contaPadrao = contaPadrao == null || contaPadrao.isBlank() ? "1" : contaPadrao.trim();
         this.aoVivo = aoVivo;
         this.habilitacao = habilitacao;
+        this.checkin = checkin;
     }
 
     public record Painel(String clinica, List<Atendimento.Chamada> chamadas) {
@@ -88,6 +91,19 @@ public class PainelChamadaController {
         String clinica = ambiente.getProperty("mandalore.clientes." + id + ".nome", ambiente.getProperty("admin.nome", ""));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .body(new Painel(clinica, atendimento.chamadasDoPainel(id)));
+    }
+
+    /** QR do check-in pelo WhatsApp no canto da TV; 204 quando a clínica não configurou o número. */
+    @GetMapping(value = "/atendimento/painel/api/checkin", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<QrSvg.Checkin> checkin(@RequestParam(required = false) String conta,
+                                                 @RequestParam(required = false) String chave,
+                                                 HttpServletResponse resposta) {
+        String id = conta(conta);
+        conferir(id, chave);
+        semRastro(resposta);
+        return (checkin == null ? java.util.Optional.<Atendimento.CheckinDoDia>empty() : checkin.doDia(id))
+                .map(dia -> ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(QrSvg.Checkin.de(dia)))
+                .orElseGet(() -> ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build());
     }
 
     @GetMapping(value = "/atendimento/painel/api/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

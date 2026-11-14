@@ -69,7 +69,8 @@ class AdminAuthFilterTest {
 
     @Test
     void painelDaTvPassaSemSessaoMasORestoDoAtendimentoNao() throws Exception {
-        for (String caminho : List.of("/atendimento/painel", "/atendimento/painel/api/chamadas", "/atendimento/painel/api/eventos")) {
+        for (String caminho : List.of("/atendimento/painel", "/atendimento/painel/api/chamadas", "/atendimento/painel/api/eventos",
+                "/atendimento/painel/api/checkin")) {
             MockFilterChain chain = new MockFilterChain();
             executar(new MockHttpServletRequest("GET", caminho), chain);
             assertThat(chain.getRequest()).as(caminho).isNotNull();

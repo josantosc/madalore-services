@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.exception.Atendim
 import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento;
 import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AtendimentoUseCase;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.CheckinUseCase;
 
 class AtendimentoControllerTest {
 
@@ -38,21 +40,46 @@ class AtendimentoControllerTest {
             Set.of("7"), 10L, 0, false, "Recepção");
 
     private AtendimentoUseCase atendimento;
+    private CheckinUseCase checkin;
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         atendimento = mock(AtendimentoUseCase.class);
-        mvc = MockMvcBuilders.standaloneSetup(new AtendimentoController(atendimento, "1"))
+        checkin = mock(CheckinUseCase.class);
+        mvc = MockMvcBuilders.standaloneSetup(new AtendimentoController(atendimento, "1", checkin))
                 .defaultRequest(get("/").accept(MediaType.APPLICATION_JSON))
                 .build();
+    }
+
+    @Test
+    void checkinDaContaDoLoginDevolveQr() throws Exception {
+        when(checkin.doDia("7")).thenReturn(Optional.of(new Atendimento.CheckinDoDia(LocalDate.of(2026, 11, 13),
+                "ABC234", "https://wa.me/5547999990000?text=Cheguei%20ABC234")));
+
+        mvc.perform(get("/atendimento/api/checkin").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.codigo").value("ABC234"))
+                .andExpect(jsonPath("$.svg").value(org.hamcrest.Matchers.containsString("<path d=\"M")));
+    }
+
+    @Test
+    void checkinSemConfiguracaoDevolve204EOutraContaEProibida() throws Exception {
+        when(checkin.doDia("7")).thenReturn(Optional.empty());
+
+        mvc.perform(get("/atendimento/api/checkin").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/atendimento/api/checkin").param("conta", "8").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isForbidden());
+        verify(checkin, never()).doDia("8");
     }
 
     @Test
     void filaUsaAContaDoLoginQuandoNaoInformada() throws Exception {
         LocalDate dia = LocalDate.of(2026, 11, 11);
         when(atendimento.fila("7", dia)).thenReturn(List.of(
-                new Atendimento.FilaItem(5L, null, null, "Maria", "12345678901", "Dr. João", "Clínica geral", "CONFIRMADO", null, null, null, null)));
+                new Atendimento.FilaItem(5L, null, null, "Maria", "12345678901", "Dr. João", "Clínica geral", "CONFIRMADO", null, null, null, null, false)));
 
         mvc.perform(get("/atendimento/api/fila").param("data", "2026-11-11").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
                 .andExpect(status().isOk())

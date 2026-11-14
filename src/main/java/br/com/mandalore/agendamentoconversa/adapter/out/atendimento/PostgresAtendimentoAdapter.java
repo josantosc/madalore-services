@@ -289,7 +289,8 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         LocalDateTime agora = LocalDateTime.now(relogio);
         return jdbc.query("""
                 SELECT a.id AS agendamento_id, a.inicio, a.status, pa.nome AS paciente, pa.cpf, p.nome AS profissional,
-                       e.nome AS especialidade, at.nr_atendimento, at.dt_entrada, at.dt_chamada, at.ds_local_chamada
+                       e.nome AS especialidade, at.nr_atendimento, at.dt_entrada, at.dt_chamada, at.ds_local_chamada,
+                       at.nm_usuario_entrada
                 FROM agenda.agendamento a
                 JOIN agenda.paciente pa ON pa.id = a.paciente_id
                 JOIN agenda.profissional p ON p.id = a.profissional_id
@@ -333,7 +334,8 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         return new Atendimento.FilaItem(rs.getLong("agendamento_id"), longOuNulo(rs, "nr_atendimento"),
                 rs.getTimestamp("inicio").toLocalDateTime(), rs.getString("paciente"), rs.getString("cpf"),
                 rs.getString("profissional"), rs.getString("especialidade"), status, chegada, espera,
-                data(rs, "dt_chamada"), rs.getString("ds_local_chamada"));
+                data(rs, "dt_chamada"), rs.getString("ds_local_chamada"),
+                Atendimento.CHEGADA_WHATSAPP.equals(rs.getString("nm_usuario_entrada")));
     }
 
     // ---- tarefa 6.1 ----
@@ -345,7 +347,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
         return jdbc.query("""
                 SELECT a.id AS agendamento_id, a.inicio, at.ie_status_atendimento AS status, pa.nome AS paciente,
                        pa.cpf, p.nome AS profissional, e.nome AS especialidade, at.nr_atendimento, at.dt_entrada,
-                       at.dt_chamada, at.ds_local_chamada
+                       at.dt_chamada, at.ds_local_chamada, at.nm_usuario_entrada
                 FROM agenda.agendamento a
                 JOIN agenda.paciente pa ON pa.id = a.paciente_id
                 JOIN agenda.profissional p ON p.id = a.profissional_id

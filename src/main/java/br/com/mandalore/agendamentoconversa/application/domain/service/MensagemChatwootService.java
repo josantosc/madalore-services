@@ -17,6 +17,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.model.RespostaDia
 import br.com.mandalore.agendamentoconversa.application.domain.model.Setor;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowEvent;
 import br.com.mandalore.agendamentoconversa.application.domain.observability.FlowTelemetry;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.CheckinUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.OrcarPedidoUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ReceberMensagemUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.port.out.ChatwootPort;
@@ -63,17 +64,20 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
     private final Map<String, Integer> aguardandoExames = new ConcurrentHashMap<>();
     private final Map<String, Integer> falhas = new ConcurrentHashMap<>();
     private final ObjectProvider<OrcarPedidoUseCase> orcamentos;
+    private final ObjectProvider<CheckinUseCase> checkins;
     private final FlowTelemetry telemetry;
 
     public MensagemChatwootService(
             DialogflowPort dialogflow,
             ChatwootPort chatwoot,
             ObjectProvider<OrcarPedidoUseCase> orcamentos,
+            ObjectProvider<CheckinUseCase> checkins,
             FlowTelemetry telemetry
     ) {
         this.dialogflow = dialogflow;
         this.chatwoot = chatwoot;
         this.orcamentos = orcamentos;
+        this.checkins = checkins;
         this.telemetry = telemetry;
     }
 
@@ -113,6 +117,17 @@ public class MensagemChatwootService implements ReceberMensagemUseCase {
                 atribuirEquipe(mensagem, Setor.RECEPCAO);
                 chatwoot.abrirAtendente(mensagem.accountId(), mensagem.conversationId());
                 registrar(mensagem, "urgencia", Setor.RECEPCAO);
+                return;
+            }
+            CheckinUseCase checkin = checkins.getIfAvailable();
+            Optional<String> respostaCheckin = checkin == null ? Optional.empty()
+                    : checkin.responder(mensagem.accountId(), mensagem.conversationId(), mensagem.content());
+            if (respostaCheckin.isPresent()) {
+                intent = "checkin";
+                falhas.remove(chave);
+                aguardandoExames.remove(chave);
+                chatwoot.publicar(mensagem.accountId(), mensagem.conversationId(), respostaCheckin.get());
+                registrar(mensagem, "checkin", null);
                 return;
             }
             boolean aguardando = orcamento != null && consumirEspera(chave);

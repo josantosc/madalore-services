@@ -126,7 +126,7 @@ public class AdminAuthFilter extends OncePerRequestFilter {
     /** Painel de chamada da TV: sem login, protegido pela chave da clínica no próprio controller. */
     static boolean painelDaTv(String caminho) {
         return caminho.equals("/atendimento/painel") || caminho.equals("/atendimento/painel/api/chamadas")
-                || caminho.equals("/atendimento/painel/api/eventos");
+                || caminho.equals("/atendimento/painel/api/eventos") || caminho.equals("/atendimento/painel/api/checkin");
     }
 
     private static Optional<AdminAcesso.Login> daSessao(HttpServletRequest request) {

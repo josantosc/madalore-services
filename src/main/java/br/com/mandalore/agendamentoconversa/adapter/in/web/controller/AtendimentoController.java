@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.exception.Atendim
 import br.com.mandalore.agendamentoconversa.application.domain.model.Atendimento;
 import br.com.mandalore.agendamentoconversa.application.domain.model.CodigoNegocio;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.AtendimentoUseCase;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.CheckinUseCase;
 import br.com.mandalore.agendamentoconversa.application.domain.service.HabilitacaoAtendimento;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -50,18 +52,24 @@ public class AtendimentoController {
     private final String contaPadrao;
     private final FilaAoVivo aoVivo;
     private final HabilitacaoAtendimento habilitacao;
+    private final CheckinUseCase checkin;
 
     @Autowired
     public AtendimentoController(AtendimentoUseCase atendimento, @Value("${agenda.conta-padrao:1}") String contaPadrao,
-                                 FilaAoVivo aoVivo, HabilitacaoAtendimento habilitacao) {
+                                 FilaAoVivo aoVivo, HabilitacaoAtendimento habilitacao, CheckinUseCase checkin) {
         this.atendimento = atendimento;
         this.contaPadrao = contaPadrao == null || contaPadrao.isBlank() ? "1" : contaPadrao.trim();
         this.aoVivo = aoVivo;
         this.habilitacao = habilitacao;
+        this.checkin = checkin;
     }
 
     AtendimentoController(AtendimentoUseCase atendimento, String contaPadrao) {
-        this(atendimento, contaPadrao, null, null);
+        this(atendimento, contaPadrao, null, null, null);
+    }
+
+    AtendimentoController(AtendimentoUseCase atendimento, String contaPadrao, CheckinUseCase checkin) {
+        this(atendimento, contaPadrao, null, null, checkin);
     }
 
     public record DesfazerRequest(String motivo) {
@@ -84,6 +92,26 @@ public class AtendimentoController {
                     .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
                     .body(html.readAllBytes());
         }
+    }
+
+    /** QR do check-in pelo WhatsApp para deixar num tablet ou imprimir no balcão. */
+    @GetMapping("/atendimento/checkin")
+    public ResponseEntity<byte[]> paginaCheckin() throws IOException {
+        try (InputStream html = new ClassPathResource("atendimento/checkin.html").getInputStream()) {
+            return ResponseEntity.ok()
+                    .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
+                    .body(html.readAllBytes());
+        }
+    }
+
+    /** 204 quando a clínica não tem o número do WhatsApp (ou o segredo do webhook) configurado. */
+    @GetMapping(value = "/atendimento/api/checkin", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<QrSvg.Checkin> checkin(@RequestParam(required = false) String conta,
+                                                 @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        String id = conta(conta, login);
+        return (checkin == null ? Optional.<Atendimento.CheckinDoDia>empty() : checkin.doDia(id))
+                .map(dia -> ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(QrSvg.Checkin.de(dia)))
+                .orElseGet(() -> ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build());
     }
 
     @GetMapping(value = "/atendimento/api/fila", produces = MediaType.APPLICATION_JSON_VALUE)

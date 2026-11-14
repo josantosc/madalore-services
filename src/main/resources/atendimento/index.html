@@ -172,6 +172,8 @@
           <button class="btn solido" type="button" id="abrirEncaixe">+ Encaixe</button>
           <a class="btn cinza" href="/atendimento/paciente" id="irPaciente">Consultar paciente</a>
           <a class="btn cinza" href="/agenda" id="irAgenda">Abrir agenda</a>
+          <a class="btn cinza" href="/atendimento/checkin" target="_blank" rel="noopener" id="irCheckin"
+             title="QR code para o paciente fazer o check-in pelo WhatsApp">QR do check-in</a>
         </div>
       </div>
 
@@ -540,6 +542,7 @@
       if (f.status === "CONFIRMADO") tags.push(el("span", { className: "tag marca" }, "Confirmada"));
       if (f.status === "FALTOU") tags.push(el("span", { className: "tag rubi" }, "Faltou"));
       if (f.chegadaEm && col !== "chegar") tags.push(el("span", { className: "tag" }, "Chegou " + hora(f.chegadaEm)));
+      if (f.checkinWhatsapp && col !== "chegar") tags.push(el("span", { className: "tag verde", title: "Check-in feito pelo paciente no WhatsApp" }, "Check-in WhatsApp"));
       if (f.chamadoEm) tags.push(el("span", { className: "tag violeta" },
         "Chamado " + hora(f.chamadoEm) + (f.localChamada ? " · " + f.localChamada : "")));
       if (f.status === "EXECUTADO") tags.push(el("span", { className: "tag verde" }, "Atendido"));

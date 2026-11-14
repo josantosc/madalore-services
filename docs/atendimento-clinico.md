@@ -53,6 +53,17 @@ agendamento sem atendimento e libera o horário.
    dia atual: agendamento de outra data é recusado, assim como cancelado, remarcado ou que já está em
    atendimento. Um segundo clique, ou duas recepções ao mesmo tempo no mesmo agendamento, devolve o
    atendimento já criado.
+   **Check-in pelo WhatsApp:** o próprio paciente registra a chegada. A recepção mostra um QR code (no canto
+   do painel da TV e em `/atendimento/checkin`, pelo botão "QR do check-in", para deixar num tablet ou
+   imprimir). O QR abre o WhatsApp da clínica com a mensagem pronta `Cheguei ABC123`. O código muda todo
+   dia, então quem não está na clínica não faz o check-in. O assistente pede CPF e data de nascimento na
+   mesma mensagem e procura a consulta `MARCADO` ou `CONFIRMADO` de hoje. O check-in abre 60 minutos antes
+   do horário; atrasado, vale até o fim do dia. A chegada segue a mesma regra do passo anterior, com o
+   usuário `whatsapp`, e a fila mostra a etiqueta "Check-in WhatsApp". Três tentativas erradas, código de
+   outro dia ou paciente sem consulta hoje recebem a orientação de procurar a recepção. Mensagem sem
+   números no meio do check-in volta para o assistente normal. O paciente não é chamado pelo WhatsApp:
+   a chamada segue pelo painel da TV. Precisa de `mandalore.clientes.<id>.whatsapp` no
+   `clientes.properties`; sem ele, o QR não aparece.
 3. **Desfazer a chegada:** com o atendimento ainda `AGUARDANDO`, desfaça informando o motivo. O atendimento
    fica `CANCELADO` e o agendamento volta ao status de antes da chegada: `CONFIRMADO` quando houve
    confirmação, `MARCADO` nos demais casos. Em seguida a recepção pode registrar a chegada de novo. Consulta
@@ -237,6 +248,7 @@ IP e horário. Paciente da fila do dia abre sem motivo.
 | `mandalore.clientes.<id>.agenda` | já existe | `mandalore` habilita chegada e consultório na conta. Outro valor: as rotas dessa conta respondem 404 |
 | `mandalore.clientes.<id>.nome` | `admin.nome` | Nome da clínica na impressão da receita e no painel da TV. Sem esta propriedade, usa `admin.nome` |
 | `mandalore.clientes.<id>.painel.chave` | vazio | Chave do painel de chamada da TV, com no mínimo 16 caracteres. Vazia: o painel não existe na conta |
+| `mandalore.clientes.<id>.whatsapp` | vazio | Número do WhatsApp da clínica com DDI e DDD, só dígitos (ex.: `5547999990000`). Liga o QR do check-in. O código do dia deriva do segredo do webhook (`mandalore.clientes.<id>.webhook-secret` ou `chatwoot.webhook-secret`), que precisa ter no mínimo 16 caracteres |
 | `mandalore.clientes.<id>.painel.locais` | vazio | Locais oferecidos ao chamar, separados por vírgula (ex.: `Consultório 1,Consultório 2,Recepção,Financeiro`). Item com mais de 60 caracteres é ignorado. Vazio: a tela só oferece digitar o local |
 
 Por clínica, no `clientes.properties`: `mandalore.clientes.<id>.agenda` e `mandalore.clientes.<id>.nome`.
@@ -260,6 +272,9 @@ adicionado à mão no proxy não pode valer para `/atendimento/api/eventos` e `/
 - Cada leitura do prontuário, do histórico do paciente e da impressão da receita grava auditoria: usuário,
   atendimento, ação, IP e horário. A consulta pelo CPF grava `FICHA_PACIENTE` (recepção) ou
   `PRONTUARIO_COMPLETO` (médico, com o motivo quando o paciente não está na fila dele no dia).
+- O check-in pelo WhatsApp exige o código do dia (HMAC do dia com o segredo do webhook, 6 caracteres) e o
+  CPF com a data de nascimento. A resposta traz só o primeiro nome, o horário e o profissional. O CPF não vai
+  para o log. A espera pelo CPF fica na memória da instância por 10 minutos.
 - Atestado é documento do médico do atendimento: a recepção emite só a declaração de comparecimento e não
   abre atestado. O CID no atestado exige a autorização do paciente. O evento `ATESTADO_EMITIDO` fica fora da
   linha do tempo da recepção.
@@ -284,7 +299,10 @@ adicionado à mão no proxy não pode valer para `/atendimento/api/eventos` e `/
    apresentações) antes do uso.
 5. Ligue `atendimento.enabled=true` depois do vínculo e do conselho. Com `false`, chegada e consultório
    permanecem desligados e a agenda atual segue sem este fluxo.
-6. Treine a recepção na fila, na chegada e no desfazer, e o médico em iniciar, registrar, imprimir e
+6. Para o check-in pelo WhatsApp, cadastre `mandalore.clientes.<id>.whatsapp` com o número que atende a
+   conta no Chatwoot e confira se o segredo do webhook tem no mínimo 16 caracteres. Abra
+   `/atendimento/checkin` e faça um check-in de teste com um agendamento de hoje.
+7. Treine a recepção na fila, na chegada e no desfazer, e o médico em iniciar, registrar, imprimir e
    finalizar. A receita e a folha da consulta desta versão seguem para impressão e assinatura manual, e a
    clínica guarda as vias assinadas.
 

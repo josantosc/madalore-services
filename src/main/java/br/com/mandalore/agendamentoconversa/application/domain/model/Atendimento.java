@@ -13,6 +13,9 @@ import java.util.List;
  */
 public final class Atendimento {
 
+    /** Ator da chegada registrada pelo paciente no WhatsApp (nm_usuario_entrada). */
+    public static final String CHEGADA_WHATSAPP = "whatsapp";
+
     private Atendimento() {
     }
 
@@ -74,7 +77,7 @@ public final class Atendimento {
     /**
      * Linha da fila da recepção. Sem conteúdo clínico (LGPD). atendimentoId e chegadaEm só existem depois da
      * chegada; esperaMin é o tempo desde a chegada enquanto o paciente aguarda; chamadoEm e localChamada, a última
-     * chamada.
+     * chamada; checkinWhatsapp, chegada registrada pelo próprio paciente no WhatsApp.
      */
     public record FilaItem(
             long agendamentoId,
@@ -88,8 +91,13 @@ public final class Atendimento {
             LocalDateTime chegadaEm,
             Long esperaMin,
             LocalDateTime chamadoEm,
-            String localChamada
+            String localChamada,
+            boolean checkinWhatsapp
     ) {
+    }
+
+    /** Código do check-in pelo WhatsApp válido no dia e o link wa.me que o QR abre. */
+    public record CheckinDoDia(LocalDate dia, String codigo, String link) {
     }
 
     /** Chamada no painel da sala de espera. paciente sai abreviado do service (Maria S. O.), nunca o nome completo. */
