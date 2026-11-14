@@ -119,6 +119,7 @@
     .consulta-ant .trecho { color: var(--texto-2); font-size: 13px; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .consulta-ant details { font-size: 13px; color: var(--texto-2); }
     .consulta-ant details summary { cursor: pointer; color: var(--marca); font-size: 12px; }
+    .trecho-doc { color: var(--texto-2); font-size: 13px; }
     .consulta-ant .rec { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 13px; }
 
     .nota { display: grid; gap: 12px; }
@@ -164,7 +165,13 @@
 
     dialog { border: 0; padding: 24px; border-radius: 12px; width: min(560px, calc(100vw - 32px)); color: var(--texto);
       box-shadow: 0 0 0 1px var(--borda), 0 16px 48px rgba(0, 0, 0, .14); background: var(--solido); }
+    dialog.largo { width: min(640px, calc(100vw - 32px)); }
     dialog::backdrop { background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px); }
+    .marcadores { display: grid; gap: 6px; }
+    .lista-marcadores { display: flex; flex-wrap: wrap; gap: 4px; }
+    .lista-marcadores button { border: 0; background: var(--marca-suave); color: var(--marca-texto); border-radius: 4px; padding: 0 6px;
+      font: 12px/20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; cursor: pointer; }
+    .lista-marcadores button:hover { background: #d5e5eb; }
     dialog h2 { font-size: 16px; font-weight: 500; margin: 0; }
     dialog p.sub { color: var(--texto-2); margin: 4px 0 0; font-size: 14px; }
     dialog .form { margin-top: 12px; }
@@ -340,13 +347,24 @@
                       <option value="ESPECIAL">Especial</option>
                     </select>
                   </label>
-                  <label class="span-2">Observação <input class="campo" id="rObs" maxlength="1000"></label>
+                  <label class="span-2">Observação <input class="campo" id="rObs" maxlength="1000" data-modelos></label>
                 </div>
                 <div id="rItens"></div>
                 <div class="botoes">
                   <button class="btn cinza mini" type="button" id="rAdd">+ Medicamento</button>
                   <button class="btn cinza mini" type="button" id="rFavoritos">★ Favoritos</button>
                 </div>
+              </div>
+
+              <div id="blocoDocumentos">
+                <div class="botoes" style="justify-content:space-between">
+                  <h3>Atestados e declarações</h3>
+                  <span class="botoes">
+                    <button class="btn link" type="button" id="docAtestado">+ Atestado</button>
+                    <button class="btn link" type="button" id="docDeclaracao">+ Declaração de comparecimento</button>
+                  </span>
+                </div>
+                <div class="lista" id="listaDocumentos" style="margin-top:8px"></div>
               </div>
 
               <details class="mais" id="maisEvolucao">
@@ -432,7 +450,8 @@
   <dialog id="dlgModelos">
     <form method="dialog" id="formModelo" novalidate>
       <h2>Modelos de texto</h2>
-      <p class="sub">Num campo da nota, digite <code class="atalho-modelo">.atalho</code> e espaço (ou Tab) para trocar pelo texto.</p>
+      <p class="sub">Num campo da nota, da receita, da alta ou do atestado, digite <code class="atalho-modelo">.atalho</code> e espaço
+        (ou Tab) para trocar pelo texto.</p>
       <div class="opcoes" id="modLista"></div>
       <div class="form">
         <p class="sub" id="modModo">Novo modelo</p>
@@ -442,6 +461,10 @@
           <label>Título <span class="dica">Opcional</span> <input class="campo" id="modTitulo" maxlength="100" autocomplete="off"></label>
         </div>
         <label>Texto <textarea class="campo alto" id="modTexto" maxlength="4000"></textarea></label>
+        <div class="marcadores">
+          <span class="sub">Marcadores: clique para incluir. São trocados pelos dados do paciente quando o modelo é usado.</span>
+          <div class="lista-marcadores" id="modMarcadores"></div>
+        </div>
         <span class="msg-erro" id="modErro"></span>
       </div>
       <div class="rodape">
@@ -483,6 +506,30 @@
       <div class="rodape">
         <button class="btn cinza" type="button" data-fechar>Voltar</button>
         <button class="btn solido" type="submit" id="fOk">Finalizar e assinar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlgDocumento" class="largo">
+    <form method="dialog" id="formDocumento" novalidate>
+      <h2 id="docTitulo">Atestado médico</h2>
+      <p class="sub">Revise o texto antes de emitir. O documento fica registrado no atendimento e não se edita depois.</p>
+      <div class="form">
+        <div class="grade-2" id="docCamposAtestado">
+          <label>Dias de afastamento <span class="dica">Vazio ou 0: só o período da consulta</span>
+            <input class="campo" id="docDias" type="number" min="0" max="365" inputmode="numeric"></label>
+          <label>CID no atestado <span class="dica">Só com autorização do paciente</span>
+            <select class="campo" id="docCid"></select></label>
+        </div>
+        <label class="check" id="docAutorizacao" hidden><input type="checkbox" id="docAutorizou">
+          O paciente autorizou incluir o CID no atestado</label>
+        <label>Texto <span class="dica">Digite .atalho para usar um modelo</span>
+          <textarea class="campo" id="docTexto" maxlength="4000" style="height:150px"></textarea></label>
+        <span class="msg-erro" id="docErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="docOk">Emitir e imprimir</button>
       </div>
     </form>
   </dialog>
@@ -774,6 +821,7 @@
         estado.receitaNova = false;
         estado.evolucaoId = null;
         estado.historico = [];
+        docEstado.lista = [];
       }
       estado.atendimentoId = id;
       if (!await carregarProntuario()) {
@@ -786,6 +834,7 @@
       q.set("atendimento", String(id));
       history.replaceState(null, "", location.pathname + "?" + q);
       carregarHistorico();
+      carregarDocumentos();
       if (emConsulta() && !anamneseLiberada() && vazio($("aQueixa").value)) $("aQueixa").focus();
     }
 
@@ -826,6 +875,7 @@
       renderReceitas(p);
       renderEvolucoes(p);
       renderAlta(p);
+      desenharDocumentos();
       renderResumos();
       indicadorSalvo();
     }
@@ -1248,7 +1298,7 @@
     }
 
     function desenharModelos() {
-      const podeInserir = emConsulta() && estado.ultimoCampo && !estado.ultimoCampo.disabled;
+      const podeInserir = emConsulta() && estado.ultimoCampo && !estado.ultimoCampo.disabled && !estado.ultimoCampo.closest("dialog");
       const lista = estado.modelos || [];
       $("modLista").replaceChildren(...(lista.length ? lista.map((m) => el("div", { className: "opcao" },
         el("div", { className: "texto-opcao" }, el("code", { className: "atalho-modelo" }, "." + m.atalho), m.titulo ? " " + m.titulo : "",
@@ -1299,15 +1349,21 @@
       const inicio = campo.selectionStart ?? campo.value.length;
       const fim = campo.selectionEnd ?? inicio;
       const antes = campo.value.substring(0, inicio);
-      inserirNoCampo(campo, inicio, fim, (antes && !/\s$/.test(antes) ? " " : "") + m.texto);
+      inserirNoCampo(campo, inicio, fim, (antes && !/\s$/.test(antes) ? " " : "") + aplicarMarcadores(m.texto));
       campo.focus();
+    }
+
+    /** Campos que aceitam .atalho: textareas da consulta e da alta, a observação da receita e o texto do documento. */
+    function aceitaModelo(campo) {
+      if (!(campo instanceof HTMLTextAreaElement || (campo instanceof HTMLInputElement && "modelos" in campo.dataset))) return false;
+      return !campo.disabled && !campo.closest("#dlgModelos") && campo.id !== "jTexto";
     }
 
     /** .atalho antes do cursor vira o texto do modelo quando o médico digita espaço ou Tab. */
     function expandirAtalho(ev) {
       if (ev.key !== " " && ev.key !== "Tab") return;
       const campo = ev.target;
-      if (!(campo instanceof HTMLTextAreaElement) || campo.disabled || !estado.modelos || !estado.modelos.length) return;
+      if (!aceitaModelo(campo) || !estado.modelos || !estado.modelos.length) return;
       if (campo.selectionStart !== campo.selectionEnd) return;
       const antes = campo.value.substring(0, campo.selectionStart);
       const achado = /(^|\s)\.([a-z0-9_-]{2,30})$/.exec(antes);
@@ -1316,7 +1372,62 @@
       if (!modelo) return;
       ev.preventDefault();
       const inicio = campo.selectionStart - achado[2].length - 1;
-      inserirNoCampo(campo, inicio, campo.selectionStart, modelo.texto + (ev.key === " " ? " " : ""));
+      inserirNoCampo(campo, inicio, campo.selectionStart, aplicarMarcadores(modelo.texto) + (ev.key === " " ? " " : ""));
+    }
+
+    // ---------- Marcadores ({paciente}, {data}...) ----------
+    const MARCADORES = [
+      ["paciente", "Nome do paciente"], ["idade", "Idade"], ["nascimento", "Data de nascimento"], ["convenio", "Convênio"],
+      ["data", "Data da consulta"], ["hoje", "Data de hoje"], ["hora", "Hora atual"], ["chegada", "Hora da chegada"], ["saida", "Hora do fim da consulta"],
+      ["alergias", "Alergias registradas"], ["cid", "CID principal"], ["retorno", "Retorno previsto"],
+      ["medico", "Seu nome"], ["crm", "Seu conselho (só em atestado e declaração)"], ["especialidade", "Especialidade"],
+      ["dias", "Dias de afastamento (atestado)"]
+    ];
+
+    /** Valores que a tela já conhece. Os que ficarem vazios continuam como {marcador} e, no documento, o servidor troca. */
+    function valoresMarcadores() {
+      const p = estado.prontuario;
+      if (!p || !p.atendimento) return {};
+      const f = p.atendimento;
+      const pac = p.paciente || {};
+      const anos = idade(pac.nascimento);
+      const diagnosticos = (p.diagnosticos || []).filter((d) => d.ativo !== false);
+      const principal = diagnosticos.find((d) => d.tipo === "PRINCIPAL") || diagnosticos[0];
+      const alergias = (pac.alergias || []).map((a) => a.descricao).join(", ");
+      const fim = f.dtFimConsulta || f.dtAlta;
+      const retorno = (p.alta && p.alta.retornoPrevisto) || $("fRetorno").value || $("eRetorno").value;
+      return {
+        paciente: pac.nome || f.paciente || "",
+        idade: anos === null ? "" : plural(anos, "ano", "anos"),
+        nascimento: dataBr(pac.nascimento),
+        convenio: pac.convenio || "",
+        data: dataBr(f.dtEntrada || hoje()),
+        hoje: dataBr(hoje()),
+        hora: fmtHora.format(new Date()),
+        chegada: hora(f.dtEntrada),
+        saida: fim ? hora(fim) : fmtHora.format(new Date()),
+        alergias: alergias || (pac.alergiasAnteriores ? "" : "nenhuma alergia registrada"),
+        cid: principal ? principal.cid : "",
+        retorno: retorno ? dataBr(retorno) : "",
+        medico: f.profissional || "",
+        especialidade: f.especialidade || ""
+      };
+    }
+
+    function aplicarMarcadores(texto, extra) {
+      const v = Object.assign(valoresMarcadores(), extra || {});
+      return String(texto || "").replace(/\{([a-z_]+)\}/g, (marca, nome) =>
+        Object.prototype.hasOwnProperty.call(v, nome) && v[nome] !== "" && v[nome] !== null && v[nome] !== undefined ? String(v[nome]) : marca);
+    }
+
+    function desenharMarcadores() {
+      $("modMarcadores").replaceChildren(...MARCADORES.map(([nome, descricao]) => el("button", {
+        type: "button", title: descricao, onclick: () => {
+          const campo = $("modTexto");
+          const inicio = campo.selectionStart ?? campo.value.length;
+          campo.setRangeText("{" + nome + "}", inicio, campo.selectionEnd ?? inicio, "end");
+          campo.focus();
+        } }, "{" + nome + "}")));
     }
 
     function imprimirConsulta(id) {
@@ -1389,6 +1500,112 @@
       $("pFim").textContent = "Consulta finalizada" + (f.dtAlta ? " às " + hora(f.dtAlta) : "") + ". Os registros não podem mais ser alterados.";
       $("altaResumo").replaceChildren(el("h3", {}, "Alta"), el("p", { className: "texto" }, partes.join(" · ")),
         alta && alta.orientacao ? el("p", { className: "texto" }, alta.orientacao) : null);
+    }
+
+    // ---------- Atestado e declaração de comparecimento ----------
+    const TIPO_DOC = { ATESTADO: "Atestado", DECLARACAO: "Declaração de comparecimento" };
+    const TEXTO_DOC = {
+      ATESTADO_DIAS: "Atesto, para os devidos fins, que {paciente} esteve sob meus cuidados profissionais em {data} e necessita "
+        + "de {dias} dia(s) de afastamento de suas atividades a partir desta data.",
+      ATESTADO: "Atesto, para os devidos fins, que {paciente} esteve sob meus cuidados profissionais em {data}, das {chegada} "
+        + "às {saida}, devendo ser dispensado(a) de suas atividades nesse período.",
+      DECLARACAO: "Declaro, para os devidos fins, que {paciente} compareceu a esta clínica em {data}, das {chegada} às {saida}, "
+        + "para consulta médica."
+    };
+    const docEstado = { tipo: null, editado: false, lista: [] };
+
+    async function carregarDocumentos() {
+      const id = estado.atendimentoId;
+      try {
+        const lista = await api("/consultorio/api/atendimentos/" + id + "/documentos");
+        if (id !== estado.atendimentoId) return;
+        docEstado.lista = lista || [];
+      } catch (e) {
+        docEstado.lista = [];
+      }
+      desenharDocumentos();
+    }
+
+    function desenharDocumentos() {
+      const p = estado.prontuario;
+      const status = p && p.atendimento && p.atendimento.status;
+      const pode = status === "EM_CONSULTA" || status === "FINALIZADO";
+      $("blocoDocumentos").hidden = !pode && !docEstado.lista.length;
+      $("docAtestado").hidden = !pode;
+      $("docDeclaracao").hidden = !pode;
+      $("listaDocumentos").replaceChildren(...(docEstado.lista.length ? docEstado.lista.map((d) => {
+        const extras = [];
+        if (d.dias !== null && d.dias !== undefined && d.dias > 0) extras.push(plural(d.dias, "dia", "dias"));
+        if (d.cid) extras.push("CID " + d.cid);
+        return el("div", { className: "cartao" },
+          el("div", { className: "botoes" },
+            el("span", { className: d.tipo === "ATESTADO" ? "tag marca" : "tag" }, TIPO_DOC[d.tipo] || d.tipo),
+            el("span", { className: "sub" }, dataBr(d.dtEmissao) + " " + hora(d.dtEmissao) + (extras.length ? " · " + extras.join(" · ") : "")),
+            el("span", { style: "flex:1" }),
+            el("button", { className: "btn link", type: "button", onclick: () => imprimirDocumento(d.id) }, "Imprimir")),
+          el("span", { className: "trecho-doc" }, curto(d.texto, 160)));
+      }) : [el("p", { className: "sub" }, "Nenhum documento emitido nesta consulta.")]));
+    }
+
+    function textoPadraoDocumento() {
+      const dias = Number($("docDias").value);
+      const chave = docEstado.tipo === "ATESTADO" ? (dias > 0 ? "ATESTADO_DIAS" : "ATESTADO") : "DECLARACAO";
+      return aplicarMarcadores(TEXTO_DOC[chave], { dias: dias > 0 ? String(dias) : "" });
+    }
+
+    function abrirDocumento(tipo) {
+      docEstado.tipo = tipo;
+      docEstado.editado = false;
+      const p = estado.prontuario;
+      $("docTitulo").textContent = tipo === "ATESTADO" ? "Atestado médico" : "Declaração de comparecimento";
+      $("docCamposAtestado").hidden = tipo !== "ATESTADO";
+      $("docDias").value = "";
+      const cids = (p.diagnosticos || []).filter((d) => d.ativo !== false);
+      $("docCid").replaceChildren(el("option", { value: "" }, "Sem CID"),
+        ...cids.map((d) => el("option", { value: d.cid }, d.cid + (d.descricao ? " · " + curto(d.descricao, 50) : ""))));
+      $("docAutorizou").checked = false;
+      $("docAutorizacao").hidden = true;
+      $("docTexto").value = textoPadraoDocumento();
+      $("docErro").textContent = "";
+      $("docOk").disabled = false;
+      $("dlgDocumento").showModal();
+      $("docTexto").focus();
+    }
+
+    function imprimirDocumento(id, janela) {
+      const alvo = url("/consultorio/api/documentos/" + id + "/impressao");
+      if (janela) { janela.location = alvo; return; }
+      if (!window.open(alvo, "_blank")) aviso("O navegador bloqueou a janela do documento. Permita pop-ups para imprimir.", true);
+    }
+
+    async function emitirDocumento() {
+      const tipo = docEstado.tipo;
+      const texto = $("docTexto").value.trim();
+      if (!texto) return $("docErro").textContent = "Escreva o texto do documento.";
+      const corpo = { tipo, texto, dias: null, cid: null, autorizouCid: false };
+      if (tipo === "ATESTADO") {
+        const bruto = $("docDias").value.trim();
+        if ((bruto && !/^\d{1,3}$/.test(bruto)) || Number(bruto) > 365) return $("docErro").textContent = "Os dias de afastamento vão de 0 a 365.";
+        corpo.dias = bruto ? Number(bruto) : null;
+        corpo.cid = $("docCid").value || null;
+        corpo.autorizouCid = $("docAutorizou").checked;
+        if (corpo.cid && !corpo.autorizouCid) return $("docErro").textContent = "Confirme que o paciente autorizou incluir o CID.";
+      }
+      // abre a janela no clique: depois do await o navegador trataria como pop-up
+      const janela = window.open("", "_blank");
+      $("docOk").disabled = true;
+      try {
+        const resp = await api("/consultorio/api/atendimentos/" + estado.atendimentoId + "/documentos", json("POST", corpo));
+        $("dlgDocumento").close();
+        aviso((TIPO_DOC[tipo] || "Documento") + " emitido.");
+        if (janela) imprimirDocumento(resp.id, janela);
+        else imprimirDocumento(resp.id);
+        await carregarDocumentos();
+      } catch (e) {
+        if (janela) janela.close();
+        $("docErro").textContent = e.message;
+        $("docOk").disabled = false;
+      }
     }
 
     // ---------- Resumos das seções (aparecem com a seção recolhida) ----------
@@ -1523,9 +1740,9 @@
     $("favBusca").addEventListener("input", desenharFavoritos);
     $("btnModelos").onclick = abrirModelos;
     $("modNovo").onclick = limparModelo;
-    $("telaProntuario").addEventListener("keydown", expandirAtalho);
-    $("telaProntuario").addEventListener("focusin", (ev) => {
-      if (ev.target instanceof HTMLTextAreaElement) estado.ultimoCampo = ev.target;
+    document.addEventListener("keydown", expandirAtalho);
+    document.addEventListener("focusin", (ev) => {
+      if (aceitaModelo(ev.target)) estado.ultimoCampo = ev.target;
     });
 
     $("formModelo").addEventListener("submit", async (ev) => {
@@ -1547,6 +1764,18 @@
       }
     });
     $("rNova").onclick = () => executar(novaReceita);
+    $("docAtestado").onclick = () => abrirDocumento("ATESTADO");
+    $("docDeclaracao").onclick = () => abrirDocumento("DECLARACAO");
+    $("docDias").addEventListener("input", () => { if (!docEstado.editado) $("docTexto").value = textoPadraoDocumento(); });
+    $("docTexto").addEventListener("input", () => docEstado.editado = true);
+    $("docCid").addEventListener("change", () => {
+      $("docAutorizacao").hidden = !$("docCid").value;
+      if (!$("docCid").value) $("docAutorizou").checked = false;
+    });
+    $("formDocumento").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      emitirDocumento();
+    });
 
     $("formJust").addEventListener("submit", async (ev) => {
       ev.preventDefault();
@@ -1668,6 +1897,7 @@
       if (Number.isFinite(id) && id > 0) abrir(id);
       else carregarFila();
       carregarModelos();
+      desenharMarcadores();
       conectarAoVivo();
     })();
   </script>

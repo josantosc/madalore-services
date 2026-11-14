@@ -1518,6 +1518,53 @@ class PostgresAtendimentoAdapterIT {
                 String.class, atendimento);
     }
 
+    // --- documentos ---
+
+    @Test
+    void emitirDocumentoGravaEventoELista() {
+        long medico = novoProfissional(CONTA, null, true);
+        long agendamento = novoAgendamento(medico, "MARCADO", "2030-01-07 09:00");
+        long nr = adapter.registrarChegada(CONTA, agendamento, "recepcao").id();
+        long paciente = adapter.atendimento(CONTA, nr).orElseThrow().pacienteId();
+
+        Atendimento.Operacao atestado = adapter.emitirDocumento(CONTA, new Atendimento.Documento(null, nr, paciente, medico,
+                Atendimento.TipoDocumento.ATESTADO, "Atesto 2 dias", 2, "J06.9", AGORA, "dr"));
+        Atendimento.Operacao declaracao = adapter.emitirDocumento(CONTA, new Atendimento.Documento(null, nr, paciente, null,
+                Atendimento.TipoDocumento.DECLARACAO, "Compareceu", null, null, AGORA.plusMinutes(5), "recepcao"));
+
+        assertThat(atestado.codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(declaracao.codigo()).isEqualTo(CodigoNegocio.SUCESSO);
+        assertThat(adapter.documentos(CONTA, nr)).extracting(Atendimento.Documento::tipo)
+                .containsExactly(Atendimento.TipoDocumento.DECLARACAO, Atendimento.TipoDocumento.ATESTADO);
+        Atendimento.Documento lido = adapter.documento(CONTA, atestado.id()).orElseThrow();
+        assertThat(lido).isEqualTo(new Atendimento.Documento(atestado.id(), nr, paciente, medico,
+                Atendimento.TipoDocumento.ATESTADO, "Atesto 2 dias", 2, "J06.9", AGORA, "dr"));
+        assertThat(adapter.documento(CONTA, declaracao.id()).orElseThrow().dias()).isNull();
+        assertThat(adapter.documento("outra", atestado.id())).isEmpty();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM atendimento.atendimento_evento WHERE nr_atendimento = ? "
+                + "AND tipo IN ('ATESTADO_EMITIDO', 'DECLARACAO_EMITIDA')", Integer.class, nr)).isEqualTo(2);
+        assertThat(adapter.visitasDoPaciente(CONTA, paciente, false).get(0).eventos())
+                .extracting(Atendimento.EventoPaciente::tipo).contains("DECLARACAO_EMITIDA").doesNotContain("ATESTADO_EMITIDO");
+    }
+
+    @Test
+    void documentoDeOutroProfissionalOuDeAtendimentoCanceladoNaoEGravado() {
+        long medico = novoProfissional(CONTA, null, true);
+        long outro = novoProfissional(CONTA, null, true);
+        long agendamento = novoAgendamento(medico, "MARCADO", "2030-01-07 09:00");
+        long nr = adapter.registrarChegada(CONTA, agendamento, "recepcao").id();
+        long paciente = adapter.atendimento(CONTA, nr).orElseThrow().pacienteId();
+
+        assertThat(adapter.emitirDocumento(CONTA, new Atendimento.Documento(null, nr, paciente, outro,
+                Atendimento.TipoDocumento.ATESTADO, "Atesto", null, null, AGORA, "dr")).codigo())
+                .isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
+        adapter.desfazerChegada(CONTA, nr, "engano", "recepcao");
+        assertThat(adapter.emitirDocumento(CONTA, new Atendimento.Documento(null, nr, paciente, null,
+                Atendimento.TipoDocumento.DECLARACAO, "Compareceu", null, null, AGORA, "recepcao")).codigo())
+                .isEqualTo(CodigoNegocio.NAO_ENCONTRADO);
+        assertThat(adapter.documentos(CONTA, nr)).isEmpty();
+    }
+
     private long novoProfissional(String conta, Long usuarioId, boolean ativo) {
         return jdbc.queryForObject("INSERT INTO agenda.profissional (conta_id, nome, ativo, usuario_id, conselho_numero, conselho_uf) "
                 + "VALUES (?, ?, ?, ?, '12345', 'SP') RETURNING id", Long.class, conta, "Dr. " + sequencia.incrementAndGet(), ativo,

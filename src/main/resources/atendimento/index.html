@@ -214,6 +214,22 @@
     </form>
   </dialog>
 
+  <dialog id="dlgDeclaracao">
+    <form method="dialog" id="formDeclaracao" novalidate>
+      <h2>Declaração de comparecimento</h2>
+      <p class="sub" id="decSub"></p>
+      <div class="form">
+        <label>Texto <span class="dica">{saida} é preenchido na emissão com o fim da consulta (ou a hora da emissão, se ainda não terminou).</span>
+          <textarea class="campo" id="decTexto" maxlength="4000" style="height:130px"></textarea></label>
+        <span class="msg-erro" id="decErro"></span>
+      </div>
+      <div class="rodape">
+        <button class="btn cinza" type="button" data-fechar>Voltar</button>
+        <button class="btn solido" type="submit" id="decOk">Emitir e imprimir</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="dlgChamar">
     <form method="dialog" id="formChamar" novalidate>
       <h2>Chamar para onde?</h2>
@@ -554,6 +570,9 @@
       if (f.status === "EXECUTADO" && f.atendimentoId && hojeSim) {
         nova("Chamar", "fantasma", () => abrirChamar(f));
       }
+      if (f.atendimentoId && ["AGUARDANDO", "EM_CONSULTA", "EXECUTADO"].includes(f.status)) {
+        nova("Declaração de comparecimento", "fantasma", () => abrirDeclaracao(f));
+      }
       return acoes;
     }
 
@@ -621,6 +640,59 @@
     $("formChamar").addEventListener("submit", (ev) => {
       ev.preventDefault();
       chamar($("cLocal").value);
+    });
+
+    // ---------- Declaração de comparecimento ----------
+    const TEXTO_DECLARACAO = "Declaramos, para os devidos fins, que {paciente}, CPF {cpf}, compareceu a esta clínica em {data}, "
+      + "das {chegada} às {saida}, para consulta com {medico} ({especialidade}).";
+    let declarando = null;
+
+    function cpfFormatado(cpf) {
+      const d = digitos(cpf);
+      return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : (cpf || "");
+    }
+
+    /** Troca o que a fila já sabe; o resto ({saida}) o servidor troca na emissão. */
+    function textoDeclaracao(f) {
+      const valores = {
+        paciente: f.paciente, cpf: cpfFormatado(f.cpf), medico: f.profissional, especialidade: f.especialidade,
+        data: f.chegadaEm ? String(f.chegadaEm).substring(8, 10) + "/" + String(f.chegadaEm).substring(5, 7) + "/" + String(f.chegadaEm).substring(0, 4) : "",
+        chegada: hora(f.chegadaEm)
+      };
+      return TEXTO_DECLARACAO.replace(/\{([a-z_]+)\}/g, (marca, nome) => valores[nome] ? valores[nome] : marca)
+        .replace(", CPF {cpf}", "");
+    }
+
+    function abrirDeclaracao(f) {
+      declarando = f;
+      $("decSub").textContent = f.paciente + ", consulta às " + hora(f.horario) + " com " + f.profissional
+        + ". Revise o texto: a declaração fica registrada no atendimento.";
+      $("decTexto").value = textoDeclaracao(f);
+      $("decErro").textContent = "";
+      $("decOk").disabled = false;
+      $("dlgDeclaracao").showModal();
+      $("decTexto").focus();
+    }
+
+    $("formDeclaracao").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const texto = $("decTexto").value.trim();
+      if (!texto) return $("decErro").textContent = "Escreva o texto da declaração.";
+      // abre a janela no clique: depois do await o navegador trataria como pop-up
+      const janela = window.open("", "_blank");
+      $("decOk").disabled = true;
+      try {
+        const resp = await post("/atendimento/api/atendimentos/" + declarando.atendimentoId + "/declaracao", { texto });
+        $("dlgDeclaracao").close();
+        aviso("Declaração de " + declarando.paciente + " emitida.");
+        const alvo = url("/atendimento/api/documentos/" + resp.id + "/impressao");
+        if (janela) janela.location = alvo;
+        else if (!window.open(alvo, "_blank")) aviso("O navegador bloqueou a janela da declaração. Permita pop-ups para imprimir.", true);
+      } catch (e) {
+        if (janela) janela.close();
+        $("decErro").textContent = e.message;
+        $("decOk").disabled = false;
+      }
     });
 
     // ---------- Desfazer chegada ----------

@@ -1898,7 +1898,7 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
 
     /** Eventos do atendimento que a recepção vê. Os demais (nota, CID, receita, alergia) são do médico. */
     static final List<String> EVENTOS_ADMINISTRATIVOS =
-            List.of("CHEGADA", "CHEGADA_DESFEITA", "CHAMADO", "CONSULTA_INICIADA", "FINALIZADO");
+            List.of("CHEGADA", "CHEGADA_DESFEITA", "CHAMADO", "CONSULTA_INICIADA", "FINALIZADO", "DECLARACAO_EMITIDA");
 
     /** Eventos que o atendimento repete na agenda; a linha do tempo mostra só a versão do atendimento. */
     private static final List<String> ESPELHOS_NA_AGENDA = List.of("CHEGOU", "CHEGADA_DESFEITA", "EM_CONSULTA", "EXECUTADO");
@@ -2064,6 +2064,61 @@ public class PostgresAtendimentoAdapter implements AtendimentoPort {
     public boolean excluirModelo(String conta, long profissionalId, long modeloId) {
         return jdbc.update("DELETE FROM atendimento.modelo_nota WHERE id = :id AND conta_id = :conta AND profissional_id = :profissional",
                 conta(conta).addValue("id", modeloId).addValue("profissional", profissionalId)) == 1;
+    }
+
+    // ---- documentos ----
+
+    private static final String DOCUMENTO = """
+            SELECT id, nr_atendimento, paciente_id, profissional_id, ie_tipo, ds_texto, qt_dias, cd_doenca, dt_emissao,
+                   nm_usuario
+            FROM atendimento.documento_paciente
+            """;
+
+    @Override
+    public Atendimento.Operacao emitirDocumento(String conta, Atendimento.Documento documento) {
+        return transacao.execute(status -> {
+            Optional<Long> id = jdbc.queryForList("""
+                    INSERT INTO atendimento.documento_paciente (conta_id, nr_atendimento, paciente_id, profissional_id,
+                        ie_tipo, ds_texto, qt_dias, cd_doenca, dt_emissao, nm_usuario)
+                    SELECT at.conta_id, at.nr_atendimento, at.paciente_id, CAST(:profissional AS BIGINT), :tipo, :texto,
+                           CAST(:dias AS SMALLINT), CAST(:cid AS VARCHAR), :emissao, :usuario
+                    FROM atendimento.atendimento_paciente at
+                    WHERE at.nr_atendimento = :nr AND at.conta_id = :conta AND at.ie_status_atendimento <> 'CANCELADO'
+                      AND (CAST(:profissional AS BIGINT) IS NULL OR at.profissional_id = :profissional)
+                    RETURNING id
+                    """, conta(conta).addValue("nr", documento.nrAtendimento())
+                    .addValue("profissional", documento.profissionalId()).addValue("tipo", documento.tipo().name())
+                    .addValue("texto", documento.texto()).addValue("dias", documento.dias())
+                    .addValue("cid", documento.cid()).addValue("emissao", Timestamp.valueOf(documento.dtEmissao()))
+                    .addValue("usuario", usuario(documento.usuario())), Long.class).stream().findFirst();
+            if (id.isEmpty()) {
+                return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
+            }
+            eventoAtendimento(documento.nrAtendimento(), documento.tipo() == Atendimento.TipoDocumento.ATESTADO
+                    ? "ATESTADO_EMITIDO" : "DECLARACAO_EMITIDA", documento.usuario(), "Documento " + id.get());
+            return Atendimento.Operacao.sucesso(id.get());
+        });
+    }
+
+    @Override
+    public List<Atendimento.Documento> documentos(String conta, long nrAtendimento) {
+        return jdbc.query(DOCUMENTO + " WHERE nr_atendimento = :nr AND conta_id = :conta ORDER BY dt_emissao DESC, id DESC",
+                conta(conta).addValue("nr", nrAtendimento), (rs, i) -> documento(rs));
+    }
+
+    @Override
+    public Optional<Atendimento.Documento> documento(String conta, long documentoId) {
+        return jdbc.query(DOCUMENTO + " WHERE id = :id AND conta_id = :conta",
+                conta(conta).addValue("id", documentoId), (rs, i) -> documento(rs)).stream().findFirst();
+    }
+
+    private static Atendimento.Documento documento(ResultSet rs) throws SQLException {
+        int qtDias = rs.getInt("qt_dias");
+        Integer dias = rs.wasNull() ? null : qtDias;
+        return new Atendimento.Documento(rs.getLong("id"), rs.getLong("nr_atendimento"), rs.getLong("paciente_id"),
+                longOuNulo(rs, "profissional_id"), Atendimento.TipoDocumento.valueOf(rs.getString("ie_tipo")),
+                rs.getString("ds_texto"), dias, rs.getString("cd_doenca"),
+                data(rs, "dt_emissao"), rs.getString("nm_usuario"));
     }
 }
 

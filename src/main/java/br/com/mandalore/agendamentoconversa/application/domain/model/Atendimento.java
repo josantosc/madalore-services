@@ -41,6 +41,10 @@ public final class Atendimento {
         COMUM, ESPECIAL
     }
 
+    public enum TipoDocumento {
+        ATESTADO, DECLARACAO
+    }
+
     /** Linha de {@code atendimento.atendimento_paciente}. */
     public record Ficha(
             long nrAtendimento,
@@ -280,6 +284,24 @@ public final class Atendimento {
             String orientacao,
             LocalDate retornoPrevisto,
             LocalDateTime dtLiberacao,
+            String usuario
+    ) {
+    }
+
+    /**
+     * {@code atendimento.documento_paciente}: atestado ou declaração de comparecimento emitido, com o texto final (já
+     * sem marcadores). profissionalId nulo: declaração emitida pela recepção. cid só existe com autorização do paciente.
+     */
+    public record Documento(
+            Long id,
+            long nrAtendimento,
+            long pacienteId,
+            Long profissionalId,
+            TipoDocumento tipo,
+            String texto,
+            Integer dias,
+            String cid,
+            LocalDateTime dtEmissao,
             String usuario
     ) {
     }

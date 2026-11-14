@@ -2,9 +2,11 @@ package br.com.mandalore.agendamentoconversa.application.domain.service;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -228,6 +230,46 @@ public class AtendimentoService implements AtendimentoUseCase {
         List<Atendimento.VisitaPaciente> visitas = atendimentos.visitasDoPaciente(conta, pacienteId, false);
         atendimentos.registrarAcesso(conta, null, pacienteId, ACAO_FICHA, ator, ip);
         return new Atendimento.FichaPaciente(paciente, visitas);
+    }
+
+    @Override
+    public Atendimento.Operacao emitirDeclaracao(String conta, long atendimentoId, String texto, String ator) {
+        exigirHabilitada(conta);
+        exigirAtor(ator);
+        Optional<Atendimento.Ficha> ficha = atendimentos.atendimento(conta, atendimentoId);
+        if (ficha.isEmpty()) {
+            return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
+        }
+        Atendimento.Ficha f = ficha.get();
+        if (f.status() == Atendimento.Status.CANCELADO) {
+            return Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_DOCUMENTO);
+        }
+        Atendimento.PacienteResumo paciente = atendimentos.paciente(conta, f.pacienteId())
+                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado"));
+        LocalDateTime agora = LocalDateTime.now(relogio);
+        String clinica = clinica(conta, atendimentoId);
+        String declaracao = Documentos.texto(texto, Documentos.marcadores(clinica, f, paciente, null, null, null, agora));
+        return atendimentos.emitirDocumento(conta, new Atendimento.Documento(null, atendimentoId, f.pacienteId(), null,
+                Atendimento.TipoDocumento.DECLARACAO, declaracao, null, null, agora, ator));
+    }
+
+    @Override
+    public String impressaoDeclaracao(String conta, long documentoId, String ator, String ip) {
+        exigirHabilitada(conta);
+        exigirAtor(ator);
+        Atendimento.Documento documento = atendimentos.documento(conta, documentoId)
+                .filter(d -> d.tipo() == Atendimento.TipoDocumento.DECLARACAO)
+                .orElseThrow(() -> new IllegalArgumentException("Documento não encontrado"));
+        Atendimento.PacienteResumo paciente = atendimentos.paciente(conta, documento.pacienteId())
+                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado"));
+        atendimentos.registrarAcesso(conta, documento.nrAtendimento(), documento.pacienteId(), Documentos.ACAO_IMPRESSAO,
+                ator, ip);
+        return Documentos.html(clinica(conta, documento.nrAtendimento()), documento, paciente, null);
+    }
+
+    private String clinica(String conta, long atendimentoId) {
+        return atendimentos.cabecalhoAtendimento(conta, atendimentoId).map(AtendimentoPort.CabecalhoReceita::clinica)
+                .orElse("");
     }
 
     /** Só os 11 dígitos; pontos, traço e espaços são ignorados. */

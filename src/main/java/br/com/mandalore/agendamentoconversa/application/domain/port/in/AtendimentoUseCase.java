@@ -51,4 +51,13 @@ public interface AtendimentoUseCase {
 
     /** Cadastro e linha do tempo administrativa, sem conteúdo clínico. Grava acesso_prontuario. */
     Atendimento.FichaPaciente fichaDoPaciente(String conta, long pacienteId, String ator, String ip);
+
+    /**
+     * Declaração de comparecimento de paciente que já chegou (atendimento não cancelado). texto aceita marcadores
+     * ({paciente}, {chegada}, {saida}...). Operacao.id() é o documento.
+     */
+    Atendimento.Operacao emitirDeclaracao(String conta, long atendimentoId, String texto, String ator);
+
+    /** HTML da declaração para imprimir. Atestado é do médico: aqui dá "Documento não encontrado". Grava acesso_prontuario. */
+    String impressaoDeclaracao(String conta, long documentoId, String ator, String ip);
 }

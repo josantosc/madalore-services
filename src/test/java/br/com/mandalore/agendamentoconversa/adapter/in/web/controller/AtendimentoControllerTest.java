@@ -183,6 +183,37 @@ class AtendimentoControllerTest {
     }
 
     @Test
+    void declaracaoRepassaTextoEUsuario() throws Exception {
+        when(atendimento.emitirDeclaracao("7", 50L, "Compareceu", "recepcao@clinica"))
+                .thenReturn(Atendimento.Operacao.sucesso(4L));
+
+        mvc.perform(post("/atendimento/api/atendimentos/50/declaracao").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"texto\":\"Compareceu\"}").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(4));
+    }
+
+    @Test
+    void declaracaoDeAtendimentoCanceladoDevolve409() throws Exception {
+        when(atendimento.emitirDeclaracao(anyString(), anyLong(), any(), anyString()))
+                .thenReturn(Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_DOCUMENTO));
+
+        mvc.perform(post("/atendimento/api/atendimentos/50/declaracao").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"texto\":\"x\"}").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erro").exists());
+    }
+
+    @Test
+    void impressaoDaDeclaracaoDevolveHtmlSemCache() throws Exception {
+        when(atendimento.impressaoDeclaracao(eq("7"), eq(4L), eq("recepcao@clinica"), any())).thenReturn("<html>Declaração</html>");
+
+        mvc.perform(get("/atendimento/api/documentos/4/impressao").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"));
+    }
+
+    @Test
     void fichaDeOutraContaEProibida() throws Exception {
         mvc.perform(get("/atendimento/api/pacientes/77/ficha").param("conta", "8").requestAttr(AdminAuthFilter.LOGIN, RECEPCAO))
                 .andExpect(status().isForbidden());

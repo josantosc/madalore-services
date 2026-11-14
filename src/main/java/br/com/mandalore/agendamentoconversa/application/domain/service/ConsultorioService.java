@@ -511,6 +511,77 @@ public class ConsultorioService implements ConsultorioUseCase {
         return new Impressao(htmlConsulta(cabecalho, prontuario, prof, ctx.ator(), agora()));
     }
 
+    // ---- documentos ----
+
+    @Override
+    public Atendimento.Operacao emitirDocumento(Contexto ctx, long atendimentoId, DocumentoInBound in) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        Optional<Atendimento.Ficha> ficha = fichaPropria(ctx, prof, atendimentoId);
+        if (ficha.isEmpty()) {
+            return Atendimento.Operacao.falha(CodigoNegocio.NAO_ENCONTRADO);
+        }
+        Atendimento.Ficha f = ficha.get();
+        if (f.status() != Atendimento.Status.EM_CONSULTA && f.status() != Atendimento.Status.FINALIZADO) {
+            return Atendimento.Operacao.falha(CodigoNegocio.STATUS_INVALIDO_PARA_DOCUMENTO);
+        }
+        if (in == null || in.tipo() == null) {
+            throw new IllegalArgumentException("Informe o tipo do documento");
+        }
+        Integer dias = null;
+        String cid = null;
+        if (in.tipo() == Atendimento.TipoDocumento.ATESTADO) {
+            if (in.dias() != null && (in.dias() < 0 || in.dias() > Documentos.DIAS_MAX)) {
+                throw new IllegalArgumentException("Os dias de afastamento vão de 0 a " + Documentos.DIAS_MAX);
+            }
+            dias = in.dias();
+            if (!vazio(in.cid())) {
+                cid = in.cid().trim().toUpperCase(Locale.ROOT);
+                if (!CID.matcher(cid).matches()) {
+                    throw new IllegalArgumentException("CID inválido. Use o formato J06 ou J06.9");
+                }
+                if (!in.autorizouCid()) {
+                    throw new IllegalArgumentException("O CID só vai no atestado com a autorização do paciente");
+                }
+            }
+        }
+        Atendimento.PacienteResumo paciente = atendimentos.paciente(ctx.conta(), f.pacienteId())
+                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado"));
+        LocalDateTime agora = agora();
+        String texto = Documentos.texto(in.texto(),
+                Documentos.marcadores(clinica(ctx.conta(), atendimentoId), f, paciente, prof, dias, cid, agora));
+        return atendimentos.emitirDocumento(ctx.conta(), new Atendimento.Documento(null, atendimentoId,
+                f.pacienteId(), prof.id(), in.tipo(), texto, dias, cid, agora, ctx.ator()));
+    }
+
+    @Override
+    public List<Atendimento.Documento> documentos(Contexto ctx, long atendimentoId) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        fichaPropria(ctx, prof, atendimentoId).orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado"));
+        return atendimentos.documentos(ctx.conta(), atendimentoId);
+    }
+
+    @Override
+    public Impressao impressaoDocumento(Contexto ctx, long documentoId, String ip) {
+        exigirHabilitada(ctx);
+        ProfissionalClinico prof = profissional(ctx);
+        Atendimento.Documento documento = atendimentos.documento(ctx.conta(), documentoId)
+                .orElseThrow(() -> new IllegalArgumentException("Documento não encontrado"));
+        fichaPropria(ctx, prof, documento.nrAtendimento())
+                .orElseThrow(() -> new IllegalArgumentException("Documento não encontrado"));
+        Atendimento.PacienteResumo paciente = atendimentos.paciente(ctx.conta(), documento.pacienteId())
+                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado"));
+        atendimentos.registrarAcesso(ctx.conta(), documento.nrAtendimento(), documento.pacienteId(),
+                Documentos.ACAO_IMPRESSAO, ctx.ator(), ip);
+        return new Impressao(Documentos.html(clinica(ctx.conta(), documento.nrAtendimento()), documento, paciente, prof));
+    }
+
+    private String clinica(String conta, long atendimentoId) {
+        return atendimentos.cabecalhoAtendimento(conta, atendimentoId).map(AtendimentoPort.CabecalhoReceita::clinica)
+                .orElse("");
+    }
+
     // ---- alta ----
 
     @Override

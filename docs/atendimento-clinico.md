@@ -84,6 +84,12 @@ agendamento sem atendimento e libera o horário.
    `AGUARDANDO`. O encaixe não verifica sobreposição com a agenda do profissional: ele entra na fila de
    chegada como qualquer outro paciente.
 
+7. **Declaração de comparecimento:** no menu "⋯" do paciente que já chegou (aguardando, em consulta ou
+   atendido), "Declaração de comparecimento" abre o texto pronto com paciente, CPF, data, hora da chegada e
+   profissional. `{saida}` é trocado na emissão pelo fim da consulta, ou pela hora da emissão se a consulta
+   não terminou. "Emitir e imprimir" grava a declaração no atendimento e abre a folha com linha para
+   assinatura e carimbo da clínica. A recepção não emite nem imprime atestado.
+
 Cada passo grava quem fez e quando, no atendimento e no agendamento. O histórico de eventos da recepção e do
 gestor traz o tipo do evento, o usuário e o horário.
 
@@ -109,9 +115,26 @@ Na fila, "Chamar" registra a chamada do paciente `AGUARDANDO` (a recepção vê 
 consulta.
 
 **Modelos de texto:** cada médico mantém os próprios modelos (botão "Modelos" no prontuário). Um modelo tem
-atalho (2 a 30 letras minúsculas, números, `_` ou `-`), título opcional e texto de até 4000 caracteres. Num
-campo da nota, digitar `.atalho` seguido de espaço ou Tab troca o atalho pelo texto. O diálogo também
-insere o modelo no último campo usado. O atalho não se repete entre os modelos do mesmo médico.
+atalho (2 a 30 letras minúsculas, números, `_` ou `-`), título opcional e texto de até 4000 caracteres.
+Digitar `.atalho` seguido de espaço ou Tab troca o atalho pelo texto nos campos da nota, na observação da
+receita, nas orientações da alta e no texto do atestado ou da declaração. O diálogo também insere o modelo
+no último campo usado. O atalho não se repete entre os modelos do mesmo médico.
+O texto do modelo aceita marcadores, trocados pelos dados do paciente quando o modelo entra no campo:
+`{paciente}`, `{idade}`, `{nascimento}`, `{convenio}`, `{data}` (dia da consulta), `{hoje}`, `{hora}`,
+`{chegada}`, `{saida}`, `{alergias}`, `{cid}` (CID principal), `{retorno}`, `{medico}`, `{especialidade}`,
+`{crm}` e `{dias}`. No diálogo de modelos, um clique no marcador o inclui no texto. Marcador sem valor fica
+como está, para o médico ver o que faltou. `{crm}` e `{dias}` só são trocados no atestado e na
+declaração, na emissão.
+
+**Atestado e declaração de comparecimento:** em "Conduta e prescrição", com a consulta em andamento ou
+finalizada, "+ Atestado" e "+ Declaração de comparecimento" abrem o texto pronto, já com os dados do
+paciente, para o médico revisar. No atestado, informe os dias de afastamento (vazio ou 0: só o período da
+consulta) e, se o paciente autorizar, um dos CIDs do atendimento: o CID só sai no atestado com a caixa de
+autorização marcada (Resolução CFM 1.658/2002). "Emitir e imprimir" grava o documento no atendimento e
+abre a folha: clínica, paciente e CPF, texto, CID (quando houver), data, assinatura com nome, conselho e UF,
+e o número do documento. Documento emitido não se edita: emita outro. A lista do bloco reimprime os
+documentos do atendimento. Cada impressão fica na auditoria (`IMPRESSAO_DOCUMENTO`) e cada emissão gera o
+evento `ATESTADO_EMITIDO` ou `DECLARACAO_EMITIDA` no histórico.
 
 **Favoritos de medicamento:** "Favoritar" num item da receita guarda medicamento, apresentação, posologia,
 via, quantidade, uso contínuo e observação nos favoritos do médico. Favoritar de novo o mesmo medicamento,
@@ -237,6 +260,9 @@ adicionado à mão no proxy não pode valer para `/atendimento/api/eventos` e `/
 - Cada leitura do prontuário, do histórico do paciente e da impressão da receita grava auditoria: usuário,
   atendimento, ação, IP e horário. A consulta pelo CPF grava `FICHA_PACIENTE` (recepção) ou
   `PRONTUARIO_COMPLETO` (médico, com o motivo quando o paciente não está na fila dele no dia).
+- Atestado é documento do médico do atendimento: a recepção emite só a declaração de comparecimento e não
+  abre atestado. O CID no atestado exige a autorização do paciente. O evento `ATESTADO_EMITIDO` fica fora da
+  linha do tempo da recepção.
 - A consulta pelo CPF da recepção traz só a linha do tempo administrativa. O prontuário de todos os médicos é
   só para usuário vinculado a profissional, e só com registros liberados.
 - Nenhuma rotina apaga prontuário sozinha. A guarda é decisão da clínica, alinhada com o jurídico antes do
@@ -264,7 +290,8 @@ adicionado à mão no proxy não pode valer para `/atendimento/api/eventos` e `/
 
 ## O que esta versão deixa para depois
 
-Troca de médico no meio do atendimento, sinais vitais, atestado, pedido de exame, catálogo de medicamentos
+Troca de médico no meio do atendimento, sinais vitais, modelos de texto da clínica (hoje cada médico tem os
+seus), cancelamento de atestado emitido, pedido de exame, catálogo de medicamentos
 e de CID, assinatura digital, PDF da receita, reabrir atendimento finalizado, sala ou consultório no
 painel da TV, aviso ao vivo entre várias instâncias e faturamento. Clínica com agenda em outro sistema (por exemplo `tasy`) segue
 com o fluxo clínico lá.

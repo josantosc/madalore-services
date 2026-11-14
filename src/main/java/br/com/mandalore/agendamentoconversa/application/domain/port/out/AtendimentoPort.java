@@ -101,6 +101,19 @@ public interface AtendimentoPort {
 
     boolean excluirModelo(String conta, long profissionalId, long modeloId);
 
+    // ---- documentos (atestado e declaração) ----
+
+    /**
+     * Grava o documento e o evento (ATESTADO_EMITIDO ou DECLARACAO_EMITIDA) numa transação. Atendimento fora da conta,
+     * cancelado ou, com profissionalId, de outro profissional: NAO_ENCONTRADO. Operacao.id() é o documento.
+     */
+    Atendimento.Operacao emitirDocumento(String conta, Atendimento.Documento documento);
+
+    /** Documentos do atendimento, do mais recente ao mais antigo. */
+    List<Atendimento.Documento> documentos(String conta, long nrAtendimento);
+
+    Optional<Atendimento.Documento> documento(String conta, long documentoId);
+
     // ---- consultório: leitura ----
 
     Optional<ProfissionalClinico> profissionalDoUsuario(String conta, long usuarioId);

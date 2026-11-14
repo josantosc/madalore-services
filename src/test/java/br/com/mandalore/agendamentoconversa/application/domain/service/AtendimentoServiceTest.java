@@ -215,4 +215,62 @@ class AtendimentoServiceTest {
         assertThatThrownBy(() -> service.fichaDoPaciente("1", 77L, "recepcao", "ip")).isInstanceOf(IllegalArgumentException.class);
         verify(port, never()).visitasDoPaciente(anyString(), anyLong(), any(Boolean.class));
     }
+
+    // ---- declaração de comparecimento ----
+
+    private static final Atendimento.PacienteResumo MARIA =
+            new Atendimento.PacienteResumo(77L, "Maria", "12345678901", LocalDate.of(1980, 1, 2), null);
+
+    @Test
+    void declaracaoTrocaHorariosDoAtendimentoEGravaSemProfissional() {
+        when(port.atendimento("1", 50L)).thenReturn(java.util.Optional.of(ficha(Atendimento.Status.FINALIZADO,
+                AGORA.minusDays(1).withHour(8), AGORA.minusDays(1).withHour(9).withMinute(15))));
+        when(port.paciente("1", 77L)).thenReturn(java.util.Optional.of(MARIA));
+        when(port.emitirDocumento(eq("1"), any())).thenReturn(Atendimento.Operacao.sucesso(4L));
+
+        assertThat(service.emitirDeclaracao("1", 50L, "{paciente}, CPF {cpf}, em {data}, das {chegada} às {saida} ({medico}).",
+                "recepcao").id()).isEqualTo(4L);
+
+        org.mockito.ArgumentCaptor<Atendimento.Documento> doc = org.mockito.ArgumentCaptor.forClass(Atendimento.Documento.class);
+        verify(port).emitirDocumento(eq("1"), doc.capture());
+        assertThat(doc.getValue()).isEqualTo(new Atendimento.Documento(null, 50L, 77L, null, Atendimento.TipoDocumento.DECLARACAO,
+                "Maria, CPF 123.456.789-01, em 09/11/2026, das 08:00 às 09:15 (Dra. Ana).", null, null, AGORA, "recepcao"));
+    }
+
+    @Test
+    void declaracaoDeAtendimentoCanceladoDevolveStatusInvalido() {
+        when(port.atendimento("1", 50L)).thenReturn(java.util.Optional.of(ficha(Atendimento.Status.CANCELADO, AGORA, null)));
+
+        assertThat(service.emitirDeclaracao("1", 50L, "Compareceu", "recepcao").codigo())
+                .isEqualTo(CodigoNegocio.STATUS_INVALIDO_PARA_DOCUMENTO);
+        verify(port, never()).emitirDocumento(anyString(), any());
+    }
+
+    @Test
+    void recepcaoNaoImprimeAtestado() {
+        when(port.documento("1", 9L)).thenReturn(java.util.Optional.of(new Atendimento.Documento(9L, 50L, 77L, 3L,
+                Atendimento.TipoDocumento.ATESTADO, "Atesto", 2, "J06", AGORA, "dr")));
+
+        assertThatThrownBy(() -> service.impressaoDeclaracao("1", 9L, "recepcao", "ip"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("não encontrado");
+        verify(port, never()).registrarAcesso(anyString(), any(), anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void impressaoDaDeclaracaoTemLinhaParaCarimboERegistraAcesso() {
+        when(port.documento("1", 4L)).thenReturn(java.util.Optional.of(new Atendimento.Documento(4L, 50L, 77L, null,
+                Atendimento.TipoDocumento.DECLARACAO, "Compareceu", null, null, AGORA, "recepcao")));
+        when(port.paciente("1", 77L)).thenReturn(java.util.Optional.of(MARIA));
+
+        String html = service.impressaoDeclaracao("1", 4L, "recepcao", "10.0.0.2");
+
+        assertThat(html).contains("Declaração de comparecimento", "Compareceu", "Assinatura e carimbo da clínica")
+                .doesNotContain("CID-10");
+        verify(port).registrarAcesso("1", 50L, 77L, "IMPRESSAO_DOCUMENTO", "recepcao", "10.0.0.2");
+    }
+
+    private static Atendimento.Ficha ficha(Atendimento.Status status, LocalDateTime entrada, LocalDateTime fim) {
+        return new Atendimento.Ficha(50L, 20L, 77L, "Maria", 3L, "Dra. Ana", 1L, "Clínica geral", null, status, entrada,
+                null, fim, null, null, "ana", null, null, null, null, null);
+    }
 }

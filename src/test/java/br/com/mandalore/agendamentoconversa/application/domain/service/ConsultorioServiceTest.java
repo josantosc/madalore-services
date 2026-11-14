@@ -30,6 +30,7 @@ import br.com.mandalore.agendamentoconversa.application.domain.port.in.Consultor
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.AnamneseInBound;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.Contexto;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.DiagnosticoInBound;
+import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.DocumentoInBound;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.EvolucaoInBound;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.FinalizarInBound;
 import br.com.mandalore.agendamentoconversa.application.domain.port.in.ConsultorioUseCase.Impressao;
@@ -551,6 +552,108 @@ class ConsultorioServiceTest {
 
         assertThatThrownBy(() -> service.prontuarioDoPaciente(CTX, PACIENTE, "x".repeat(501), "ip"))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ---- atestado e declaração ----
+
+    @Test
+    void atestadoTrocaMarcadoresEGravaDiasECidAutorizado() {
+        emConsulta();
+        when(port.paciente(CONTA, PACIENTE)).thenReturn(Optional.of(MARIA));
+        when(port.cabecalhoAtendimento(CONTA, ATEND)).thenReturn(Optional.of(new CabecalhoReceita("Clínica", "Maria", "")));
+        when(port.emitirDocumento(eq(CONTA), any())).thenReturn(Atendimento.Operacao.sucesso(9L));
+
+        Atendimento.Operacao op = service.emitirDocumento(CTX, ATEND, new DocumentoInBound(Atendimento.TipoDocumento.ATESTADO,
+                " {paciente}, {idade}, {data}: {dias} dia(s). {crm} {desconhecido} ", 3, " j06.9 ", true));
+
+        assertThat(op.id()).isEqualTo(9L);
+        ArgumentCaptor<Atendimento.Documento> doc = ArgumentCaptor.forClass(Atendimento.Documento.class);
+        verify(port).emitirDocumento(eq(CONTA), doc.capture());
+        assertThat(doc.getValue()).isEqualTo(new Atendimento.Documento(null, ATEND, PACIENTE, PROF,
+                Atendimento.TipoDocumento.ATESTADO, "Maria, 46 anos, 10/11/2026: 3 dia(s). 12345/SP {desconhecido}", 3,
+                "J06.9", AGORA, "dr"));
+    }
+
+    @Test
+    void atestadoComCidSemAutorizacaoDoPacienteLancaIllegalArgument() {
+        emConsulta();
+
+        assertThatThrownBy(() -> service.emitirDocumento(CTX, ATEND, new DocumentoInBound(Atendimento.TipoDocumento.ATESTADO,
+                "Atesto", 1, "J06", false))).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("autorização");
+        verify(port, never()).emitirDocumento(anyString(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 366})
+    void atestadoComDiasForaDoLimiteLancaIllegalArgument(int dias) {
+        emConsulta();
+
+        assertThatThrownBy(() -> service.emitirDocumento(CTX, ATEND, new DocumentoInBound(Atendimento.TipoDocumento.ATESTADO,
+                "Atesto", dias, null, false))).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void declaracaoIgnoraDiasECid() {
+        emConsulta();
+        when(port.paciente(CONTA, PACIENTE)).thenReturn(Optional.of(MARIA));
+        when(port.emitirDocumento(eq(CONTA), any())).thenReturn(Atendimento.Operacao.sucesso(9L));
+
+        service.emitirDocumento(CTX, ATEND, new DocumentoInBound(Atendimento.TipoDocumento.DECLARACAO,
+                "Compareceu das {chegada} às {saida}", 5, "J06", false));
+
+        ArgumentCaptor<Atendimento.Documento> doc = ArgumentCaptor.forClass(Atendimento.Documento.class);
+        verify(port).emitirDocumento(eq(CONTA), doc.capture());
+        assertThat(doc.getValue().texto()).isEqualTo("Compareceu das 07:00 às 07:00");
+        assertThat(doc.getValue().dias()).isNull();
+        assertThat(doc.getValue().cid()).isNull();
+    }
+
+    @Test
+    void documentoAntesDeIniciarAConsultaDevolveStatusInvalido() {
+        profissional();
+        when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.AGUARDANDO, PROF)));
+
+        assertThat(service.emitirDocumento(CTX, ATEND, new DocumentoInBound(Atendimento.TipoDocumento.DECLARACAO,
+                "Compareceu", null, null, false)).codigo()).isEqualTo(CodigoNegocio.STATUS_INVALIDO_PARA_DOCUMENTO);
+        verify(port, never()).emitirDocumento(anyString(), any());
+    }
+
+    @Test
+    void documentoSemTextoLancaIllegalArgument() {
+        emConsulta();
+        when(port.paciente(CONTA, PACIENTE)).thenReturn(Optional.of(MARIA));
+
+        assertThatThrownBy(() -> service.emitirDocumento(CTX, ATEND, new DocumentoInBound(Atendimento.TipoDocumento.DECLARACAO,
+                "  ", null, null, false))).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void impressaoDeDocumentoDeOutroProfissionalEAcessoNegado() {
+        profissional();
+        when(port.documento(CONTA, 9L)).thenReturn(Optional.of(atestado("Atesto")));
+        when(port.atendimento(CONTA, ATEND)).thenReturn(Optional.of(ficha(Atendimento.Status.FINALIZADO, 99L)));
+
+        assertThatThrownBy(() -> service.impressaoDocumento(CTX, 9L, "ip")).isInstanceOf(AcessoNegadoException.class);
+        verify(port, never()).registrarAcesso(anyString(), any(), anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void impressaoDeAtestadoEscapaHtmlTrazCidEConselhoERegistraAcesso() {
+        emConsulta();
+        when(port.documento(CONTA, 9L)).thenReturn(Optional.of(atestado("<b>Atesto</b>")));
+        when(port.paciente(CONTA, PACIENTE)).thenReturn(Optional.of(MARIA));
+        when(port.cabecalhoAtendimento(CONTA, ATEND)).thenReturn(Optional.of(new CabecalhoReceita("Clínica & Cia", "Maria", "")));
+
+        Impressao impressao = service.impressaoDocumento(CTX, 9L, "1.2.3.4");
+
+        assertThat(impressao.html()).contains("Atestado médico", "Clínica &amp; Cia", "&lt;b&gt;Atesto&lt;/b&gt;",
+                "CID-10: J06.9", "12345/SP", "CPF: 123.456.789-01", "Documento nº 9").doesNotContain("<b>Atesto");
+        verify(port).registrarAcesso(CONTA, ATEND, PACIENTE, "IMPRESSAO_DOCUMENTO", "dr", "1.2.3.4");
+    }
+
+    private static Atendimento.Documento atestado(String texto) {
+        return new Atendimento.Documento(9L, ATEND, PACIENTE, PROF, Atendimento.TipoDocumento.ATESTADO, texto, 2, "J06.9",
+                AGORA, "dr");
     }
 
     private void profissional(ProfissionalClinico prof) {

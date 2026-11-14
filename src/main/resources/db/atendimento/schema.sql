@@ -272,3 +272,22 @@ CREATE TABLE IF NOT EXISTS atendimento.modelo_nota (
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_modelo_nota_atalho ON atendimento.modelo_nota (conta_id, profissional_id, nm_atalho);
+
+-- Atestados e declarações de comparecimento emitidos. Texto final, já com os marcadores trocados; não se edita.
+-- profissional_id nulo: declaração emitida pela recepção. CID só com autorização do paciente (CFM 1.658/2002).
+CREATE TABLE IF NOT EXISTS atendimento.documento_paciente (
+    id BIGSERIAL PRIMARY KEY,
+    conta_id VARCHAR(40) NOT NULL,
+    nr_atendimento BIGINT NOT NULL REFERENCES atendimento.atendimento_paciente (nr_atendimento),
+    paciente_id BIGINT NOT NULL REFERENCES agenda.paciente (id),
+    profissional_id BIGINT REFERENCES agenda.profissional (id),
+    ie_tipo VARCHAR(12) NOT NULL CHECK (ie_tipo IN ('ATESTADO', 'DECLARACAO')),
+    ds_texto TEXT NOT NULL CHECK (btrim(ds_texto) <> ''),
+    qt_dias SMALLINT CHECK (qt_dias BETWEEN 0 AND 365),
+    cd_doenca VARCHAR(10),
+    dt_emissao TIMESTAMP NOT NULL,
+    nm_usuario VARCHAR(150) NOT NULL,
+    CHECK (ie_tipo = 'ATESTADO' OR (qt_dias IS NULL AND cd_doenca IS NULL)),
+    CHECK (ie_tipo = 'DECLARACAO' OR profissional_id IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS idx_documento_atendimento ON atendimento.documento_paciente (nr_atendimento);

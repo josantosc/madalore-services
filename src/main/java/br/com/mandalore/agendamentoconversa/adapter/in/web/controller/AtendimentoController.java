@@ -195,6 +195,28 @@ public class AtendimentoController {
                 .body(atendimento.fichaDoPaciente(conta(conta, login), id, login.usuario(), AdminAcesso.ip(request)));
     }
 
+    public record DeclaracaoRequest(String texto) {
+    }
+
+    @PostMapping(value = "/atendimento/api/atendimentos/{id}/declaracao", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> declaracao(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                          @RequestBody(required = false) DeclaracaoRequest request,
+                                                          @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(atendimento.emitirDeclaracao(conta(conta, login), id, request == null ? null : request.texto(),
+                login.usuario()), "id");
+    }
+
+    @GetMapping("/atendimento/api/documentos/{id}/impressao")
+    public ResponseEntity<byte[]> impressaoDeclaracao(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                      @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
+                                                      HttpServletRequest request) {
+        String html = atendimento.impressaoDeclaracao(conta(conta, login), id, login.usuario(), AdminAcesso.ip(request));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
+                .body(html.getBytes(StandardCharsets.UTF_8));
+    }
+
     /** Avisos da fila em tempo real (só tipo e números, sem dado do paciente). */
     @GetMapping(value = "/atendimento/api/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter eventosAoVivo(@RequestParam(required = false) String conta,
@@ -265,6 +287,7 @@ public class AtendimentoController {
             case HORARIO_INDISPONIVEL -> "O horário já foi ocupado por outra consulta. Remarque pela agenda.";
             case ATALHO_DUPLICADO -> "Você já tem um modelo com este atalho.";
             case MEDICAMENTO_DUPLICADO -> "Este medicamento, com esta apresentação, já está na lista.";
+            case STATUS_INVALIDO_PARA_DOCUMENTO -> "Não dá para emitir o documento nesta situação (consulta não iniciada ou atendimento cancelado). Atualize a tela.";
             default -> "Não foi possível gravar (" + codigo.name() + ").";
         };
     }

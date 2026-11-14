@@ -208,6 +208,26 @@ public class ConsultorioController {
         return html(consultorio.impressaoConsulta(contexto(conta, login), id, AdminAcesso.ip(request)));
     }
 
+    @PostMapping(value = "/consultorio/api/atendimentos/{id}/documentos", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> emitirDocumento(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                               @RequestBody ConsultorioUseCase.DocumentoInBound documento,
+                                                               @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return operacao(consultorio.emitirDocumento(contexto(conta, login), id, documento));
+    }
+
+    @GetMapping(value = "/consultorio/api/atendimentos/{id}/documentos", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Atendimento.Documento>> documentos(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                                  @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login) {
+        return semCache(consultorio.documentos(contexto(conta, login), id));
+    }
+
+    @GetMapping("/consultorio/api/documentos/{id}/impressao")
+    public ResponseEntity<byte[]> impressaoDocumento(@PathVariable long id, @RequestParam(required = false) String conta,
+                                                     @RequestAttribute(AdminAuthFilter.LOGIN) AdminAcesso.Login login,
+                                                     HttpServletRequest request) {
+        return html(consultorio.impressaoDocumento(contexto(conta, login), id, AdminAcesso.ip(request)));
+    }
+
     private static ResponseEntity<byte[]> html(ConsultorioUseCase.Impressao impressao) {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())

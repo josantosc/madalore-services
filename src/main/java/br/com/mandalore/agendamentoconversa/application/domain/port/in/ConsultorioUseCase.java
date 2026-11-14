@@ -52,6 +52,14 @@ public interface ConsultorioUseCase {
     ) {
     }
 
+    /**
+     * Atestado ou declaração. texto aceita marcadores ({paciente}, {data}, {dias}...). dias e cid só no atestado; cid
+     * exige autorizouCid (autorização do paciente).
+     */
+    record DocumentoInBound(Atendimento.TipoDocumento tipo, String texto, Integer dias, String cid,
+                            boolean autorizouCid) {
+    }
+
     /** Receita pronta para imprimir: HTML já montado com clínica, paciente, itens, médico e conselho. */
     record Impressao(String html) {
     }
@@ -96,6 +104,14 @@ public interface ConsultorioUseCase {
 
     /** Folha da consulta finalizada para assinatura manual, só com registros liberados e ativos. Grava acesso_prontuario. */
     Impressao impressaoConsulta(Contexto ctx, long atendimentoId, String ip);
+
+    /** Consulta em andamento ou finalizada do próprio profissional. Operacao.id() é o documento. */
+    Atendimento.Operacao emitirDocumento(Contexto ctx, long atendimentoId, DocumentoInBound documento);
+
+    List<Atendimento.Documento> documentos(Contexto ctx, long atendimentoId);
+
+    /** Documento de atendimento do próprio profissional. Grava acesso_prontuario. */
+    Impressao impressaoDocumento(Contexto ctx, long documentoId, String ip);
 
     Atendimento.Operacao finalizar(Contexto ctx, long atendimentoId, FinalizarInBound finalizacao);
 

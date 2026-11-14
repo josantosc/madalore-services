@@ -173,6 +173,30 @@ class ConsultorioControllerTest {
     }
 
     @Test
+    void emitirDocumentoRepassaOCorpo() throws Exception {
+        when(consultorio.emitirDocumento(CTX, 99L, new ConsultorioUseCase.DocumentoInBound(Atendimento.TipoDocumento.ATESTADO,
+                "Atesto", 2, "J06", true))).thenReturn(Atendimento.Operacao.sucesso(9L));
+
+        mvc.perform(post("/consultorio/api/atendimentos/99/documentos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tipo\":\"ATESTADO\",\"texto\":\"Atesto\",\"dias\":2,\"cid\":\"J06\",\"autorizouCid\":true}")
+                        .requestAttr(AdminAuthFilter.LOGIN, MEDICO))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(9));
+    }
+
+    @Test
+    void impressaoDeDocumentoDevolveHtmlSemCache() throws Exception {
+        when(consultorio.impressaoDocumento(eq(CTX), eq(9L), any()))
+                .thenReturn(new ConsultorioUseCase.Impressao("<html><body>Atestado</body></html>"));
+
+        mvc.perform(get("/consultorio/api/documentos/9/impressao").requestAttr(AdminAuthFilter.LOGIN, MEDICO))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(content().string(containsString("Atestado")));
+    }
+
+    @Test
     void finalizarComRascunhoDevolve409() throws Exception {
         when(consultorio.finalizar(eq(CTX), eq(99L), any()))
                 .thenReturn(Atendimento.Operacao.falha(CodigoNegocio.RASCUNHO_PENDENTE));
