@@ -145,8 +145,20 @@
     .lista { display: grid; gap: 8px; }
     .cartao { background: var(--alpha-1); outline: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
     .texto { white-space: pre-wrap; margin: 0; }
-    .item { display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 6px; padding: 8px 0; border-top: 1px solid var(--borda); align-items: center; }
-    .item .linha2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 6px; align-items: center; }
+    #rItens { display: grid; gap: 14px; }
+    /* Um cartão por medicamento: o médico enxerga cada item como unidade, padrão de EHR (Avaros, Inspired EHRs). */
+    .item-rx { background: var(--solido); box-shadow: 0 0 0 1px var(--borda); border-radius: 12px; padding: 14px 14px 12px;
+      display: grid; gap: 12px; border-left: 3px solid var(--marca); }
+    .item-rx-cabeca { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 2px; }
+    .item-rx-titulo { font-size: 13px; font-weight: 600; color: var(--texto); letter-spacing: .02em; }
+    .item-rx-campos { display: grid; grid-template-columns: 2fr 1.2fr 2fr; gap: 10px; align-items: end; }
+    .item-rx-campos .span-2 { grid-column: span 2; }
+    .item-rx-campos .span-3 { grid-column: 1 / -1; }
+    .item-rx-detalhe { display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 10px; align-items: end; padding-top: 2px;
+      border-top: 1px dashed var(--borda); }
+    .item-rx label { display: grid; gap: 4px; font-weight: 500; font-size: 12px; color: var(--texto-2); min-width: 0; }
+    .item-rx label .campo { font-weight: 400; color: var(--texto); }
+    .item-rx .check { margin-bottom: 2px; color: var(--texto); font-size: 13px; }
     .busca-med { position: relative; min-width: 0; }
     .sugestoes { position: absolute; left: 0; top: calc(100% + 4px); z-index: 20; width: max(100%, 460px); max-width: calc(100vw - 32px);
       background: var(--solido); border-radius: 10px; box-shadow: 0 0 0 1px var(--borda), 0 12px 32px rgba(0, 0, 0, .14);
@@ -193,8 +205,8 @@
     }
     @media (max-width: 860px) {
       .conteudo { padding: 20px 16px 40px; }
-      .resumo, .grade-3, .grade-2, .grade-cid, .item, .item .linha2 { grid-template-columns: 1fr; }
-      .span-2 { grid-column: auto; }
+      .resumo, .grade-3, .grade-2, .grade-cid, .item-rx-campos, .item-rx-detalhe { grid-template-columns: 1fr; }
+      .span-2, .item-rx-campos .span-2, .item-rx-campos .span-3 { grid-column: auto; }
     }
   </style>
   <link rel="stylesheet" href="/admin/assets/tema.css">
@@ -1028,31 +1040,50 @@
       $("rModo").textContent = r ? "Rascunho da receita (salvo automaticamente)" : "Nova receita";
     }
 
+    function numerarItensReceita() {
+      [...$("rItens").children].forEach((box, i) => {
+        const titulo = box.querySelector(".item-rx-titulo");
+        if (titulo) titulo.textContent = (i + 1) + ". Medicamento";
+      });
+    }
+
     function adicionarItem(item) {
       const campo = (ph, max, valor) => el("input", { className: "campo", maxLength: max, placeholder: ph, value: valor || "" });
-      const med = campo("Medicamento (digite para buscar)", 300, item && item.medicamento);
-      const apres = campo("Apresentação (ex.: 500 mg cp)", 200, item && item.apresentacao);
-      const pos = campo("Posologia (ex.: 1 cp de 6/6h por 5 dias)", 500, item && item.posologia);
-      const via = campo("Via", 60, item && item.via);
-      const qtd = campo("Quantidade", 100, item && item.quantidade);
-      const obs = campo("Observação do item", 500, item && item.observacao);
+      const med = campo("Digite para buscar ou escrever", 300, item && item.medicamento);
+      const apres = campo("Ex.: 500 mg comprimido", 200, item && item.apresentacao);
+      const pos = campo("Ex.: 1 comprimido de 6/6h por 5 dias", 500, item && item.posologia);
+      const via = campo("Ex.: Oral", 60, item && item.via);
+      const qtd = campo("Ex.: 1 caixa", 100, item && item.quantidade);
+      const obs = campo("Opcional", 500, item && item.observacao);
       const uso = el("input", { type: "checkbox" });
       uso.checked = !!(item && item.usoContinuo);
-      const box = el("div", { className: "item" });
-      const remover = el("button", { className: "btn link", type: "button", title: "Remover item",
-        onclick: () => { box.remove(); if (!$("rItens").children.length) adicionarItem(); agendarReceita(); } }, "Remover");
+      const box = el("div", { className: "item-rx" });
+      const titulo = el("span", { className: "item-rx-titulo" }, "Medicamento");
+      const remover = el("button", { className: "btn link", type: "button", title: "Remover medicamento",
+        onclick: () => { box.remove(); if (!$("rItens").children.length) adicionarItem(); else numerarItensReceita();
+          agendarReceita(); } }, "Remover");
       const favoritar = el("button", { className: "btn link", type: "button", title: "Salvar este item nos seus favoritos",
         onclick: () => executar(() => favoritarItem(box)) }, "Favoritar");
       const sugestoes = el("div", { className: "sugestoes", role: "listbox", hidden: true });
       med.setAttribute("autocomplete", "off");
-      box.append(el("div", { className: "busca-med" }, med, sugestoes), apres, pos, el("div", { className: "botoes" }, favoritar, remover),
-        el("div", { className: "linha2" }, via, qtd, obs, el("label", { className: "check" }, uso, "Uso contínuo")));
+      box.append(
+        el("div", { className: "item-rx-cabeca" }, titulo, el("div", { className: "botoes" }, favoritar, remover)),
+        el("div", { className: "item-rx-campos" },
+          el("label", {}, "Medicamento", el("div", { className: "busca-med" }, med, sugestoes)),
+          el("label", {}, "Apresentação", apres),
+          el("label", {}, "Posologia", pos)),
+        el("div", { className: "item-rx-detalhe" },
+          el("label", {}, "Via", via),
+          el("label", {}, "Quantidade", qtd),
+          el("label", {}, "Observação do item", obs),
+          el("label", { className: "check" }, uso, "Uso contínuo")));
       box._c = { med, apres, pos, via, qtd, uso, obs };
       ligarBuscaMedicamento(box, sugestoes);
       pos.addEventListener("input", () => pos.classList.remove("sugerido"));
       box.addEventListener("input", agendarReceita);
       box.addEventListener("change", agendarReceita);
       $("rItens").append(box);
+      numerarItensReceita();
       return box;
     }
 
